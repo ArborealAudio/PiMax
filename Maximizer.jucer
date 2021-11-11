@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<JUCERPROJECT id="HMsJ6B" name="PiMax" projectType="audioplug" useAppConfig="0"
+              jucerFormatVersion="1" companyName="Arboreal Audio" pluginFormats="buildAU,buildVST,buildVST3"
+              cppLanguageStandard="latest" displaySplashScreen="0" version="1.0"
+              companyCopyright="(c) 2021 Arboreal Audio" companyWebsite="arborealaudio.com"
+              companyEmail="contact@arborealaudio.com" pluginManufacturerCode="Arau">
+  <MAINGROUP id="C1sQx6" name="PiMax">
+    <GROUP id="{696D5D65-36E5-2635-0882-CAC75D7874E4}" name="Source">
+      <GROUP id="{B3CD073D-D104-63E6-F84E-6EB41EEA0766}" name="Presets">
+        <GROUP id="{4FC1440E-6729-7381-75D5-EB9396C54948}" name="Factory Presets">
+          <FILE id="TOw6bT" name="Bass Fattener.aap" compile="0" resource="1"
+                file="Source/Presets/Factory Presets/Bass Fattener.aap"/>
+          <FILE id="nmv2JJ" name="Bass Quack.aap" compile="0" resource="1" file="Source/Presets/Factory Presets/Bass Quack.aap"/>
+          <FILE id="Vpx0sq" name="Broken Gear.aap" compile="0" resource="1" file="Source/Presets/Factory Presets/Broken Gear.aap"/>
+          <FILE id="cVHvru" name="Default.aap" compile="0" resource="1" file="Source/Presets/Factory Presets/Default.aap"/>
+          <FILE id="WPyMhT" name="Drum Crusher.aap" compile="0" resource="1"
+                file="Source/Presets/Factory Presets/Drum Crusher.aap"/>
+          <FILE id="DtXicM" name="Drum Expander.aap" compile="0" resource="1"
+                file="Source/Presets/Factory Presets/Drum Expander.aap"/>
+          <FILE id="ziMHQw" name="Guitar Stompbox.aap" compile="0" resource="1"
+                file="Source/Presets/Factory Presets/Guitar Stompbox.aap"/>
+          <FILE id="BCnD7w" name="Kick Enhancer.aap" compile="0" resource="1"
+                file="Source/Presets/Factory Presets/Kick Enhancer.aap"/>
+          <FILE id="xnKtwb" name="Loudness Curve.aap" compile="0" resource="1"
+                file="Source/Presets/Factory Presets/Loudness Curve.aap"/>
+          <FILE id="jVuKcj" name="Snare Enhancer.aap" compile="0" resource="1"
+                file="Source/Presets/Factory Presets/Snare Enhancer.aap"/>
+          <FILE id="vIBavj" name="Subtle Warmth.aap" compile="0" resource="1"
+                file="Source/Presets/Factory Presets/Subtle Warmth.aap"/>
+          <FILE id="mXJYTI" name="Vocal Polisher.aap" compile="0" resource="1"
+                file="Source/Presets/Factory Presets/Vocal Polisher.aap"/>
+        </GROUP>
+        <FILE id="yLqw2j" name="PresetComp.h" compile="0" resource="0" file="Source/Presets/PresetComp.h"/>
+        <FILE id="QWTP3W" name="PresetManager.h" compile="0" resource="0" file="Source/Presets/PresetManager.h"/>
+      </GROUP>
+      <GROUP id="{C25E21B2-C532-BAB7-34C0-C1C650D7AF5A}" name="Processors">
+        <FILE id="JEMkxT" name="LinearFilter.h" compile="0" resource="0" file="Source/Processors/LinearFilter.h"/>
+        <FILE id="oVqBv6" name="LRFilter.h" compile="0" resource="0" file="Source/Processors/LRFilter.h"/>
+        <FILE id="h1cZjl" name="MaximPizer.h" compile="0" resource="0" file="Source/Processors/MaximPizer.h"/>
+        <FILE id="sciXip" name="MultiBand Processor.h" compile="0" resource="0"
+              file="Source/Processors/MultiBand Processor.h"/>
+        <FILE id="N26bst" name="StereoWidener.h" compile="0" resource="0" file="Source/Processors/StereoWidener.h"/>
+        <FILE id="AV7bTl" name="Waveshapers.h" compile="0" resource="0" file="Source/Processors/Waveshapers.h"/>
+      </GROUP>
+      <GROUP id="{B9A5C6FA-7C6B-46C0-23E0-28F365B8EE67}" name="UI">
+        <FILE id="rvcxWa" name="LookAndFeel.h" compile="0" resource="0" file="Source/UI/LookAndFeel.h"/>
+        <FILE id="eblXKu" name="Splash.h" compile="0" resource="0" file="Source/UI/Splash.h"/>
+      </GROUP>
+      <GROUP id="{A057AE5C-FC08-BD90-1321-1455950ED7BE}" name="ff_meters-master">
+        <GROUP id="{F526CB96-CB11-C89B-1D63-A711E8199B61}" name="LevelMeter">
+          <FILE id="gYmN77" name="LevelMeter.cpp" compile="0" resource="0" file="Source/ff_meters-master/LevelMeter/LevelMeter.cpp"/>
+          <FILE id="bpEv1y" name="LevelMeter.h" compile="0" resource="0" file="Source/ff_meters-master/LevelMeter/LevelMeter.h"/>
+          <FILE id="cGucvs" name="LevelMeterSource.h" compile="0" resource="0"
+                file="Source/ff_meters-master/LevelMeter/LevelMeterSource.h"/>
+        </GROUP>
+        <GROUP id="{78535D60-38F8-19A9-C726-13A5428E9028}" name="LookAndFeel">
+          <FILE id="sxdB31" name="LevelMeterLookAndFeel.h" compile="0" resource="0"
+                file="Source/ff_meters-master/LookAndFeel/LevelMeterLookAndFeel.h"/>
+          <FILE id="JmgAQB" name="LevelMeterLookAndFeelMethods.h" compile="0"
+                resource="0" file="Source/ff_meters-master/LookAndFeel/LevelMeterLookAndFeelMethods.h"/>
+          <FILE id="jQXiqZ" name="SoundFieldLookAndFeelMethods.h" compile="0"
+                resource="0" file="Source/ff_meters-master/LookAndFeel/SoundFieldLookAndFeelMethods.h"/>
+        </GROUP>
+        <GROUP id="{459D55CC-B6A4-24B0-CCDF-1AECF314D90F}" name="Visualisers">
+          <FILE id="oTtg2m" name="OutlineBuffer.h" compile="0" resource="0" file="Source/ff_meters-master/Visualisers/OutlineBuffer.h"/>
+          <FILE id="q2p210" name="StereoFieldBuffer.h" compile="0" resource="0"
+                file="Source/ff_meters-master/Visualisers/StereoFieldBuffer.h"/>
+          <FILE id="wBEuWa" name="StereoFieldComponent.h" compile="0" resource="0"
+                file="Source/ff_meters-master/Visualisers/StereoFieldComponent.h"/>
+        </GROUP>
+        <FILE id="TUU5Ft" name="Doxyfile" compile="0" resource="1" file="Source/ff_meters-master/Doxyfile"/>
+        <FILE id="zFDkWT" name="ff_meters.cpp" compile="1" resource="0" file="Source/ff_meters-master/ff_meters.cpp"/>
+        <FILE id="WAUSEc" name="ff_meters.h" compile="0" resource="0" file="Source/ff_meters-master/ff_meters.h"/>
+        <FILE id="D8OKSe" name="LICENSE.md" compile="0" resource="1" file="Source/ff_meters-master/LICENSE.md"/>
+        <FILE id="GTA3eA" name="README.md" compile="0" resource="1" file="Source/ff_meters-master/README.md"/>
+      </GROUP>
+      <GROUP id="{50345B8B-10B3-CB40-32B3-8F016DE15B1E}" name="Resources">
+        <GROUP id="{C4AC17CD-7CFC-28CA-C3BE-6850DFAD379B}" name="fonts">
+          <FILE id="OIa6cD" name="Sora-Bold.ttf" compile="0" resource="1" file="Source/Resources/fonts/Sora-Bold.ttf"/>
+          <FILE id="zI88KS" name="Sora-ExtraBold.ttf" compile="0" resource="1"
+                file="Source/Resources/fonts/Sora-ExtraBold.ttf"/>
+          <FILE id="bWgnQt" name="Sora-ExtraLight.ttf" compile="0" resource="1"
+                file="Source/Resources/fonts/Sora-ExtraLight.ttf"/>
+          <FILE id="JhDKdl" name="Sora-Light.ttf" compile="0" resource="1" file="Source/Resources/fonts/Sora-Light.ttf"/>
+          <FILE id="rXpofj" name="Sora-Medium.ttf" compile="0" resource="1" file="Source/Resources/fonts/Sora-Medium.ttf"/>
+          <FILE id="Sf2hoy" name="Sora-Regular.ttf" compile="0" resource="1"
+                file="Source/Resources/fonts/Sora-Regular.ttf"/>
+          <FILE id="j4Z2Ck" name="Sora-SemiBold.ttf" compile="0" resource="1"
+                file="Source/Resources/fonts/Sora-SemiBold.ttf"/>
+          <FILE id="kZ23c0" name="Sora-Thin.ttf" compile="0" resource="1" file="Source/Resources/fonts/Sora-Thin.ttf"/>
+        </GROUP>
+        <FILE id="U2RuVG" name="arboreal tree.svg" compile="0" resource="1"
+              file="Source/Resources/arboreal tree.svg"/>
+        <FILE id="blozf2" name="g245.png" compile="0" resource="0" file="Source/Resources/g245.png"/>
+      </GROUP>
+      <FILE id="a43xJY" name="PluginProcessor.cpp" compile="1" resource="0"
+            file="Source/PluginProcessor.cpp"/>
+      <FILE id="M1Chn4" name="PluginProcessor.h" compile="0" resource="0"
+            file="Source/PluginProcessor.h"/>
+      <FILE id="vEGmxB" name="PluginEditor.cpp" compile="1" resource="0"
+            file="Source/PluginEditor.cpp"/>
+      <FILE id="ZaHCgc" name="PluginEditor.h" compile="0" resource="0" file="Source/PluginEditor.h"/>
+      <FILE id="Q25MP2" name="UI.cpp" compile="1" resource="0" file="Source/UI.cpp"/>
+      <FILE id="ElmJhs" name="UI.h" compile="0" resource="0" file="Source/UI.h"/>
+      <FILE id="pWpYdT" name="OnlineActivation.h" compile="0" resource="0"
+            file="Source/OnlineActivation.h"/>
+      <FILE id="wGiTC3" name="DownloadManager.h" compile="0" resource="0"
+            file="Source/DownloadManager.h"/>
+    </GROUP>
+  </MAINGROUP>
+  <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1" JUCE_VST3_CAN_REPLACE_VST2="0"
+               JUCE_DSP_ENABLE_SNAP_TO_ZERO="0"/>
+  <EXPORTFORMATS>
+    <VS2019 targetFolder="Builds/VisualStudio2019">
+      <CONFIGURATIONS>
+        <CONFIGURATION isDebug="1" name="Debug" targetName="PiMax" enablePluginBinaryCopyStep="1"/>
+        <CONFIGURATION isDebug="0" name="Release" targetName="PiMax" enablePluginBinaryCopyStep="1"/>
+      </CONFIGURATIONS>
+      <MODULEPATHS>
+        <MODULEPATH id="juce_audio_basics" path="../../../../../../JUCE/modules"/>
+        <MODULEPATH id="juce_audio_devices" path="../../../../../../JUCE/modules"/>
+        <MODULEPATH id="juce_audio_formats" path="../../../../../../JUCE/modules"/>
+        <MODULEPATH id="juce_audio_plugin_client" path="../../../../../../JUCE/modules"/>
+        <MODULEPATH id="juce_audio_processors" path="../../../../../../JUCE/modules"/>
+        <MODULEPATH id="juce_audio_utils" path="../../../../../../JUCE/modules"/>
+        <MODULEPATH id="juce_core" path="../../../../../../JUCE/modules"/>
+        <MODULEPATH id="juce_data_structures" path="../../../../../../JUCE/modules"/>
+        <MODULEPATH id="juce_dsp" path="../../../../../../JUCE/modules"/>
+        <MODULEPATH id="juce_events" path="../../../../../../JUCE/modules"/>
+        <MODULEPATH id="juce_graphics" path="../../../../../../JUCE/modules"/>
+        <MODULEPATH id="juce_gui_basics" path="../../../../../../JUCE/modules"/>
+        <MODULEPATH id="juce_gui_extra" path="../../../../../../JUCE/modules"/>
+        <MODULEPATH id="juce_opengl" path="../../../../../JUCE/modules"/>
+        <MODULEPATH id="gin" path="../../../../../modules/Gin-master/modules"/>
+        <MODULEPATH id="gin_gui" path="../../../../../modules/Gin-master/modules"/>
+        <MODULEPATH id="juce_product_unlocking" path="../../../../../JUCE/modules"/>
+        <MODULEPATH id="juce_cryptography" path="../../../../../JUCE/modules"/>
+      </MODULEPATHS>
+    </VS2019>
+    <XCODE_MAC targetFolder="Builds/MacOSX" hardenedRuntime="1">
+      <CONFIGURATIONS>
+        <CONFIGURATION isDebug="1" name="Debug" targetName="PiMax"/>
+        <CONFIGURATION isDebug="0" name="Release" targetName="PiMax"/>
+      </CONFIGURATIONS>
+      <MODULEPATHS>
+        <MODULEPATH id="juce_audio_basics" path="../../../../../../JUCE/modules"/>
+        <MODULEPATH id="juce_audio_devices" path="../../../../../../JUCE/modules"/>
+        <MODULEPATH id="juce_audio_formats" path="../../../../../../JUCE/modules"/>
+        <MODULEPATH id="juce_audio_plugin_client" path="../../../../../../JUCE/modules"/>
+        <MODULEPATH id="juce_audio_processors" path="../../../../../../JUCE/modules"/>
+        <MODULEPATH id="juce_audio_utils" path="../../../../../../JUCE/modules"/>
+        <MODULEPATH id="juce_core" path="../../../../../../JUCE/modules"/>
+        <MODULEPATH id="juce_data_structures" path="../../../../../../JUCE/modules"/>
+        <MODULEPATH id="juce_dsp" path="../../../../../../JUCE/modules"/>
+        <MODULEPATH id="juce_events" path="../../../../../../JUCE/modules"/>
+        <MODULEPATH id="juce_graphics" path="../../../../../../JUCE/modules"/>
+        <MODULEPATH id="juce_gui_basics" path="../../../../../../JUCE/modules"/>
+        <MODULEPATH id="juce_gui_extra" path="../../../../../../JUCE/modules"/>
+        <MODULEPATH id="juce_opengl" path="../../../../../JUCE/modules"/>
+        <MODULEPATH id="gin" path="../../../../../modules/Gin-master/modules"/>
+        <MODULEPATH id="gin_gui" path="../../../../../modules/Gin-master/modules"/>
+        <MODULEPATH id="juce_product_unlocking" path="../../../../../JUCE/modules"/>
+        <MODULEPATH id="juce_cryptography" path="../../../../../JUCE/modules"/>
+      </MODULEPATHS>
+    </XCODE_MAC>
+  </EXPORTFORMATS>
+  <MODULES>
+    <MODULE id="gin" showAllCode="1" useLocalCopy="1" useGlobalPath="1"/>
+    <MODULE id="gin_gui" showAllCode="1" useLocalCopy="1" useGlobalPath="1"/>
+    <MODULE id="juce_audio_basics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_audio_devices" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_audio_formats" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_audio_plugin_client" showAllCode="1" useLocalCopy="0"
+            useGlobalPath="1"/>
+    <MODULE id="juce_audio_processors" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_audio_utils" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_core" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_cryptography" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_data_structures" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_dsp" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_events" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_graphics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_gui_basics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_gui_extra" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_opengl" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_product_unlocking" showAllCode="1" useLocalCopy="0"
+            useGlobalPath="1"/>
+  </MODULES>
+</JUCERPROJECT>

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<SubtleWarmth>
+  <PARAM id="autoGain" value="0.0"/>
+  <PARAM id="bandInGain0" value="0.0"/>
+  <PARAM id="bandInGain1" value="0.0"/>
+  <PARAM id="bandInGain2" value="0.0"/>
+  <PARAM id="bandInGain3" value="0.0"/>
+  <PARAM id="bandOutGain0" value="0.0"/>
+  <PARAM id="bandOutGain1" value="0.0"/>
+  <PARAM id="bandOutGain2" value="0.0"/>
+  <PARAM id="bandOutGain3" value="0.0"/>
+  <PARAM id="bandSplit" value="0.0"/>
+  <PARAM id="bandWidth0" value="1.0"/>
+  <PARAM id="bandWidth1" value="1.0"/>
+  <PARAM id="bandWidth2" value="1.0"/>
+  <PARAM id="bandWidth3" value="1.0"/>
+  <PARAM id="bypass" value="0.0"/>
+  <PARAM id="bypassBand0" value="0.0"/>
+  <PARAM id="bypassBand1" value="0.0"/>
+  <PARAM id="bypassBand2" value="0.0"/>
+  <PARAM id="bypassBand3" value="0.0"/>
+  <PARAM id="clipType" value="2.0"/>
+  <PARAM id="crossover0" value="150.0"/>
+  <PARAM id="crossover1" value="2500.0"/>
+  <PARAM id="crossover2" value="40.0"/>
+  <PARAM id="curve" value="1.0"/>
+  <PARAM id="distType" value="1.0"/>
+  <PARAM id="gain" value="2.399999618530273"/>
+  <PARAM id="hq" value="0.0"/>
+  <PARAM id="linearPhase" value="0.0"/>
+  <PARAM id="mix" value="1.0"/>
+  <PARAM id="monoWidth" value="0.0"/>
+  <PARAM id="muteBand0" value="0.0"/>
+  <PARAM id="muteBand1" value="0.0"/>
+  <PARAM id="muteBand2" value="0.0"/>
+  <PARAM id="muteBand3" value="0.0"/>
+  <PARAM id="output" value="-1.0"/>
+  <PARAM id="soloBand0" value="0.0"/>
+  <PARAM id="soloBand1" value="0.0"/>
+  <PARAM id="soloBand2" value="0.0"/>
+  <PARAM id="soloBand3" value="0.0"/>
+  <PARAM id="width" value="1.0"/>
+  <PARAM id="numBands" value="2"/>
+  <PARAM id="renderHQ" value="0.0"/>
+</SubtleWarmth>
