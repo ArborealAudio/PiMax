@@ -303,10 +303,11 @@ void MaximizerAudioProcessor::updateNumBands(int newNumBands) noexcept
     suspendProcessing(false);
 
     /*write numBands change to tree state*/
-    //numBandsTree.setProperty("value", numBands, nullptr);
     auto val = apvts.state.getChildWithProperty("id", "numBands");
     val.setProperty("value", numBands, nullptr);
-    DBG(apvts.state.toXmlString());
+
+    if (onPresetChange != nullptr)
+        onPresetChange();
 }
 
 void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
@@ -365,7 +366,6 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
 #else
     if (*bandSplit) {
         for (auto& b : m_Proc.bandBuffer) {
-            //b.setSize(2, numSamples * oversample[osIndex].getOversamplingFactor(), false, false, true);
             b.copyFrom(0, 0, const_cast<float*>(osBlock.getChannelPointer(0)), osBlock.getNumSamples());
             b.copyFrom(1, 0, const_cast<float*>(osBlock.getChannelPointer(1)), osBlock.getNumSamples());
         }
@@ -514,7 +514,6 @@ void MaximizerAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     //presetModified = manager->compareStates(currentPreset);
     //xml->setAttribute("presetModified", presetModified);
     copyXmlToBinary(*xml, destData);
-    DBG(xml->toString());
 }
 
 void MaximizerAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
@@ -532,7 +531,6 @@ void MaximizerAudioProcessor::setStateInformation (const void* data, int sizeInB
         //if (xmlState->hasTagName(apvts.state.getType()))
         apvts.replaceState(ValueTree::fromXml(*xmlState));
         numBands = apvts.state.getChildWithProperty("id", "numBands").getProperty("value");
-        DBG(apvts.state.toXmlString());
     }
 }
 
