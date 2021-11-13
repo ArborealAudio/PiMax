@@ -43,7 +43,6 @@ struct PresetComp : Component
         copy.action = [&]
         {
             SystemClipboard::copyTextToClipboard(manager.getStateAsString());
-            //box.setText(currentPreset, NotificationType::dontSendNotification);
         };
         menu->addItem(copy);
         paste.setID(1004);
@@ -51,7 +50,6 @@ struct PresetComp : Component
         paste.action = [&]
         {
             manager.setStateFromString(SystemClipboard::getTextFromClipboard());
-            //box.setText(currentPreset, NotificationType::dontSendNotification);
         };
         menu->addItem(paste);
         menu->addSeparator();
@@ -81,13 +79,11 @@ struct PresetComp : Component
     {
         currentPreset = newPreset;
         box.setText(currentPreset, NotificationType::dontSendNotification);
-        //valueChanged(manager.compareStates(currentPreset));
     }
 
     void savePreset() noexcept
     {
         manager.savePreset(currentPreset, manager.userDir);
-        //box.setText(currentPreset, NotificationType::dontSendNotification);
     }
 
     void savePresetAs() noexcept
@@ -132,7 +128,7 @@ struct PresetComp : Component
 
         if (!presetModified) {
             if (id < 1000 && id > 0) {
-                
+
                 if (id <= factoryPresetSize) {
                     if (manager.loadPreset(preset, manager.presetDir))
                         box.setText(preset, NotificationType::sendNotificationSync);
@@ -149,7 +145,7 @@ struct PresetComp : Component
                 currentPreset = preset;
             }
             else
-                return;
+                box.setText(currentPreset, NotificationType::dontSendNotification);
         }
         else
             box.setText(preset, NotificationType::dontSendNotification);
