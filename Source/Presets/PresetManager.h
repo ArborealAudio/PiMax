@@ -66,10 +66,10 @@ struct PresetManager
         return xml->writeTo(file);
     }
 
-    bool loadPreset(const String& filename, const File& parentDir)
+    bool loadPreset(const String& filename, bool factoryPreset)
     {
         ValueTree newstate;
-        if (parentDir.getFullPathName().endsWith("Factory Presets")) {
+        if (factoryPreset) {
             int size;
             auto str = String(filename).replace(" ", "_");
             str.append("_aap", 4);
@@ -78,7 +78,7 @@ struct PresetManager
             newstate = ValueTree::fromXml(*xml);
         }
         else {
-            auto file = parentDir.getChildFile(filename).withFileExtension("aap");
+            auto file = userDir.getChildFile(filename).withFileExtension("aap");
             if (!file.exists())
                 return false;
 
@@ -109,7 +109,7 @@ struct PresetManager
         return true;
     }
 
-    bool compareStates(const String& presetName)
+    /*bool compareStates(const String& presetName)
     {
         auto file = presetDir.getChildFile(presetName).withFileExtension("aap");
         if (!file.existsAsFile()) {
@@ -135,7 +135,7 @@ struct PresetManager
             jassertfalse;
 
         return apvts.state.isEquivalentTo(presetState);
-    }
+    }*/
 
     String getStateAsString()
     {
@@ -149,10 +149,6 @@ struct PresetManager
         apvts.replaceState(newstate);
     }
 
-    /*File presetDir{ "C:/ProgramData/Arboreal Audio/PiMax/Factory Presets" };
-    File userDir{ "C:/ProgramData/Arboreal Audio/PiMax/User Presets" };*/
-    File presetDir{ File::getSpecialLocation(File::SpecialLocationType::userApplicationDataDirectory)
-        .getFullPathName() + "/Arboreal Audio/PiMax/Presets/Factory Presets"};
     File userDir{ File::getSpecialLocation(File::SpecialLocationType::userApplicationDataDirectory)
         .getFullPathName() + "/Arboreal Audio/PiMax/Presets/User Presets" };
 

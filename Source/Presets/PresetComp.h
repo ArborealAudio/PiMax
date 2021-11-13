@@ -130,13 +130,13 @@ struct PresetComp : Component
             if (id < 1000 && id > 0) {
 
                 if (id <= factoryPresetSize) {
-                    if (manager.loadPreset(preset, manager.presetDir))
+                    if (manager.loadPreset(preset, true))
                         box.setText(preset, NotificationType::sendNotificationSync);
                     else
                         box.setText("preset not found", NotificationType::dontSendNotification);
                 }
                 else {
-                    if (manager.loadPreset(preset, manager.userDir))
+                    if (manager.loadPreset(preset, false))
                         box.setText(preset, NotificationType::sendNotificationSync);
                     else
                         box.setText("preset not found", NotificationType::dontSendNotification);
