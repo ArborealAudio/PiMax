@@ -158,13 +158,6 @@ void ResponseCurveComponent::paint(Graphics& g)
         if (sliderValueChanged) {
             sliderValueChanged = false;
 
-            //for (auto& b : solo)
-            //    b->setVisible(false);
-            //for (auto& b : mute)
-            //    b->setVisible(false);
-            //for (auto& b : bypass)
-            //    b->setVisible(false);
-
             auto slider1Lim = (slider0Pos + 50.0);
             auto slider2Lim = (slider1Pos + 50.0);
 
@@ -193,7 +186,7 @@ void ResponseCurveComponent::paint(Graphics& g)
 
         for (int i = 0; i < w; ++i)
         {
-            double magL = 1.f, /*magM1 = 1.f, magM2 = 1.f,*/ magH = 1.f, prevMagH = 1.f;
+            double magL = 1.f, magH = 1.f, prevMagH = 1.f;
 
             auto freq = mapToLog10(double(i) / double(w), 25.0, 24000.0);
 
@@ -437,24 +430,6 @@ inline void ResponseCurveComponent::drawBandParams(Graphics& g, float slider0Pos
             Rectangle<float> area{ 0, 51, slider0Pos, 145 };
 
             flex.performLayout(area);
-
-            //Rectangle<float> buttonsArea;
-
-            //buttonsArea = buttonsArea.getUnion(solo[0]->getBounds().toFloat());
-            //buttonsArea = buttonsArea.getUnion(mute[0]->getBounds().toFloat());
-            //buttonsArea = buttonsArea.getUnion(bypass[0]->getBounds().toFloat());
-            //buttonsArea.expand(2, 2);
-
-            //Rectangle<int> buttonsInParent{ getX() + int(buttonsArea.getX()), getY() + int(buttonsArea.getY()),
-            //int(buttonsArea.getWidth()), int(buttonsArea.getHeight()) };
-
-            //auto image = getTopLevelComponent()->createComponentSnapshot(buttonsInParent);
-            //Graphics g_img(image);
-            //gin::applyStackBlur(image, 100);
-            ////g_img.setColour(/*Colour(0xff30414d)*/Colours::darkslategrey);
-            ////g_img.fillRoundedRectangle(image.getBounds().toFloat(), 3.f);
-            //g.drawImage(image, buttonsArea, RectanglePlacement::stretchToFit);
-
         }
         else if ((mouseX > slider0Pos && mouseX < slider1Pos && numBands > 1)
             || (mouseX > slider0Pos && numBands < 2)) {
@@ -532,7 +507,6 @@ inline void ResponseCurveComponent::drawBandParams(Graphics& g, float slider0Pos
 
         }
         else if (mouseX > slider2Pos && numBands > 2) {
-            //int xPos = jmin(slider2Pos + 25.f, width - 25.f);
             solo[3]->setVisible(true);
             mute[3]->setVisible(true);
             bypass[3]->setVisible(true);
@@ -689,7 +663,6 @@ inline void ResponseCurveComponent::setBand() noexcept
         addAndMakeVisible(*sliders[numBands - 1]);
 
     if (freq < value[0]) {
-        //sliders[1]->setValue(value[0], sendNotificationSync);
         if (numBands > 2) {
             slider[2] = value[1];
             bandIn[3] = bandIn[2].getValue();
@@ -707,7 +680,6 @@ inline void ResponseCurveComponent::setBand() noexcept
 
         }
         slider[1] = value[0];
-        //sliders[0]->setValue(freq, sendNotificationSync);
         slider[0] = freq;
         bandIn[2] = bandIn[1].getValue();
         bandOut[2] = bandOut[1].getValue();
@@ -724,7 +696,6 @@ inline void ResponseCurveComponent::setBand() noexcept
     }
     else if (numBands == 2) {
         if (freq > value[0]) {
-            //sliders[1]->setValue(freq, sendNotificationSync);
             slider[1] = freq;
             bandIn[2] = 0.0;
             bandOut[2] = 0.0;
@@ -736,7 +707,6 @@ inline void ResponseCurveComponent::setBand() noexcept
     }
     else if (numBands == 3) {
         if (freq > value[0] && freq > value[1]) {
-            //sliders[2]->setValue(freq, sendNotificationSync);
             slider[2] = freq;
             bandIn[3] = 0.0;
             bandOut[3] = 0.0;
@@ -746,8 +716,6 @@ inline void ResponseCurveComponent::setBand() noexcept
             bandBypass[3] = false;
         }
         else if (freq > value[0] && freq < value[1]) {
-            /*sliders[1]->setValue(freq, sendNotificationSync);
-            sliders[2]->setValue(value[1], sendNotificationSync);*/
             slider[1] = freq;
             slider[2] = value[1];
             bandIn[3] = bandIn[2].getValue();
@@ -798,8 +766,6 @@ inline void ResponseCurveComponent::removeBand(int index) noexcept
     if (index > 0) {
         if (index < 2) {
             if (numBands > 2) {
-                //sliders[1]->setValue(value[2], sendNotificationSync);
-                //sliders[2]->setValue(40.0, sendNotificationSync);
                 slider[1] = value[2];
                 bandIn[2] = bandIn[3].getValue();
                 bandOut[2] = bandOut[3].getValue();
@@ -818,7 +784,6 @@ inline void ResponseCurveComponent::removeBand(int index) noexcept
                 numBands -= 1;
             }
             else {
-                //sliders[1]->setValue(40.0, sendNotificationSync);
                 slider[1] = 40.0;
                 bandIn[2] = 0.0;
                 bandOut[2] = 0.0;
@@ -831,7 +796,6 @@ inline void ResponseCurveComponent::removeBand(int index) noexcept
             }
         }
         else {
-            //sliders[2]->setValue(40.0, sendNotificationSync);
             slider[2] = 40.0;
             bandIn[3] = 0.0;
             bandOut[3] = 0.0;
@@ -844,12 +808,9 @@ inline void ResponseCurveComponent::removeBand(int index) noexcept
         }
     }
     else {
-        //sliders[0]->setValue(value[1], sendNotificationSync);
         slider[0] = value[1];
         bandIn[0] = bandIn[1].getValue();
         if (numBands > 2) {
-            //sliders[1]->setValue(value[2], sendNotificationSync);
-            //sliders[2]->setValue(40.0, sendNotificationSync);
             slider[1] = value[2];
             bandIn[1] = bandIn[2].getValue();
             bandOut[1] = bandOut[2].getValue();
@@ -874,7 +835,6 @@ inline void ResponseCurveComponent::removeBand(int index) noexcept
             numBands -= 1;
         }
         else {
-            //sliders[1]->setValue(40.0, sendNotificationSync);
             slider[1] = 40.0;
             bandIn[1] = bandIn[2].getValue();
             bandOut[1] = bandOut[2].getValue();
