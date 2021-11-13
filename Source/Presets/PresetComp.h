@@ -26,32 +26,32 @@ struct PresetComp : Component
 
     void loadPresets()
     {
-        PopupMenu::Item save{ "save" }, saveAs{ "save as" }, copy{ "copy state" }, paste{"paste from clipboard"};
+        PopupMenu::Item save{ "save" }, saveAs{ "save as" }, copy{ "copy state" }, paste{"paste state"};
 
         auto menu = box.getRootMenu();
         menu->clear();
         save.setID(1001);
         save.setTicked(false);
-        save.action = [this] {savePreset(); };
+        save.action = [&] { savePreset(); };
         menu->addItem(save);
         saveAs.setID(1002);
         saveAs.setTicked(false);
-        saveAs.action = [this] {savePresetAs(); };
+        saveAs.action = [&] { savePresetAs(); };
         menu->addItem(saveAs);
         copy.setID(1003);
         copy.setTicked(false);
-        copy.action = [this]
+        copy.action = [&]
         {
             SystemClipboard::copyTextToClipboard(manager.getStateAsString());
-            box.setText(currentPreset, NotificationType::dontSendNotification);
+            //box.setText(currentPreset, NotificationType::dontSendNotification);
         };
         menu->addItem(copy);
         paste.setID(1004);
         paste.setTicked(false);
-        paste.action = [this]
+        paste.action = [&]
         {
             manager.setStateFromString(SystemClipboard::getTextFromClipboard());
-            box.setText(currentPreset, NotificationType::dontSendNotification);
+            //box.setText(currentPreset, NotificationType::dontSendNotification);
         };
         menu->addItem(paste);
         menu->addSeparator();
@@ -87,14 +87,15 @@ struct PresetComp : Component
     void savePreset() noexcept
     {
         manager.savePreset(currentPreset, manager.userDir);
-        box.setText(currentPreset, NotificationType::dontSendNotification);
+        //box.setText(currentPreset, NotificationType::dontSendNotification);
     }
 
     void savePresetAs() noexcept
     {
         editor.setVisible(true);
         editor.toFront(true);
-        editor.setTextToShowWhenEmpty("preset name", Colours::grey);
+        editor.setText("Preset Name", false);
+        editor.setHighlightedRegion({ 0, 12 });
 
         editor.onFocusLost = [&]
         {
