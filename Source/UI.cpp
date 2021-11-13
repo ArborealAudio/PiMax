@@ -215,7 +215,6 @@ UI::UI (MaximizerAudioProcessor& p) : audioProcessor(p), gain__slider(false), ou
     {
         presetComp.valueChanged(false);
         p.currentPreset = getCurrentPreset();
-        //p.presetTree.setProperty("value", p.currentPreset, nullptr);
     };
     presetComp.setBounds(30, 374, 185, 24);
 
