@@ -138,13 +138,13 @@ void ResponseCurveComponent::paint(Graphics& g)
 
         for (int i = 0; i < numBands; ++i) {
             sliders[i]->setVisible(true);
-            if (i == 0 && numBands == 1) {
-                sliders[1]->setVisible(false);
-                sliders[2]->setVisible(false);
-            }
-            else if (i == 1 && numBands == 2) {
-                sliders[2]->setVisible(false);
-            }
+            //if (i == 0 && numBands == 1) {
+            //    sliders[1]->setVisible(false);
+            //    sliders[2]->setVisible(false);
+            //}
+            //else if (i == 1 && numBands == 2) {
+            //    sliders[2]->setVisible(false);
+            //}
         }
 
         auto responseArea = getLocalBounds();
@@ -154,115 +154,11 @@ void ResponseCurveComponent::paint(Graphics& g)
         auto slider0Pos = sliders[0]->getPositionOfValue(sliders[0]->getValue());
         auto slider1Pos = sliders[1]->getPositionOfValue(sliders[1]->getValue());
         auto slider2Pos = sliders[2]->getPositionOfValue(sliders[2]->getValue());
-
-        if (sliderValueChanged) {
-            sliderValueChanged = false;
-
-            auto slider1Lim = (slider0Pos + 50.0);
-            auto slider2Lim = (slider1Pos + 50.0);
-
-            if (numBands > 1 && (slider1Pos <= slider1Lim)) {
-                sliders[0]->setValue(mapToLog10(double(slider1Pos - 50.0) / double(w), 25.0, 24000.0),
-                    sendNotificationAsync);
-                sliders[1]->setValue(mapToLog10(double(slider1Lim) / double(w), 25.0, 24000.0),
-                    sendNotificationAsync);
-            }
-            
-            if (numBands > 2 && (slider2Pos <= slider2Lim)) {
-                sliders[1]->setValue(mapToLog10(double(slider2Pos - 50.0) / double(w), 25.0, 24000.0),
-                    sendNotificationAsync);
-                sliders[2]->setValue(mapToLog10(double(slider2Lim) / double(w), 25.0, 24000.0),
-                    sendNotificationAsync);
-            }
-        }
         
+        if (sliderValueChanged)
+            setSliderLimits(slider0Pos, slider1Pos, slider2Pos);
 
-        std::vector<double> magLVec, magM1Vec, magM2Vec, magHVec;
-
-        magLVec.resize(w); magM1Vec.resize(w); magM2Vec.resize(w); magHVec.resize(w);
-
-        const auto& lp = lowPass;
-        const auto& hp = highPass;
-
-        for (int i = 0; i < w; ++i)
-        {
-            double magL = 1.f, magH = 1.f, prevMagH = 1.f;
-
-            auto freq = mapToLog10(double(i) / double(w), 25.0, 24000.0);
-
-            if (numBands > 0) {
-                magL *= lp[0].coefficients->getMagnitudeForFrequency(freq, sampleRate);
-                magLVec[i] = 20.0 * log10(magL);
-                prevMagH *= hp[0].coefficients->getMagnitudeForFrequency(freq, sampleRate);
-                magM1Vec[i] = 20.0 * log10(prevMagH);
-            }
-            if (numBands > 1) {
-                prevMagH *= lp[1].coefficients->getMagnitudeForFrequency(freq, sampleRate);
-                magM1Vec[i] = 20.0 * log10(prevMagH);
-                magH *= hp[1].coefficients->getMagnitudeForFrequency(freq, sampleRate);
-                prevMagH = magH;
-                magM2Vec[i] = 20.0 * log10(magH);
-            }
-            if (numBands > 2) {
-                prevMagH *= lp[2].coefficients->getMagnitudeForFrequency(freq, sampleRate);
-                magM2Vec[i] = 20.0 * log10(prevMagH);
-                magH *= hp[2].coefficients->getMagnitudeForFrequency(freq, sampleRate);
-                magHVec[i] = 20.0 * log10(magH);
-            }
-        }
-
-        const double outputMin = responseArea.getBottom();
-        const double outputMax = responseArea.getY();
-        auto map = [outputMin, outputMax](double input)
-        {
-            return jmap(input, -12.0, 12.0, outputMin, outputMax);
-        };
-
-        g.setColour(Colours::floralwhite);
-
-        std::array<Path, 4> responseCurve
-        { {
-            Path(),
-            Path(),
-            Path(),
-            Path()
-        } };
-
-        for (int i = 0; i < numBands + 1; ++i) {
-
-            if (i == 0) {
-                responseCurve[i].startNewSubPath(responseArea.getX(), map(magLVec.front()));
-                for (size_t j = 1; j < magLVec.size(); ++j)
-                {
-                    responseCurve[i].lineTo(responseArea.getX() + j, map(magLVec[j]));
-                }
-                g.strokePath(responseCurve[i], PathStrokeType(2.f));
-            }
-            else if (i == 1) {
-                responseCurve[i].startNewSubPath(responseArea.getX(), map(magM1Vec.front()));
-                for (size_t j = 1; j < magM1Vec.size(); ++j)
-                {
-                    responseCurve[i].lineTo(responseArea.getX() + j, map(magM1Vec[j]));
-                }
-                g.strokePath(responseCurve[i], PathStrokeType(2.f));
-            }
-            else if (i == 2) {
-                responseCurve[i].startNewSubPath(responseArea.getX(), map(magM2Vec.front()));
-                for (size_t j = 1; j < magM2Vec.size(); ++j)
-                {
-                    responseCurve[i].lineTo(responseArea.getX() + j, map(magM2Vec[j]));
-                }
-                g.strokePath(responseCurve[i], PathStrokeType(2.f));
-            }
-            else if (i == 3) {
-                responseCurve[i].startNewSubPath(responseArea.getX(), map(magHVec.front()));
-                for (size_t j = 1; j < magHVec.size(); ++j)
-                {
-                    responseCurve[i].lineTo(responseArea.getX() + j, map(magHVec[j]));
-                }
-                g.strokePath(responseCurve[i], PathStrokeType(2.f));
-            }
-        }
+        drawResponseCurve(g, responseArea.toFloat(), w);
 
         g.drawRoundedRectangle(responseArea.toFloat(), 4.f, 1.f);
 
@@ -284,7 +180,122 @@ void ResponseCurveComponent::paint(Graphics& g)
         for (auto& b : bypass)
             b->setVisible(false);
     }
+}
 
+inline void ResponseCurveComponent::setSliderLimits(float slider0Pos, float slider1Pos,
+    float slider2Pos) noexcept
+{
+    sliderValueChanged = false;
+
+    double w = getLocalBounds().getWidth();
+
+    auto slider1Lim = (slider0Pos + 50.0);
+    auto slider2Lim = (slider1Pos + 50.0);
+
+    //if (numBands > 1 && (slider1Pos <= slider1Lim)) {
+    //    sliders[0]->setValue(mapToLog10(double(slider1Pos - 50.0) / double(w), 25.0, 24000.0),
+    //        sendNotificationAsync);
+    //    sliders[1]->setValue(mapToLog10(double(slider1Lim) / double(w), 25.0, 24000.0),
+    //        sendNotificationAsync);
+    //}
+    //
+    //if (numBands > 2 && (slider2Pos <= slider2Lim)) {
+    //    sliders[1]->setValue(mapToLog10(double(slider2Pos - 50.0) / double(w), 25.0, 24000.0),
+    //        sendNotificationAsync);
+    //    sliders[2]->setValue(mapToLog10(double(slider2Lim) / double(w), 25.0, 24000.0),
+    //        sendNotificationAsync);
+    //}
+}
+
+inline void ResponseCurveComponent::drawResponseCurve(Graphics& g, const Rectangle<float>& responseArea,
+    float w) noexcept
+{
+    std::vector<double> magLVec, magM1Vec, magM2Vec, magHVec;
+
+    magLVec.resize(w); magM1Vec.resize(w); magM2Vec.resize(w); magHVec.resize(w);
+
+    const auto& lp = lowPass;
+    const auto& hp = highPass;
+
+    for (int i = 0; i < w; ++i)
+    {
+        double magL = 1.f, magH = 1.f, prevMagH = 1.f;
+
+        auto freq = mapToLog10(double(i) / double(w), 25.0, 24000.0);
+
+        if (numBands > 0) {
+            magL *= lp[0].coefficients->getMagnitudeForFrequency(freq, sampleRate);
+            magLVec[i] = 20.0 * log10(magL);
+            prevMagH *= hp[0].coefficients->getMagnitudeForFrequency(freq, sampleRate);
+            magM1Vec[i] = 20.0 * log10(prevMagH);
+        }
+        if (numBands > 1) {
+            prevMagH *= lp[1].coefficients->getMagnitudeForFrequency(freq, sampleRate);
+            magM1Vec[i] = 20.0 * log10(prevMagH);
+            magH *= hp[1].coefficients->getMagnitudeForFrequency(freq, sampleRate);
+            prevMagH = magH;
+            magM2Vec[i] = 20.0 * log10(magH);
+        }
+        if (numBands > 2) {
+            prevMagH *= lp[2].coefficients->getMagnitudeForFrequency(freq, sampleRate);
+            magM2Vec[i] = 20.0 * log10(prevMagH);
+            magH *= hp[2].coefficients->getMagnitudeForFrequency(freq, sampleRate);
+            magHVec[i] = 20.0 * log10(magH);
+        }
+    }
+
+    const double outputMin = responseArea.getBottom();
+    const double outputMax = responseArea.getY();
+    auto map = [outputMin, outputMax](double input)
+    {
+        return jmap(input, -12.0, 12.0, outputMin, outputMax);
+    };
+
+    g.setColour(Colours::floralwhite);
+
+    std::array<Path, 4> responseCurve
+    { {
+        Path(),
+        Path(),
+        Path(),
+        Path()
+    } };
+
+    for (int i = 0; i < numBands + 1; ++i) {
+
+        if (i == 0) {
+            responseCurve[i].startNewSubPath(responseArea.getX(), map(magLVec.front()));
+            for (size_t j = 1; j < magLVec.size(); ++j)
+            {
+                responseCurve[i].lineTo(responseArea.getX() + j, map(magLVec[j]));
+            }
+            g.strokePath(responseCurve[i], PathStrokeType(2.f));
+        }
+        else if (i == 1) {
+            responseCurve[i].startNewSubPath(responseArea.getX(), map(magM1Vec.front()));
+            for (size_t j = 1; j < magM1Vec.size(); ++j)
+            {
+                responseCurve[i].lineTo(responseArea.getX() + j, map(magM1Vec[j]));
+            }
+            g.strokePath(responseCurve[i], PathStrokeType(2.f));
+        }
+        else if (i == 2) {
+            responseCurve[i].startNewSubPath(responseArea.getX(), map(magM2Vec.front()));
+            for (size_t j = 1; j < magM2Vec.size(); ++j)
+            {
+                responseCurve[i].lineTo(responseArea.getX() + j, map(magM2Vec[j]));
+            }
+            g.strokePath(responseCurve[i], PathStrokeType(2.f));
+        }
+        else if (i == 3) {
+            responseCurve[i].startNewSubPath(responseArea.getX(), map(magHVec.front()));
+            for (size_t j = 1; j < magHVec.size(); ++j)
+            {
+                responseCurve[i].lineTo(responseArea.getX() + j, map(magHVec[j]));
+            }
+            g.strokePath(responseCurve[i], PathStrokeType(2.f));
+        }
+    }
 }
 
 inline void ResponseCurveComponent::drawBandArea(Graphics& g, float slider0Pos, float slider1Pos,
