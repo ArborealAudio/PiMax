@@ -28,6 +28,7 @@ ResponseCurveComponent::ResponseCurveComponent(MaximizerAudioProcessor& p) : aud
     for (int i = 0; i < 3; ++i)
     {
         sliders.emplace_back(std::make_unique<CrossoverSlider>());
+        addChildComponent(*sliders[i]);
         sliders[i]->setMouseDragSensitivity(400);
         sliders[i]->setTooltip("Adjusts crossover frequency of the adjacent bands.");
         sliders[i]->onValueChange = [this] { sliderValueChanged = true; };
@@ -139,13 +140,14 @@ void ResponseCurveComponent::paint(Graphics& g)
         g.setGradientFill(gradient);
         g.fillAll();
 
-        for (int i = 0; i < numBands; ++i)
-        {
-            addAndMakeVisible(*sliders[i]);
-            if (i < numBands) {
-                sliders[i + 1]->setVisible(false);
-                if (i < 1)
-                    sliders[i + 2]->setVisible(false);
+        for (int i = 0; i < numBands; ++i) {
+            sliders[i]->setVisible(true);
+            if (i == 0 && numBands == 1) {
+                sliders[1]->setVisible(false);
+                sliders[2]->setVisible(false);
+            }
+            else if (i == 1 && numBands == 2) {
+                sliders[2]->setVisible(false);
             }
         }
 
