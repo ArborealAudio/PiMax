@@ -34,11 +34,7 @@ ResponseCurveComponent::ResponseCurveComponent(MaximizerAudioProcessor& p) : aud
         sliders[i]->onValueChange = [this] { sliderValueChanged = true; };
         lowPass.emplace_back();
         highPass.emplace_back();
-        /*lowPassCoeffs.emplace_back(dsp::IIR::Coefficients<float>
-            (dsp::IIR::ArrayCoefficients<float>::makeLowPass(sampleRate, *audioProcessor.crossovers[i])));*/
         *lowPass[i].coefficients = *dsp::IIR::Coefficients<float>::makeLowPass(sampleRate, *audioProcessor.crossovers[i]);
-        /*highPassCoeffs.emplace_back(dsp::IIR::Coefficients<float>
-            (dsp::IIR::ArrayCoefficients<float>::makeHighPass(sampleRate, *audioProcessor.crossovers[i])));*/
         *highPass[i].coefficients = *dsp::IIR::Coefficients<float>::makeHighPass(sampleRate, *audioProcessor.crossovers[i]);
         p.apvts.addParameterListener("crossover" + std::to_string(i), this);
     }
@@ -162,12 +158,12 @@ void ResponseCurveComponent::paint(Graphics& g)
         if (sliderValueChanged) {
             sliderValueChanged = false;
 
-            for (auto& b : solo)
-                b->setVisible(false);
-            for (auto& b : mute)
-                b->setVisible(false);
-            for (auto& b : bypass)
-                b->setVisible(false);
+            //for (auto& b : solo)
+            //    b->setVisible(false);
+            //for (auto& b : mute)
+            //    b->setVisible(false);
+            //for (auto& b : bypass)
+            //    b->setVisible(false);
 
             auto slider1Lim = (slider0Pos + 50.0);
             auto slider2Lim = (slider1Pos + 50.0);
@@ -638,10 +634,6 @@ void ResponseCurveComponent::timerCallback()
                 (sampleRate, *audioProcessor.crossovers[i]);
             *highPass[i].coefficients = dsp::IIR::ArrayCoefficients<float>::makeHighPass
                 (sampleRate, *audioProcessor.crossovers[i]);
-            /**lowPass[i].coefficients = *dsp::IIR::Coefficients<float>::makeLowPass
-                (sampleRate, *audioProcessor.crossovers[i]);
-            *highPass[i].coefficients = *dsp::IIR::Coefficients<float>::makeHighPass
-                (sampleRate, *audioProcessor.crossovers[i]);*/
             lowPass[i].reset();
             highPass[i].reset();
         }
