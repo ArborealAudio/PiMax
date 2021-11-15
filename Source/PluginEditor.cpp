@@ -34,9 +34,11 @@ ResponseCurveComponent::ResponseCurveComponent(MaximizerAudioProcessor& p) : aud
         sliders[i]->onValueChange = [this] { sliderValueChanged = true; };
         lowPass.emplace_back();
         highPass.emplace_back();
-        *lowPass[i].coefficients = *dsp::IIR::Coefficients<float>::makeLowPass(sampleRate, *audioProcessor.crossovers[i]);
-        *highPass[i].coefficients = *dsp::IIR::Coefficients<float>::makeHighPass(sampleRate, *audioProcessor.crossovers[i]);
-        p.apvts.addParameterListener("crossover" + std::to_string(i), this);
+        *lowPass[i].coefficients = *dsp::IIR::Coefficients<float>::makeLowPass(sampleRate,
+            *audioProcessor.crossovers[i]);
+        *highPass[i].coefficients = *dsp::IIR::Coefficients<float>::makeHighPass(sampleRate,
+            *audioProcessor.crossovers[i]);
+        p.apvts.addParameterListener("crossover" + String(i), this);
     }
 
     for (int i = 0; i < 4; ++i)
@@ -101,7 +103,7 @@ ResponseCurveComponent::ResponseCurveComponent(MaximizerAudioProcessor& p) : aud
 
     numBands = p.numBands;
     
-    if (numBands <= 3)
+    if (numBands < 3)
         addChildComponent(addButton);
     addButton.setButtonText("+");
     addButton.setClickingTogglesState(false);
@@ -138,13 +140,13 @@ void ResponseCurveComponent::paint(Graphics& g)
 
         for (int i = 0; i < numBands; ++i) {
             sliders[i]->setVisible(true);
-            //if (i == 0 && numBands == 1) {
-            //    sliders[1]->setVisible(false);
-            //    sliders[2]->setVisible(false);
-            //}
-            //else if (i == 1 && numBands == 2) {
-            //    sliders[2]->setVisible(false);
-            //}
+            if (i == 0 && numBands == 1) {
+                sliders[1]->setVisible(false);
+                sliders[2]->setVisible(false);
+            }
+            else if (i == 1 && numBands == 2) {
+                sliders[2]->setVisible(false);
+            }
         }
 
         auto responseArea = getLocalBounds();
@@ -192,19 +194,19 @@ inline void ResponseCurveComponent::setSliderLimits(float slider0Pos, float slid
     auto slider1Lim = (slider0Pos + 50.0);
     auto slider2Lim = (slider1Pos + 50.0);
 
-    //if (numBands > 1 && (slider1Pos <= slider1Lim)) {
-    //    sliders[0]->setValue(mapToLog10(double(slider1Pos - 50.0) / double(w), 25.0, 24000.0),
-    //        sendNotificationAsync);
-    //    sliders[1]->setValue(mapToLog10(double(slider1Lim) / double(w), 25.0, 24000.0),
-    //        sendNotificationAsync);
-    //}
-    //
-    //if (numBands > 2 && (slider2Pos <= slider2Lim)) {
-    //    sliders[1]->setValue(mapToLog10(double(slider2Pos - 50.0) / double(w), 25.0, 24000.0),
-    //        sendNotificationAsync);
-    //    sliders[2]->setValue(mapToLog10(double(slider2Lim) / double(w), 25.0, 24000.0),
-    //        sendNotificationAsync);
-    //}
+    if (numBands > 1 && (slider1Pos <= slider1Lim)) {
+        sliders[0]->setValue(mapToLog10(double(slider1Pos - 50.0) / double(w), 25.0, 24000.0),
+            sendNotificationAsync);
+        sliders[1]->setValue(mapToLog10(double(slider1Lim) / double(w), 25.0, 24000.0),
+            sendNotificationAsync);
+    }
+    
+    if (numBands > 2 && (slider2Pos <= slider2Lim)) {
+        sliders[1]->setValue(mapToLog10(double(slider2Pos - 50.0) / double(w), 25.0, 24000.0),
+            sendNotificationAsync);
+        sliders[2]->setValue(mapToLog10(double(slider2Lim) / double(w), 25.0, 24000.0),
+            sendNotificationAsync);
+    }
 }
 
 inline void ResponseCurveComponent::drawResponseCurve(Graphics& g, const Rectangle<float>& responseArea,
@@ -658,7 +660,7 @@ inline void ResponseCurveComponent::setBand() noexcept
     for (int i = 0; i < 3; ++i)
     {
         value[i] = sliders[i]->getValue();
-        slider[i] = audioProcessor.apvts.getParameterAsValue("crossover" + std::to_string(i));
+        slider[i] = audioProcessor.apvts.getParameterAsValue("crossover" + String(i));
     }
     for (int i = 0; i < 4; ++i)
     {
@@ -671,7 +673,7 @@ inline void ResponseCurveComponent::setBand() noexcept
     }
 
     if (numBands > 1)
-        addAndMakeVisible(*sliders[numBands - 1]);
+        sliders[numBands - 1]->setVisible(true);
 
     if (freq < value[0]) {
         if (numBands > 2) {
@@ -870,7 +872,7 @@ inline void ResponseCurveComponent::removeBand(int index) noexcept
 
 void ResponseCurveComponent::resized()
 {
-    for (int i = 0; i < numBands; ++i) {
+    for (int i = 0; i < 3; ++i) {
         sliders[i]->setBounds(getLocalBounds());
     }
 }
