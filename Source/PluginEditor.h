@@ -19,7 +19,7 @@
 /**
 */
 
-struct CrossoverSlider : public Slider
+struct CrossoverSlider : Slider
 {
     CrossoverSlider()
     {
@@ -91,7 +91,7 @@ private:
     CrossoverSliderLNF sliderLNF;
 };
 
-struct BandParamSlider : public Slider
+struct BandParamSlider : Slider
 {
     BandParamSlider()
     {
@@ -140,9 +140,9 @@ private:
     bool painted = false;
 };
 
-struct WaveshaperComponent : public Component,
-                             public Timer,
-                             public AudioProcessorValueTreeState::Listener
+struct WaveshaperComponent : Component,
+                             Timer,
+                             AudioProcessorValueTreeState::Listener
 {
     WaveshaperComponent(MaximizerAudioProcessor&);
     ~WaveshaperComponent() override;
@@ -158,9 +158,9 @@ private:
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(WaveshaperComponent)
 };
 
-struct ResponseCurveComponent : public Component,
-                                public AudioProcessorValueTreeState::Listener,
-                                public Timer
+struct ResponseCurveComponent : Component,
+                                AudioProcessorValueTreeState::Listener,
+                                Timer
 {
     ResponseCurveComponent(MaximizerAudioProcessor&);
     ~ResponseCurveComponent() override;
