@@ -231,7 +231,7 @@ inline void MaximizerAudioProcessor::updateOversample() noexcept
 
 void MaximizerAudioProcessor::parameterChanged(const String& parameterID, float newValue)
 {
-    if (trialEnded)
+    if (trialEnded && !checkUnlock())
         return;
 
     if (parameterID == "hq" || parameterID == "renderHQ" || parameterID == "linearPhase") {
@@ -287,10 +287,8 @@ void MaximizerAudioProcessor::valueTreeRedirected(ValueTree& treeWhichHasBeenCha
     auto child = treeWhichHasBeenChanged.getChildWithProperty("id", "numBands");
     if (child.isValid()) {
         auto num = child.getProperty("value");
-        updateNumBands((int)num);
-        /*call update for GUI numBands*/
-        if (onPresetChange != nullptr)
-            onPresetChange();
+        if (num.operator int() != numBands)
+            updateNumBands((int)num);
     }
 }
 
@@ -312,7 +310,7 @@ void MaximizerAudioProcessor::updateNumBands(int newNumBands) noexcept
 
 void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
-    if (trialEnded)
+    if (trialEnded && !checkUnlock())
         return;
 
     juce::ScopedNoDenormals noDenormals;
@@ -506,7 +504,7 @@ AudioProcessorEditor* MaximizerAudioProcessor::getEditor() const noexcept
 void MaximizerAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     auto state = apvts.copyState();
-    std::unique_ptr<XmlElement> xml(state.createXml());
+    auto xml = state.createXml();
     xml->setAttribute("uiWidth", lastUIWidth);
     xml->setAttribute("uiHeight", lastUIHeight);
     //xml->setAttribute("numBands", numBands);
@@ -518,10 +516,10 @@ void MaximizerAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 
 void MaximizerAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
-    if (trialEnded)
+    if (trialEnded && !checkUnlock())
         return;
 
-    std::unique_ptr<XmlElement> xmlState(getXmlFromBinary(data, sizeInBytes));
+    auto xmlState = getXmlFromBinary(data, sizeInBytes);
     if (xmlState.get() != nullptr) {
         lastUIWidth = xmlState->getIntAttribute("uiWidth", lastUIWidth);
         lastUIHeight = xmlState->getIntAttribute("uiHeight", lastUIHeight);
@@ -530,7 +528,7 @@ void MaximizerAudioProcessor::setStateInformation (const void* data, int sizeInB
         //presetModified = xmlState->getBoolAttribute("presetModified");
         //if (xmlState->hasTagName(apvts.state.getType()))
         apvts.replaceState(ValueTree::fromXml(*xmlState));
-        numBands = apvts.state.getChildWithProperty("id", "numBands").getProperty("value");
+        updateNumBands(apvts.state.getChildWithProperty("id", "numBands").getProperty("value"));
     }
 }
 
