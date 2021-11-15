@@ -260,11 +260,10 @@ void MaximizerAudioProcessor::parameterChanged(const String& parameterID, float 
         dsp::ProcessSpec newSpec{ lastSampleRate, uint32(numSamples * oversample[osIndex].getOversamplingFactor()),
             (uint32)getTotalNumInputChannels() };
         m_Proc.setOversamplingFactor(oversample[osIndex].getOversamplingFactor());
-        if (*bandSplit) {
+        if (*bandSplit)
             suspendProcessing(true);
-            m_Proc.updateSpecs(newSpec);
-            suspendProcessing(false);
-        }
+        m_Proc.updateSpecs(newSpec);
+        suspendProcessing(false);
         mPi.prepare();
     }
 
@@ -451,12 +450,14 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
             widener.widenBlock(outBlock, *width, *monoWidth);
     }
 
+    int hqLinBandLatency = buffer.getNumSamples() > 256 ? 1090 - (buffer.getNumSamples() - 256) : 1090;
+
     (*linearPhase && *bandSplit) ? 
-        setLatencySamples(1535 + (osIndex > 1 ? -324 : 0)) :
+        setLatencySamples(1535 + (osIndex > 1 ? - hqLinBandLatency : 0)) :
         setLatencySamples(oversample[osIndex].getLatencyInSamples());
 
     mixer.setWetLatency((*linearPhase && *bandSplit) ?
-        1535 + (osIndex > 1 ? -323.8 : 0) :
+        1535 + (osIndex > 1 ? - hqLinBandLatency : 0) :
         oversample[osIndex].getLatencyInSamples());
 
     if (*autoGain && *output_dB == 0.0)
