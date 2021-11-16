@@ -171,7 +171,7 @@ void MaximizerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
         b.setSize(1, samplesPerBlock * oversample[osIndex].getOversamplingFactor());
 #else
         suspendProcessing(true);
-        b.setSize(2, samplesPerBlock * oversample[osIndex].getOversamplingFactor());
+        b.setSize(getTotalNumInputChannels(), samplesPerBlock * oversample[osIndex].getOversamplingFactor());
         suspendProcessing(false);
 #endif
     }
@@ -446,6 +446,8 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
         if (*monoWidth && (*m_Proc.bandWidth[0] > 1.f || *m_Proc.bandWidth[1] > 1.f || *m_Proc.bandWidth[2] > 1.f ||
             *m_Proc.bandWidth[3] > 1.f))
             widener.widenBlock(outBlock, *width, false);
+        else if (buffer.getNumChannels() < 2)
+            widener.widenBlock(outBlock, *width, true);
         else
             widener.widenBlock(outBlock, *width, *monoWidth);
     }

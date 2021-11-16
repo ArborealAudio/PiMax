@@ -9,8 +9,10 @@ public:
 
 	void prepare(const dsp::ProcessSpec& spec)
 	{
+        auto forceSpec = spec;
+        forceSpec.numChannels = 2;
 		for (auto& d : delay)
-			d.prepare(spec);
+			d.prepare(forceSpec);
 
 		delay[0].setDelay(0.008 * spec.sampleRate);
 		delay[1].setDelay(0.010 * spec.sampleRate);
@@ -24,7 +26,7 @@ public:
 	{
 		auto& input = block;
 
-		if (isMono && width > 1.0)
+		if ((isMono && width > 1.0) || block.getNumChannels() < 2)
 			input = widenMonoSource(input, width);
 		else
 			input = widenStereoSourceBlock(input, width);
@@ -34,7 +36,7 @@ public:
 	inline void widenBuffer(AudioBuffer<T>& buffer, float width, bool isMono)
 	{
 		auto channelData = buffer.getArrayOfWritePointers();
-		dsp::AudioBlock<T> block(channelData, 2, buffer.getNumSamples());
+		dsp::AudioBlock<T> block(channelData, buffer.getNumChannels(), buffer.getNumSamples());
 
 		if (isMono && width > 1.0)
 			block = widenMonoSource(block, width);
@@ -79,7 +81,7 @@ public:
 		auto& output = input;
 
 		auto xnL = input.getChannelPointer(0);
-		auto xnR = input.getChannelPointer(1);
+        auto xnR = input.getChannelPointer(1);
 
 		T side = 0.0;
 		T mid = 0.0;
@@ -127,7 +129,8 @@ public:
 				T yn_R = xn - (s_D * mix);
 
 				output.setSample(0, i, yn_L);
-				output.setSample(1, i, yn_R);
+                if (block.getNumChannels() > 1)
+                    output.setSample(1, i, yn_R);
 			}
 		//}
 

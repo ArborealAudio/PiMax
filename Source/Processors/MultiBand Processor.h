@@ -49,13 +49,8 @@ struct MultibandProcessor
 #if! USE_CONVOLUTION
         linSpec.numChannels = 1;
 #endif
-        coeffsUpdated[0] = false;
-        coeffsUpdated[1] = false;
-        coeffsUpdated[2] = false;
-        for (int i = 0; i < 3; ++i) {
-            //linBand[i].updateFilter(*crossovers[i], lastSampleRate, 2);
+        for (int i = 0; i < 3; ++i)
             linBand[i].prepare(linSpec);
-        }
 
         for (auto& w : bandWidener)
             w.prepare(spec);
@@ -93,10 +88,16 @@ struct MultibandProcessor
     inline void initCrossovers() noexcept
     {
         for (int i = 0; i < 3; ++i) {
-            bands[i].updateFilter(*crossovers[i]);
+            if (*crossovers[i] > (lastSampleRate * 0.5))
+                bands[i].updateFilter(lastSampleRate * 0.5 - 1.0);
+            else
+                bands[i].updateFilter(*crossovers[i]);
             bands[i].reset();
 
-            linBand[i].initFilters(*crossovers[i], lastSampleRate, 2);
+            if (*crossovers[i] > (lastSampleRate * 0.5))
+                linBand[i].initFilters(lastSampleRate * 0.5 - 1.0, lastSampleRate, 2);
+            else
+                linBand[i].initFilters(*crossovers[i], lastSampleRate, 2);
             //lastCrossover[i] = *crossovers[i];
             linBand[i].reset();
         }
