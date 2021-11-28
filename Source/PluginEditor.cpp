@@ -1057,12 +1057,15 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(MaximizerAudioProce
     activationComp.onUnlock = [&](var unlocked)
     {
         p.isUnlocked = unlocked;
-        splash.setOwner(activationComp.getOwner());
+        splash.setOwner(activationComp.getOwner(false));
     };
 
     if (!p.checkUnlock()) {
         downloadManager.setVisible(false);
         activationComp.setImage(createComponentSnapshot(getLocalBounds()));
+    }
+    else {
+        splash.setOwner(activationComp.getOwner(true));
     }
 
     addChildComponent(downloadManager);
