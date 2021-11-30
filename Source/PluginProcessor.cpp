@@ -562,8 +562,11 @@ AudioProcessorValueTreeState::ParameterLayout MaximizerAudioProcessor::createPar
         ("curve", "Curve", curveRange, 1.f, String(), AudioProcessorParameter::genericParameter,
             [curveRange](float value, int)
             {
-                float curve = static_cast<int> (jmap(curveRange.convertTo0to1(value), -100.f, 100.f));
-                return String(curve, 0);
+                float curve = jmap(curveRange.convertTo0to1(value), -100.f, 100.f);
+                if (curve >= 9.999)
+                    return String(roundToInt(curve));
+                else
+                    return String(curve, 1);
             }, nullptr));
     params.emplace_back(std::make_unique<AudioParameterChoice>
         ("distType", "Saturation Type", StringArray("Symmetric", "Asymmetric"), 0));
