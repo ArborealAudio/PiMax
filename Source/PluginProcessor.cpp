@@ -643,20 +643,32 @@ AudioProcessorValueTreeState::ParameterLayout MaximizerAudioProcessor::createPar
 
 void MaximizerAudioProcessor::checkActivation()
 {
-    auto dir = File(File::getSpecialLocation(File::SpecialLocationType::userApplicationDataDirectory)
+    PluginHostType host;
+    File dir = File(File::getSpecialLocation(File::SpecialLocationType::userApplicationDataDirectory)
         .getFullPathName() + "/Arboreal Audio/PiMax/License/license.aal");
+    
+    auto uuid = OnlineUnlockStatus::MachineIDUtilities::getLocalMachineIDs();
 
 #if JUCE_WINDOWS
     String timeFile = "HKEY_CURRENT_USER\\SOFTWARE\\Arboreal Audio\\PiMax\\TrialKey";
 #elif JUCE_MAC
+    File dirGB = File("~/Music/Audio Music Apps/Arboreal Audio/PiMax/License/license.aal");
     File timeFile = File(File::getSpecialLocation(File::SpecialLocationType::userApplicationDataDirectory)
-        .getFullPathName() + "/Arboreal Audio/PiMax/License/trialkey.aal");
+                             .getFullPathName() + "/Arboreal Audio/PiMax/License/trialkey.aal");
+    File timeFileGB = File("~/Music/Audio Music Apps/Arboreal Audio/PiMax/License/trialkey.aal");
+    auto gbuuid = File("~/Music/Audio Music Apps").getFileIdentifier();
 #endif
-
-    if (dir.exists() && !checkUnlock()) {
-        auto xml = parseXML(dir);
-        auto uuid = String(OnlineUnlockStatus::MachineIDUtilities::getLocalMachineIDs().strings[0].hashCode64());
-        isUnlocked = uuid == xml->getStringAttribute("uuid");
+    if (!host.isGarageBand()) {
+        if (dir.exists() && !checkUnlock()) {
+            auto xml = parseXML(dir);
+            isUnlocked = uuid[0] == xml->getStringAttribute("uuid");
+        }
+    }
+    else {
+        if (dirGB.exists() && !checkUnlock()) {
+            auto xml = parseXML(dirGB);
+            isUnlocked = String(gbuuid) == xml->getStringAttribute("GBuuid");
+        }
     }
 #if JUCE_WINDOWS
     if (!WindowsRegistry::valueExists(timeFile)) {
@@ -671,22 +683,43 @@ void MaximizerAudioProcessor::checkActivation()
             trialRemaining_ms = trialEnd.toMilliseconds() - Time::getCurrentTime().toMilliseconds();
     }
 #elif JUCE_MAC
-    if (!timeFile.exists()) {
-        timeFile.create();
-        auto trialStart = Time::getCurrentTime();
-        XmlElement xml{ "TrialKey" };
-        xml.setAttribute("key", String(trialStart.toMilliseconds()));
-        xml.writeTo(timeFile);
-        timeFile.setReadOnly(true);
+    if (!host.isGarageBand()) {
+        if (!timeFile.exists()) {
+            timeFile.create();
+            auto trialStart = Time::getCurrentTime();
+            XmlElement xml{ "TrialKey" };
+            xml.setAttribute("key", String(trialStart.toMilliseconds()));
+            xml.writeTo(timeFile);
+            timeFile.setReadOnly(true);
+        }
+        else {
+            auto xml = parseXML(timeFile);
+
+            auto trialEnd = Time(xml->getStringAttribute("key").getLargeIntValue());
+            trialEnd += RelativeTime::days(7);
+            trialEnded = (trialEnd <= Time::getCurrentTime());
+            if (!trialEnded)
+                trialRemaining_ms = trialEnd.toMilliseconds() - Time::getCurrentTime().toMilliseconds();
+        }
     }
     else {
-        auto xml = parseXML(timeFile);
+        if (!timeFileGB.exists()) {
+            timeFileGB.create();
+            auto trialStart = Time::getCurrentTime();
+            XmlElement xml{ "TrialKey" };
+            xml.setAttribute("key", String(trialStart.toMilliseconds()));
+            xml.writeTo(timeFileGB);
+            timeFileGB.setReadOnly(true);
+        }
+        else {
+            auto xml = parseXML(timeFileGB);
 
-        auto trialEnd = Time(xml->getStringAttribute("key").getLargeIntValue());
-        trialEnd += RelativeTime::days(7);
-        trialEnded = (trialEnd <= Time::getCurrentTime());
-        if (!trialEnded)
-            trialRemaining_ms = trialEnd.toMilliseconds() - Time::getCurrentTime().toMilliseconds();
+            auto trialEnd = Time(xml->getStringAttribute("key").getLargeIntValue());
+            trialEnd += RelativeTime::days(7);
+            trialEnded = (trialEnd <= Time::getCurrentTime());
+            if (!trialEnded)
+                trialRemaining_ms = trialEnd.toMilliseconds() - Time::getCurrentTime().toMilliseconds();
+        }
     }
 #endif
 }

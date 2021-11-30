@@ -33,47 +33,9 @@ struct UnlockStatus
 
         DBG("Trying to unlock via URL: " << url.toString(true));
 
+        if (auto stream = URL(url).createInputStream(URL::InputStreamOptions(URL::ParameterHandling::inAddress)))
         {
-            juce::ScopedLock lock(streamCreationLock);
-            stream.reset(new juce::WebInputStream(url, false));
-        }
-
-        if (stream->connect(nullptr))
-        {
-            //auto* thread = juce::Thread::getCurrentThread();
-
-            if (/*thread->threadShouldExit() || */stream->isError())
-                return {};
-
-            auto contentLength = stream->getTotalLength();
-            auto downloaded = 0;
-
-            const size_t bufferSize = 0x8000;
-            juce::HeapBlock<char> buffer(bufferSize);
-
-            while (!(stream->isExhausted() || stream->isError()/* || thread->threadShouldExit()*/))
-            {
-                auto max = juce::jmin((int)bufferSize, contentLength < 0 ? std::numeric_limits<int>::max()
-                    : static_cast<int> (contentLength - downloaded));
-
-                auto actualBytesRead = stream->read(buffer.get() + downloaded, max - downloaded);
-
-                if (actualBytesRead < 0 /*|| thread->threadShouldExit()*/ || stream->isError())
-                    break;
-
-                downloaded += actualBytesRead;
-
-                if (downloaded == contentLength)
-                    break;
-            }
-
-            if (/*thread->threadShouldExit() ||*/ stream->isError() || (contentLength > 0 && downloaded < contentLength))
-                return {};
-
-            if (stream->getStatusCode() != 200)
-                return "fail";
-
-            return { juce::CharPointer_UTF8(buffer.get()) };
+            return stream->readEntireStreamAsString();
         }
 
         return {};
@@ -89,47 +51,9 @@ struct UnlockStatus
 
         DBG("Trying to unlock via URL: " << url.toString(true));
 
+        if (auto stream = URL(url).createInputStream(URL::InputStreamOptions(URL::ParameterHandling::inAddress)))
         {
-            juce::ScopedLock lock(streamCreationLock);
-            stream.reset(new juce::WebInputStream(url, false));
-        }
-
-        if (stream->connect(nullptr))
-        {
-            /*auto* thread = juce::Thread::getCurrentThread();*/
-
-            if (/*thread->threadShouldExit() || */stream->isError())
-                return {};
-
-            auto contentLength = stream->getTotalLength();
-            auto downloaded = 0;
-
-            const size_t bufferSize = 0x8000;
-            juce::HeapBlock<char> buffer(bufferSize);
-
-            while (!(stream->isExhausted() || stream->isError()/* || thread->threadShouldExit()*/))
-            {
-                auto max = juce::jmin((int)bufferSize, contentLength < 0 ? std::numeric_limits<int>::max()
-                    : static_cast<int> (contentLength - downloaded));
-
-                auto actualBytesRead = stream->read(buffer.get() + downloaded, max - downloaded);
-
-                if (actualBytesRead < 0 || /*thread->threadShouldExit() ||*/ stream->isError())
-                    break;
-
-                downloaded += actualBytesRead;
-
-                if (downloaded == contentLength)
-                    break;
-            }
-
-            if (/*thread->threadShouldExit() || */stream->isError() || (contentLength > 0 && downloaded < contentLength))
-                return {};
-
-            if (stream->getStatusCode() != 200)
-                return "fail";
-
-            return { juce::CharPointer_UTF8(buffer.get()) };
+            return stream->readEntireStreamAsString();
         }
 
         return {};
@@ -144,6 +68,7 @@ struct UnlockStatus
     inline int authorize(const String& key, const String& email)
     {
         auto keyResponse = readReplyForKey(key, false);
+        DBG(keyResponse);
         if (keyResponse == "fail")
             return 0;
 
@@ -180,14 +105,35 @@ struct UnlockStatus
                 dir.create();
 
             auto ids = OnlineUnlockStatus::MachineIDUtilities::getLocalMachineIDs();
+            auto gbuuid = File("~/Music/Audio Music Apps").getFileIdentifier();
 
             XmlElement xml{ "Key" };
 
             for (int i = 0; i < ids.size(); ++i)
-                xml.setAttribute("uuid", String(ids[i].hashCode64()));
+                xml.setAttribute("uuid", String(ids[i]));
+
+            xml.setAttribute("owner", owner);
 
             xml.writeTo(dir);
             dir.setReadOnly(true);
+            
+        #if JUCE_MAC
+            auto dirGB = File("~/Music/Audio Music Apps/Arboreal Audio/PiMax/License/license.aal");
+            
+            if (!dirGB.exists())
+                dirGB.create();
+            
+            XmlElement xmlGB{"Key"};
+            
+            for (int i = 0; i < ids.size(); ++i)
+                xmlGB.setAttribute("uuid", String(ids[i]));
+            
+            xmlGB.setAttribute("GBuuid", String(gbuuid));
+
+            xmlGB.setAttribute("owner", owner);
+
+            xmlGB.writeTo(dirGB);
+        #endif
         }
     }
 
@@ -254,9 +200,6 @@ private:
     {
         return createValueTreeFromJSON(JSON::parse(data));
     }    
-
-    juce::CriticalSection streamCreationLock;
-    std::unique_ptr<juce::WebInputStream> stream;
 
     ValueTree state{ "UNLOCKED", {{"value", 0}} };
 
@@ -409,6 +352,19 @@ struct ActivationComponent : Component, Timer
             unlockButton.setVisible(true);
             unlockForm.setVisible(true);
         }
+        else
+        {
+            File dir;
+            PluginHostType host;
+            if (!host.isGarageBand())
+                dir = File(File::getSpecialLocation(File::SpecialLocationType::userApplicationDataDirectory)
+                    .getFullPathName() + "/Arboreal Audio/PiMax/License/license.aal");
+            else
+                dir = File("~/Music/Audio Music Apps/Arboreal Audio/PiMax/License/license.aal");
+
+            auto xml = parseXML(dir);
+            owner = xml->getStringAttribute("owner");
+        }
         unlockButton.onClick = [this] { if (onButtonClick != nullptr) onButtonClick(); };
         unlockButton.setBounds(90, 30, 62, 28);
 
@@ -433,9 +389,12 @@ struct ActivationComponent : Component, Timer
         showForm();
     }
 
-    String getOwner()
+    String getOwner(bool alreadyActivated)
     {
-        return status.getOwner();
+        if (!alreadyActivated)
+            return status.getOwner();
+        else
+            return owner;
     }
 
     void paint(Graphics& g) override
@@ -504,6 +463,8 @@ private:
     var isUnlocked = false;
 
     bool needBlur = false;
+
+    String owner;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ActivationComponent)
 };
