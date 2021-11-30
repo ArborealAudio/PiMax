@@ -105,16 +105,35 @@ struct UnlockStatus
                 dir.create();
 
             auto ids = OnlineUnlockStatus::MachineIDUtilities::getLocalMachineIDs();
+            auto gbuuid = File("~/Music/Audio Music Apps").getFileIdentifier();
 
             XmlElement xml{ "Key" };
 
             for (int i = 0; i < ids.size(); ++i)
-                xml.setAttribute("uuid", String(ids[i].hashCode64()));
+                xml.setAttribute("uuid", String(ids[i]));
 
             xml.setAttribute("owner", owner);
 
             xml.writeTo(dir);
             dir.setReadOnly(true);
+            
+        #if JUCE_MAC
+            auto dirGB = File("~/Music/Audio Music Apps/Arboreal Audio/PiMax/License/license.aal");
+            
+            if (!dirGB.exists())
+                dirGB.create();
+            
+            XmlElement xmlGB{"Key"};
+            
+            for (int i = 0; i < ids.size(); ++i)
+                xmlGB.setAttribute("uuid", String(ids[i]));
+            
+            xmlGB.setAttribute("GBuuid", String(gbuuid));
+
+            xmlGB.setAttribute("owner", owner);
+
+            xmlGB.writeTo(dirGB);
+        #endif
         }
     }
 
@@ -335,8 +354,13 @@ struct ActivationComponent : Component, Timer
         }
         else
         {
-            auto dir = File(File::getSpecialLocation(File::SpecialLocationType::userApplicationDataDirectory)
-                .getFullPathName() + "/Arboreal Audio/PiMax/License/license.aal");
+            File dir;
+            PluginHostType host;
+            if (!host.isGarageBand())
+                dir = File(File::getSpecialLocation(File::SpecialLocationType::userApplicationDataDirectory)
+                    .getFullPathName() + "/Arboreal Audio/PiMax/License/license.aal");
+            else
+                dir = File("~/Music/Audio Music Apps/Arboreal Audio/PiMax/License/license.aal");
 
             auto xml = parseXML(dir);
             owner = xml->getStringAttribute("owner");
