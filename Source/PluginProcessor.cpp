@@ -563,7 +563,7 @@ AudioProcessorValueTreeState::ParameterLayout MaximizerAudioProcessor::createPar
             [curveRange](float value, int)
             {
                 float curve = jmap(curveRange.convertTo0to1(value), -100.f, 100.f);
-                if (curve >= 9.999)
+                if (fabs(curve) >= 9.999)
                     return String(roundToInt(curve));
                 else
                     return String(curve, 1);
