@@ -688,17 +688,19 @@ void MaximizerAudioProcessor::checkActivation()
     PluginHostType host;
     File dir = File(File::getSpecialLocation(File::SpecialLocationType::userApplicationDataDirectory)
         .getFullPathName() + "/Arboreal Audio/PiMax/License/license.aal");
+    File dirGB;
+    String gbuuid;
     
     auto uuid = OnlineUnlockStatus::MachineIDUtilities::getLocalMachineIDs();
 
 #if JUCE_WINDOWS
     String timeFile = "HKEY_CURRENT_USER\\SOFTWARE\\Arboreal Audio\\PiMax\\TrialKey";
 #elif JUCE_MAC
-    File dirGB = File("~/Music/Audio Music Apps/Arboreal Audio/PiMax/License/license.aal");
+    dirGB = File("~/Music/Audio Music Apps/Arboreal Audio/PiMax/License/license.aal");
     File timeFile = File(File::getSpecialLocation(File::SpecialLocationType::userApplicationDataDirectory)
                              .getFullPathName() + "/Arboreal Audio/PiMax/License/trialkey.aal");
     File timeFileGB = File("~/Music/Audio Music Apps/Arboreal Audio/PiMax/License/trialkey.aal");
-    auto gbuuid = File("~/Music/Audio Music Apps").getFileIdentifier();
+    gbuuid = File("~/Music/Audio Music Apps").getFileIdentifier();
 #endif
     if (!host.isGarageBand()) {
         if (dir.exists() && !checkUnlock()) {

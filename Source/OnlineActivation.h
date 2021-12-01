@@ -105,7 +105,6 @@ struct UnlockStatus
                 dir.create();
 
             auto ids = OnlineUnlockStatus::MachineIDUtilities::getLocalMachineIDs();
-            auto gbuuid = File("~/Music/Audio Music Apps").getFileIdentifier();
 
             XmlElement xml{ "Key" };
 
@@ -119,7 +118,8 @@ struct UnlockStatus
             
         #if JUCE_MAC
             auto dirGB = File("~/Music/Audio Music Apps/Arboreal Audio/PiMax/License/license.aal");
-            
+            auto gbuuid = File("~/Music/Audio Music Apps").getFileIdentifier();
+
             if (!dirGB.exists())
                 dirGB.create();
             
