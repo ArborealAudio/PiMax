@@ -225,11 +225,17 @@ struct MultibandProcessor
         /*widen any bands which need to be*/
         for (int i = 0; i <= numBands ; ++i)
         {
-            if (*bandWidth[i] != 1.0)
-                bandWidener[i].widenBuffer(bandBuffer[i], *bandWidth[i], *monoWidth);
+            if (*bandWidth[i] != 1.0) {
+                if (*bandWidth[i] != lastBandWidth[i]) {
+                    bandWidener[i].widenBufferWithRamp(bandBuffer[i], lastBandWidth[i], *bandWidth[i], *monoWidth);
+                    lastBandWidth[i] = *bandWidth[i];
+                }
+                else
+                    bandWidener[i].widenBuffer(bandBuffer[i], *bandWidth[i], *monoWidth);
+            }
         }
 
-        const double r = 1.0 - (1.0 / (float)(oversampleFactor * 1000.0));
+        const double r = 1.0 - (1.0 / (float)(oversampleFactor * 1000));
 
         if (*soloBand[0] || *soloBand[1] || *soloBand[2] || *soloBand[3]) {
             for (int channel = 0; channel < inputBlock.getNumChannels(); ++channel)
