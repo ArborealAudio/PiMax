@@ -19,8 +19,11 @@ struct MultibandProcessor
         for (int i = 0; i < 4; ++i)
         {
             bandInGain[i] = (apvts.getRawParameterValue("bandInGain" + std::to_string(i)));
+            lastInGain[i] = 1.0;
             bandOutGain[i] = (apvts.getRawParameterValue("bandOutGain" + std::to_string(i)));
+            lastOutGain[i] = 1.0;
             bandWidth[i] = (apvts.getRawParameterValue("bandWidth" + std::to_string(i)));
+            lastBandWidth[i] = 1.0;
             soloBand[i] = (apvts.getRawParameterValue("soloBand" + std::to_string(i)));
             muteBand[i] = (apvts.getRawParameterValue("muteBand" + std::to_string(i)));
             bypassBand[i] = (apvts.getRawParameterValue("bypassBand" + std::to_string(i)));
@@ -196,6 +199,7 @@ struct MultibandProcessor
                             if (*autoGain)
                                 out[n] *= 1.0 / gain[n];
                         }
+                        out[n] /= halfPi;
                     }
                     if (*muteBand[n])
                         out[n] = 0.0;
@@ -211,147 +215,12 @@ struct MultibandProcessor
                 }
             }
         }
+        
         /*ensure last gains are set to cooked value of corresponding atomics*/
         for (int i = 0; i <= numBands; ++i) {
             lastInGain[i] = gain[i];
             lastOutGain[i] = outGain[i];
         }
-
-//        for (int channel = 0; channel < inputBlock.getNumChannels(); ++channel)
-//        {
-//            for (int i = 0; i < inputBlock.getNumSamples(); ++i)
-//            {
-//                T in = inputBlock.getSample(channel, i);
-//
-//                if (!*linearPhase)
-//                    bands[0].processSample(channel, in, out[0], out[1]);
-//            #if! USE_CONVOLUTION
-//                else {
-//                    if (!linBand[0].isThreadRunning() && coeffsUpdated[0]) {
-//                        out[0] = linBand[0].processLowPass(channel, in);
-//                        out[1] = linBand[0].processHighPass(channel, in);
-//                    }
-//                    else {
-//                        out[0] = linBand[0].processLastLowPass(channel, in);
-//                        out[1] = linBand[0].processLastHighPass(channel, in);
-//                    }
-//                }
-//            #endif
-//                if (!*bypassBand[0]) {
-//                    auto gain = pow(10.f, (*bandInGain[0] / 20.f));
-//                    auto invgain = 1.0 / gain;
-//                    out[0] *= gain;
-//                    out[0] = mPi[0].processSample(channel, out[0]);
-//                    if (*autoGain)
-//                        out[0] *= invgain;
-//                }
-//                out[0] *= pow(10.f, (*bandOutGain[0] / 20.f));
-//                bandBuffer[0].setSample(channel, i, out[0]);
-//
-//                /*if (*soloBand[0])
-//                    yn += out[0];*/
-//                auto gain1 = pow(10.f, (*bandInGain[1] / 20.f));
-//                auto invgain1 = 1.0 / gain1;
-//                if (numBands < 2) {
-//                    if (!*bypassBand[1]) {
-//                        
-//                        out[1] *= gain1;
-//                        out[1] = mPi[1].processSample(channel, out[1]);
-//                        if (*autoGain)
-//                            out[1] *= invgain1;
-//                    }
-//                    out[1] *= pow(10.f, (*bandOutGain[1] / 20.f));
-//                    bandBuffer[1].setSample(channel, i, out[1]);
-//                    /*if (*soloBand[1])
-//                         yn += out[1];*/
-//                }
-//
-//                if (numBands > 1) {
-//                    if (!*linearPhase)
-//                        bands[1].processTwoSamples(channel, out[1], in, out[1], out[2]);
-//#if! USE_CONVOLUTION
-//                    else {
-//                        if (!linBand[1].isThreadRunning() && coeffsUpdated[1]) {
-//                            out[2] = linBand[1].processHighPass(channel, in);
-//                            out[1] = out[1] - out[2];
-//                        }
-//                        else {
-//                            out[2] = linBand[1].processLastHighPass(channel, in);
-//                            out[1] = out[1] - out[2];
-//                        }
-//                    }
-//#endif
-//                    if (!*bypassBand[1]) {
-//                        out[1] *= gain1;
-//                        out[1] = mPi[1].processSample(channel, out[1]);
-//                        if (*autoGain)
-//                            out[1] *= invgain1;
-//                    }
-//                    out[1] *= pow(10.f, (*bandOutGain[1] / 20.f));
-//                    bandBuffer[1].setSample(channel, i, out[1]);
-//                    /*if (*soloBand[1])
-//                        yn += out[1];*/
-//
-//                    if (numBands < 3) {
-//                        if (!*bypassBand[2]) {
-//                            auto gain = pow(10.f, (*bandInGain[2] / 20.f));
-//                            auto invgain = 1.0 / gain;
-//                            out[2] *= gain;
-//                            out[2] = mPi[2].processSample(channel, out[2]);
-//                            if (*autoGain)
-//                                out[2] *= invgain;
-//                        }
-//                        out[2] *= pow(10.f, (*bandOutGain[2] / 20.f));
-//                        bandBuffer[2].setSample(channel, i, out[2]);
-//                        /*if (*soloBand[2])
-//                            yn += out[2];*/
-//                    }
-//                }
-//
-//                if (numBands > 2) {
-//                    if (!*linearPhase)
-//                        bands[2].processTwoSamples(channel, out[2], in, out[2], out[3]);
-//#if! USE_CONVOLUTION
-//                    else {
-//                        if (!linBand[2].isThreadRunning() && coeffsUpdated[2]) {
-//                            out[3] = linBand[2].processHighPass(channel, in);
-//                            out[2] = out[2] - out[3];
-//                        }
-//                        else {
-//                            out[3] = linBand[2].processLastHighPass(channel, in);
-//                            out[2] = out[2] - out[3];
-//                        }
-//                    }
-//#endif
-//
-//                    if (!*bypassBand[2]) {
-//                        auto gain = pow(10.f, (*bandInGain[2] / 20.f));
-//                        auto invgain = 1.0 / gain;
-//                        out[2] *= gain;
-//                        out[2] = mPi[2].processSample(channel, out[2]);
-//                        if (*autoGain)
-//                            out[2] *= invgain;
-//                    }
-//                    out[2] *= pow(10.f, (*bandOutGain[2] / 20.f));
-//                    bandBuffer[2].setSample(channel, i, out[2]);
-//                    /*if (*soloBand[2])
-//                        yn += out[2];*/
-//
-//                    if (!*bypassBand[3]) {
-//                        auto gain = pow(10.f, (*bandInGain[3] / 20.f));
-//                        auto invgain = 1.0 / gain;
-//                        out[3] *= gain;
-//                        out[3] = mPi[3].processSample(channel, out[3]);
-//                        if (*autoGain)
-//                            out[3] *= invgain;
-//                    }
-//                    out[3] *= pow(10.f, (*bandOutGain[3] / 20.f));
-//                    bandBuffer[3].setSample(channel, i, out[3]);
-//                    /*if (*soloBand[3])
-//                        yn += out[3];*/
-//                }
-//            }
-//        }
 
         /*widen any bands which need to be*/
         for (int i = 0; i <= numBands ; ++i)
@@ -475,6 +344,7 @@ struct MultibandProcessor
                             if (*autoGain)
                                 bandPtr[i] *= 1.0 / gain;
                         }
+                        bandPtr[i] /= halfPi - (1.f / (float)(numBands + 1));
                     }
                     if (*muteBand[n])
                         bandPtr[i] = 0.0;
