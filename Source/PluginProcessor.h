@@ -58,6 +58,7 @@ public:
 #endif
 
     void processBlock(juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
+    void processBlockBypassed(AudioBuffer<float>&, MidiBuffer&) override;
 
     //==============================================================================
     juce::AudioProcessorEditor* createEditor() override;
@@ -165,6 +166,12 @@ private:
     float lastInputGain = 0.0, lastOutGain = 0.0;
 
     foleys::LevelMeterSource inputMeter, outputMeter;
+    
+    AudioBuffer<float> bypassBuffer;
+    bool lastBypass = false;
+    bool bufferCopied = false;
+    
+    dsp::DelayLine<float> bypassDelay {44100};
 
 #if USE_SIMD_SAT
     using Vec2 = dsp::SIMDRegister<float>;

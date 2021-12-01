@@ -148,6 +148,9 @@ void MaximizerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
 
     dsp::ProcessSpec spec{lastSampleRate, uint32(oversample[osIndex].getOversamplingFactor() * samplesPerBlock),
         (uint32)getTotalNumInputChannels()};
+    
+    bypassBuffer.setSize(getTotalNumInputChannels(), samplesPerBlock);
+    bypassDelay.prepare(spec);
 
 #if USE_SIMD_SAT
     interleaved = dsp::AudioBlock<Vec2>(interleavedBlockData, 1, spec.maximumBlockSize);
@@ -318,6 +321,9 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
 
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear(i, 0, buffer.getNumSamples());
+    
+    bypassBuffer.makeCopyOf(buffer);
+    bufferCopied = true;
 
     dsp::AudioBlock<float> block(buffer);
     dsp::ProcessContextReplacing<float> context(block);
@@ -457,18 +463,20 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     (*linearPhase && *bandSplit) ? 
         setLatencySamples(1535 + (osIndex > 1 ? - hqLinBandLatency : 0)) :
         setLatencySamples(oversample[osIndex].getLatencyInSamples());
+    
+    bypassDelay.setDelay(getLatencySamples());
 
-    mixer.setWetLatency((*linearPhase && *bandSplit) ?
-        1535 + (osIndex > 1 ? - hqLinBandLatency : 0) :
-        oversample[osIndex].getLatencyInSamples());
+    mixer.setWetLatency(getLatencySamples());
 
     if (*autoGain && *output_dB == 0.0)
         output_raw = 0.999;
 
-    if (gainRamped && *autoGain && !*bypass)
-        buffer.applyGainRamp(0, buffer.getNumSamples(), 1.0 / m_lastGain, 1.0 / gain_raw);
-    else if (*autoGain && !*bypass)
-        buffer.applyGain(1.0 / gain_raw);
+    if (!*bypass && *autoGain) {
+        if (gainRamped)
+            buffer.applyGainRamp(0, buffer.getNumSamples(), 1.0 / m_lastGain, 1.0 / gain_raw);
+        else
+            buffer.applyGain(1.0 / gain_raw);
+    }
 
     if (output_raw != lastOutGain) {
         buffer.applyGainRamp(0, buffer.getNumSamples(), lastOutGain, output_raw);
@@ -479,12 +487,43 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
 
     outputMeter.measureBlock(buffer);
 
-    if (*bypass)
-        mixer.setWetMixProportion(0.0);
-    else
-        mixer.setWetMixProportion(*mix);
-
+    mixer.setWetMixProportion(*mix);
     mixer.mixWetSamples(outBlock);
+    
+    processBlockBypassed(buffer, midiMessages);
+}
+
+void MaximizerAudioProcessor::processBlockBypassed(AudioBuffer<float>& buffer, MidiBuffer&)
+{
+    if ((!*bypass && !lastBypass) || !bufferCopied)
+        return;
+    else {
+        for (int ch = 0; ch < bypassBuffer.getNumChannels(); ++ch) {
+            auto in = bypassBuffer.getWritePointer(ch);
+            for (int i = 0; i < bypassBuffer.getNumSamples(); ++i) {
+                bypassDelay.pushSample(ch, in[i]);
+                in[i] = bypassDelay.popSample(ch);
+            }
+        }
+    }
+    
+    if (*bypass && lastBypass)
+        buffer.makeCopyOf(bypassBuffer);
+    else if (*bypass && !lastBypass) {
+        for (int ch = 0; ch < buffer.getNumChannels(); ++ch) {
+            buffer.applyGainRamp(ch, 0, buffer.getNumSamples(), 1.0, 0.0);
+            bypassBuffer.applyGainRamp(ch, 0, bypassBuffer.getNumSamples(), 0.0, 1.0);
+        }
+    }
+    else if (!*bypass && lastBypass) {
+        for (int ch = 0; ch < buffer.getNumChannels(); ++ch) {
+            buffer.applyGainRamp(ch, 0, buffer.getNumSamples(), 0.0, 1.0);
+            bypassBuffer.applyGainRamp(ch, 0, bypassBuffer.getNumSamples(), 1.0, 0.0);
+        }
+    }
+    
+    lastBypass = *bypass;
+    bufferCopied = false;
 }
 
 //==============================================================================
