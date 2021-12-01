@@ -689,9 +689,9 @@ void MaximizerAudioProcessor::checkActivation()
     File dir = File(File::getSpecialLocation(File::SpecialLocationType::userApplicationDataDirectory)
         .getFullPathName() + "/Arboreal Audio/PiMax/License/license.aal");
     File dirGB;
-    String gbuuid;
+    uint64 gbuuid;
     
-    auto uuid = OnlineUnlockStatus::MachineIDUtilities::getLocalMachineIDs();
+    auto uuid = String(OnlineUnlockStatus::MachineIDUtilities::getLocalMachineIDs().strings[0].hashCode64());
 
 #if JUCE_WINDOWS
     String timeFile = "HKEY_CURRENT_USER\\SOFTWARE\\Arboreal Audio\\PiMax\\TrialKey";
@@ -705,7 +705,7 @@ void MaximizerAudioProcessor::checkActivation()
     if (!host.isGarageBand()) {
         if (dir.exists() && !checkUnlock()) {
             auto xml = parseXML(dir);
-            isUnlocked = uuid[0] == xml->getStringAttribute("uuid");
+            isUnlocked = uuid == xml->getStringAttribute("uuid");
         }
     }
     else {

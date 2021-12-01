@@ -109,7 +109,7 @@ struct UnlockStatus
             XmlElement xml{ "Key" };
 
             for (int i = 0; i < ids.size(); ++i)
-                xml.setAttribute("uuid", String(ids[i]));
+                xml.setAttribute("uuid", String(ids[i].hashCode64()));
 
             xml.setAttribute("owner", owner);
 
@@ -126,7 +126,7 @@ struct UnlockStatus
             XmlElement xmlGB{"Key"};
             
             for (int i = 0; i < ids.size(); ++i)
-                xmlGB.setAttribute("uuid", String(ids[i]));
+                xmlGB.setAttribute("uuid", String(ids[i].hashCode64()));
             
             xmlGB.setAttribute("GBuuid", String(gbuuid));
 
