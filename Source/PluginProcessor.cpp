@@ -473,9 +473,9 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
 
     if (!*bypass && *autoGain) {
         if (gainRamped)
-            buffer.applyGainRamp(0, buffer.getNumSamples(), 1.0 / m_lastGain, 1.0 / gain_raw);
+            buffer.applyGainRamp(0, buffer.getNumSamples(), 1.0 / (m_lastGain * halfPi), 1.0 / (gain_raw * halfPi));
         else
-            buffer.applyGain(1.0 / gain_raw);
+            buffer.applyGain(1.0 / (gain_raw * halfPi));
     }
 
     if (output_raw != lastOutGain) {
