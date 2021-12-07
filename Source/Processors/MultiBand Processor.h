@@ -19,11 +19,8 @@ struct MultibandProcessor
         for (int i = 0; i < 4; ++i)
         {
             bandInGain[i] = (apvts.getRawParameterValue("bandInGain" + std::to_string(i)));
-            lastInGain[i] = 1.0;
             bandOutGain[i] = (apvts.getRawParameterValue("bandOutGain" + std::to_string(i)));
-            lastOutGain[i] = 1.0;
             bandWidth[i] = (apvts.getRawParameterValue("bandWidth" + std::to_string(i)));
-            lastBandWidth[i] = 1.0;
             soloBand[i] = (apvts.getRawParameterValue("soloBand" + std::to_string(i)));
             muteBand[i] = (apvts.getRawParameterValue("muteBand" + std::to_string(i)));
             bypassBand[i] = (apvts.getRawParameterValue("bypassBand" + std::to_string(i)));
@@ -59,9 +56,9 @@ struct MultibandProcessor
             w.prepare(spec);
 
         for (int i = 0; i < 4; ++i) {
-            lastInGain[i] = *bandInGain[i];
-            lastOutGain[i] = *bandOutGain[i];
-            lastBandWidth[i] = *bandWidth[i];
+            lastInGain[i] = 1.0;
+            lastOutGain[i] = 1.0;
+            lastBandWidth[i] = 1.0;
         }
 
         for (auto& m : mPi)
@@ -160,7 +157,7 @@ struct MultibandProcessor
 #endif
         float gain[4] = {};
         float outGain[4] = {};
-        float out[4] = {};
+        float out[4] = {0.0, 0.0, 0.0, 0.0};
         float inc[4] = {};
         float outinc[4] = {};
         for (int i = 0; i <= numBands; ++i) {
