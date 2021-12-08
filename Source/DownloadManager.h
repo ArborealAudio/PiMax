@@ -24,16 +24,15 @@ struct DownloadManager : Component
     DownloadManager(bool hasUpdated) : updated(hasUpdated)
     {
         lnf.setType(TopButtonLNF::Type::Regular);
-        addChildComponent(yes);
+        addAndMakeVisible(yes);
         yes.setLookAndFeel(&lnf);
-        addChildComponent(no);
+        addAndMakeVisible(no);
         no.setLookAndFeel(&lnf);
         addChildComponent(retry);
         retry.setLookAndFeel(&lnf);
 
         if (checkForUpdate() && !updated) {
             DBG("need update");
-            //displayDownloadPrompt();
             setVisible(true);
         }
         else {
@@ -65,12 +64,6 @@ struct DownloadManager : Component
         }
         else
             return false;
-    }
-
-    void displayDownloadPrompt()
-    {
-        yes.setVisible(true);
-        no.setVisible(true);
     }
 
     void downloadUpdate()

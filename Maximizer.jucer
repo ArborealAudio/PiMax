@@ -2,7 +2,7 @@
 
 <JUCERPROJECT id="HMsJ6B" name="PiMax" projectType="audioplug" useAppConfig="0"
               jucerFormatVersion="1" companyName="Arboreal Audio" pluginFormats="buildAU,buildVST,buildVST3"
-              cppLanguageStandard="latest" displaySplashScreen="0" version="1.0.0"
+              cppLanguageStandard="latest" displaySplashScreen="0" version="1.0.1"
               companyCopyright="(c) 2021 Arboreal Audio" companyWebsite="arborealaudio.com"
               companyEmail="contact@arborealaudio.com" pluginManufacturerCode="Arau">
   <MAINGROUP id="C1sQx6" name="PiMax">

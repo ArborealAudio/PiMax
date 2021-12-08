@@ -148,6 +148,9 @@ void MaximizerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
 
     dsp::ProcessSpec spec{lastSampleRate, uint32(oversample[osIndex].getOversamplingFactor() * samplesPerBlock),
         (uint32)getTotalNumInputChannels()};
+    
+    bypassBuffer.setSize(getTotalNumInputChannels(), samplesPerBlock);
+    bypassDelay.prepare(spec);
 
 #if USE_SIMD_SAT
     interleaved = dsp::AudioBlock<Vec2>(interleavedBlockData, 1, spec.maximumBlockSize);
@@ -318,6 +321,9 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
 
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear(i, 0, buffer.getNumSamples());
+    
+    bypassBuffer.makeCopyOf(buffer);
+    bufferCopied = true;
 
     dsp::AudioBlock<float> block(buffer);
     dsp::ProcessContextReplacing<float> context(block);
@@ -338,11 +344,6 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     }
     else
         buffer.applyGain(gain_raw);
-
-    //const auto curveCoeff = exp(log(0.01f) / (100 * lastSampleRate * 0.001));
-    //SmoothedValue<float> smoothCurve(lastK);
-    //smoothCurve.reset(numSamples);
-    //smoothCurve.setTargetValue(*curve);
 
     inputMeter.measureBlock(buffer);
 
@@ -457,18 +458,20 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     (*linearPhase && *bandSplit) ? 
         setLatencySamples(1535 + (osIndex > 1 ? - hqLinBandLatency : 0)) :
         setLatencySamples(oversample[osIndex].getLatencyInSamples());
+    
+    bypassDelay.setDelay(getLatencySamples());
 
-    mixer.setWetLatency((*linearPhase && *bandSplit) ?
-        1535 + (osIndex > 1 ? - hqLinBandLatency : 0) :
-        oversample[osIndex].getLatencyInSamples());
+    mixer.setWetLatency(getLatencySamples());
 
     if (*autoGain && *output_dB == 0.0)
         output_raw = 0.999;
 
-    if (gainRamped && *autoGain && !*bypass)
-        buffer.applyGainRamp(0, buffer.getNumSamples(), 1.0 / m_lastGain, 1.0 / gain_raw);
-    else if (*autoGain && !*bypass)
-        buffer.applyGain(1.0 / gain_raw);
+    if (*autoGain) {
+        if (gainRamped)
+            buffer.applyGainRamp(0, buffer.getNumSamples(), 1.0 / (m_lastGain * halfPi), 1.0 / (gain_raw * halfPi));
+        else
+            buffer.applyGain(1.0 / (gain_raw * halfPi));
+    }
 
     if (output_raw != lastOutGain) {
         buffer.applyGainRamp(0, buffer.getNumSamples(), lastOutGain, output_raw);
@@ -479,12 +482,50 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
 
     outputMeter.measureBlock(buffer);
 
-    if (*bypass)
-        mixer.setWetMixProportion(0.0);
-    else
-        mixer.setWetMixProportion(*mix);
-
+    mixer.setWetMixProportion(*mix);
     mixer.mixWetSamples(outBlock);
+    
+    processBlockBypassed(buffer, midiMessages);
+}
+
+void MaximizerAudioProcessor::processBlockBypassed(AudioBuffer<float>& buffer, MidiBuffer&)
+{
+    /*return if not bypass & unchanged or switched on mid-buffer*/
+    if ((!*bypass && !lastBypass) || !bufferCopied)
+        return;
+    /*push to our delay buffer & pop delayed sample*/
+    else {
+        for (int ch = 0; ch < bypassBuffer.getNumChannels(); ++ch) {
+            auto in = bypassBuffer.getWritePointer(ch);
+            for (int i = 0; i < bypassBuffer.getNumSamples(); ++i) {
+                bypassDelay.pushSample(ch, in[i]);
+                in[i] = bypassDelay.popSample(ch);
+            }
+        }
+    }
+
+    /*copy as usual if no change*/
+    if (*bypass && lastBypass)
+        buffer.makeCopyOf(bypassBuffer);
+    /*fade bypass in*/
+    else if (*bypass && !lastBypass) {
+        for (int ch = 0; ch < buffer.getNumChannels(); ++ch) {
+            buffer.applyGainRamp(ch, 0, buffer.getNumSamples(), 1.0, 0.0);
+            buffer.addFromWithRamp(ch, 0, bypassBuffer.getReadPointer(ch),
+                buffer.getNumSamples(), 0.0, 1.0);
+        }
+    }
+    /*fade bypass out*/
+    else if (!*bypass && lastBypass) {
+        for (int ch = 0; ch < buffer.getNumChannels(); ++ch) {
+            buffer.applyGainRamp(ch, 0, buffer.getNumSamples(), 0.0, 1.0);
+            buffer.addFromWithRamp(ch, 0, bypassBuffer.getReadPointer(ch),
+                buffer.getNumSamples(), 1.0, 0.0);
+        }
+    }
+    
+    lastBypass = *bypass;
+    bufferCopied = false;
 }
 
 //==============================================================================
@@ -562,8 +603,11 @@ AudioProcessorValueTreeState::ParameterLayout MaximizerAudioProcessor::createPar
         ("curve", "Curve", curveRange, 1.f, String(), AudioProcessorParameter::genericParameter,
             [curveRange](float value, int)
             {
-                float curve = static_cast<int> (jmap(curveRange.convertTo0to1(value), -100.f, 100.f));
-                return String(curve, 0);
+                float curve = jmap(curveRange.convertTo0to1(value), -100.f, 100.f);
+                if (fabs(curve) >= 9.999)
+                    return String(roundToInt(curve));
+                else
+                    return String(curve, 1);
             }, nullptr));
     params.emplace_back(std::make_unique<AudioParameterChoice>
         ("distType", "Saturation Type", StringArray("Symmetric", "Asymmetric"), 0));
@@ -643,20 +687,34 @@ AudioProcessorValueTreeState::ParameterLayout MaximizerAudioProcessor::createPar
 
 void MaximizerAudioProcessor::checkActivation()
 {
-    auto dir = File(File::getSpecialLocation(File::SpecialLocationType::userApplicationDataDirectory)
+    PluginHostType host;
+    File dir = File(File::getSpecialLocation(File::SpecialLocationType::userApplicationDataDirectory)
         .getFullPathName() + "/Arboreal Audio/PiMax/License/license.aal");
+    File dirGB;
+    uint64 gbuuid;
+    
+    auto uuid = String(OnlineUnlockStatus::MachineIDUtilities::getLocalMachineIDs().strings[0].hashCode64());
 
 #if JUCE_WINDOWS
     String timeFile = "HKEY_CURRENT_USER\\SOFTWARE\\Arboreal Audio\\PiMax\\TrialKey";
 #elif JUCE_MAC
+    dirGB = File("~/Music/Audio Music Apps/Arboreal Audio/PiMax/License/license.aal");
     File timeFile = File(File::getSpecialLocation(File::SpecialLocationType::userApplicationDataDirectory)
-        .getFullPathName() + "/Arboreal Audio/PiMax/License/trialkey.aal");
+                             .getFullPathName() + "/Arboreal Audio/PiMax/License/trialkey.aal");
+    File timeFileGB = File("~/Music/Audio Music Apps/Arboreal Audio/PiMax/License/trialkey.aal");
+    gbuuid = File("~/Music/Audio Music Apps").getFileIdentifier();
 #endif
-
-    if (dir.exists() && !checkUnlock()) {
-        auto xml = parseXML(dir);
-        auto uuid = String(OnlineUnlockStatus::MachineIDUtilities::getLocalMachineIDs().strings[0].hashCode64());
-        isUnlocked = uuid == xml->getStringAttribute("uuid");
+    if (!host.isGarageBand()) {
+        if (dir.exists() && !checkUnlock()) {
+            auto xml = parseXML(dir);
+            isUnlocked = uuid == xml->getStringAttribute("uuid");
+        }
+    }
+    else {
+        if (dirGB.exists() && !checkUnlock()) {
+            auto xml = parseXML(dirGB);
+            isUnlocked = String(gbuuid) == xml->getStringAttribute("GBuuid");
+        }
     }
 #if JUCE_WINDOWS
     if (!WindowsRegistry::valueExists(timeFile)) {
@@ -671,22 +729,43 @@ void MaximizerAudioProcessor::checkActivation()
             trialRemaining_ms = trialEnd.toMilliseconds() - Time::getCurrentTime().toMilliseconds();
     }
 #elif JUCE_MAC
-    if (!timeFile.exists()) {
-        timeFile.create();
-        auto trialStart = Time::getCurrentTime();
-        XmlElement xml{ "TrialKey" };
-        xml.setAttribute("key", String(trialStart.toMilliseconds()));
-        xml.writeTo(timeFile);
-        timeFile.setReadOnly(true);
+    if (!host.isGarageBand()) {
+        if (!timeFile.exists()) {
+            timeFile.create();
+            auto trialStart = Time::getCurrentTime();
+            XmlElement xml{ "TrialKey" };
+            xml.setAttribute("key", String(trialStart.toMilliseconds()));
+            xml.writeTo(timeFile);
+            timeFile.setReadOnly(true);
+        }
+        else {
+            auto xml = parseXML(timeFile);
+
+            auto trialEnd = Time(xml->getStringAttribute("key").getLargeIntValue());
+            trialEnd += RelativeTime::days(7);
+            trialEnded = (trialEnd <= Time::getCurrentTime());
+            if (!trialEnded)
+                trialRemaining_ms = trialEnd.toMilliseconds() - Time::getCurrentTime().toMilliseconds();
+        }
     }
     else {
-        auto xml = parseXML(timeFile);
+        if (!timeFileGB.exists()) {
+            timeFileGB.create();
+            auto trialStart = Time::getCurrentTime();
+            XmlElement xml{ "TrialKey" };
+            xml.setAttribute("key", String(trialStart.toMilliseconds()));
+            xml.writeTo(timeFileGB);
+            timeFileGB.setReadOnly(true);
+        }
+        else {
+            auto xml = parseXML(timeFileGB);
 
-        auto trialEnd = Time(xml->getStringAttribute("key").getLargeIntValue());
-        trialEnd += RelativeTime::days(7);
-        trialEnded = (trialEnd <= Time::getCurrentTime());
-        if (!trialEnded)
-            trialRemaining_ms = trialEnd.toMilliseconds() - Time::getCurrentTime().toMilliseconds();
+            auto trialEnd = Time(xml->getStringAttribute("key").getLargeIntValue());
+            trialEnd += RelativeTime::days(7);
+            trialEnded = (trialEnd <= Time::getCurrentTime());
+            if (!trialEnded)
+                trialRemaining_ms = trialEnd.toMilliseconds() - Time::getCurrentTime().toMilliseconds();
+        }
     }
 #endif
 }
