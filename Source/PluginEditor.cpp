@@ -1050,6 +1050,7 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(MaximizerAudioProce
         splash.setImage(createComponentSnapshot(getLocalBounds()));
     };
 
+    addChildComponent(activationComp);
     activationComp.onButtonClick = [this]
     {
         activationComp.setImage(createComponentSnapshot(getLocalBounds()));
@@ -1063,6 +1064,7 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(MaximizerAudioProce
     if (!p.checkUnlock()) {
         downloadManager.setVisible(false);
         activationComp.setImage(createComponentSnapshot(getLocalBounds()));
+        activationComp.setVisible(true);
     }
     else {
         splash.setOwner(activationComp.getOwner(true));
@@ -1113,7 +1115,6 @@ std::vector<Component*> MaximizerAudioProcessorEditor::getComps()
         &ui,
         &responseCurveComponent,
         &waveshaperComponent,
-        &splash,
-        &activationComp
+        &splash
     };
 }

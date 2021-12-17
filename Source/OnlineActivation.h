@@ -394,15 +394,11 @@ struct ActivationComponent : Component, Timer
     void setImage(const Image& newImage)
     {
         img = newImage;
-        needBlur = true;
 
         auto bounds = getParentComponent()->getLocalArea(this, unlockForm.getBounds());
         img = img.getClippedImage(bounds);
 
-        if (needBlur) {
-            gin::applyStackBlur(img, 35);
-            needBlur = false;
-        }
+        needBlur = true;
 
         showForm();
     }
@@ -419,6 +415,10 @@ struct ActivationComponent : Component, Timer
     {
         if (unlockForm.isVisible())
         {
+            if (needBlur) {
+                gin::applyStackBlur(img, 35);
+                needBlur = false;
+            }
             g.drawImage(img, unlockForm.getBounds().toFloat(), RectanglePlacement::centred);
         }
     }
@@ -437,7 +437,6 @@ struct ActivationComponent : Component, Timer
             if (onUnlock != nullptr)
                 onUnlock(true);
         }
-        repaint();
     }
     
     bool hitTest(int x, int y) override
@@ -457,11 +456,10 @@ struct ActivationComponent : Component, Timer
 private:
     void showForm()
     {
-        unlockForm.setVisible(true);
+        if (!unlockForm.isVisible())
+            unlockForm.setVisible(true);
         unlockForm.toFront(true);
         unlockForm.unfocusAllComponents();
-        needBlur = true;
-        repaint();
     }
 
     inline void unlockApp()
@@ -469,6 +467,7 @@ private:
         unlockButton.setEnabled(false);
         unlockButton.setVisible(false);
         status.writeHashKey();
+        repaint();
     }
 
     Image img;
