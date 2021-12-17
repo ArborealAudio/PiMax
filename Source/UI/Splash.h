@@ -43,8 +43,12 @@ struct Splash : Component
         else if (splashOn && clipArea.contains((float)x, (float)y))
         {
             if (ModifierKeys::currentModifiers.isLeftButtonDown()) {
-                splashOn = false;
-                repaint();
+                if (clipArea.reduced(50.f).withTrimmedBottom(70.f).contains(x, y))
+                    return true;
+                else {
+                    splashOn = false;
+                    repaint();
+                }
             }
             return true;
         }
@@ -91,6 +95,15 @@ struct Splash : Component
                 clipArea.withTrimmedTop(150.f).toNearestInt(),
                 Justification::centred, 3, 1.f);
 
+            if (clipArea.reduced(50.f).withTrimmedBottom(70.f).contains(getMouseXYRelative().toFloat())) {
+                setMouseCursor(MouseCursor::PointingHandCursor);
+                if (isMouseButtonDown()) {
+                    URL("https://arborealaudio.com").launchInDefaultBrowser();
+                    return;
+                }
+            }
+            else
+                setMouseCursor(MouseCursor::NormalCursor);
         }
     }
 
