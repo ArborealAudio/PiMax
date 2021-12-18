@@ -117,6 +117,13 @@ public:
         {dsp::Oversampling<float>(2, 2, dsp::Oversampling<float>::FilterType::filterHalfBandFIREquiripple, true, true)}
     } };
 
+    std::array<dsp::Oversampling<float>, 3> oversampleMono
+    { {
+        {dsp::Oversampling<float>(1)},
+        {dsp::Oversampling<float>(1, 2, dsp::Oversampling<float>::FilterType::filterHalfBandPolyphaseIIR, false, true)},
+        {dsp::Oversampling<float>(1, 2, dsp::Oversampling<float>::FilterType::filterHalfBandFIREquiripple, true, true)}
+    } };
+
     int osIndex = 0;
 
     int numSamples = 0;

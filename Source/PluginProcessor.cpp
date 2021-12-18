@@ -162,6 +162,8 @@ void MaximizerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
 
     for (auto& ovs : oversample)
         ovs.initProcessing(size_t(samplesPerBlock));
+    for (auto& ovs : oversampleMono)
+        ovs.initProcessing(size_t(samplesPerBlock));
 
     mPi.prepare();
 
@@ -257,7 +259,8 @@ void MaximizerAudioProcessor::parameterChanged(const String& parameterID, float 
 
         suspendProcessing(true);
         for (auto& b : m_Proc.bandBuffer)
-            b.setSize(2, numSamples * oversample[osIndex].getOversamplingFactor(), false, false, true);
+            b.setSize(getTotalNumInputChannels(), numSamples * oversample[osIndex].getOversamplingFactor(),
+                false, false, true);
         suspendProcessing(false);
 
         dsp::ProcessSpec newSpec{ lastSampleRate, uint32(numSamples * oversample[osIndex].getOversamplingFactor()),
@@ -347,7 +350,11 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
 
     inputMeter.measureBlock(buffer);
 
-    auto osBlock = oversample[osIndex].processSamplesUp(inputBlock);
+    dsp::AudioBlock<float> osBlock;
+    if (totalNumInputChannels > 1)
+        osBlock = oversample[osIndex].processSamplesUp(inputBlock);
+    else
+        osBlock = oversampleMono[osIndex].processSamplesUp(inputBlock);
 
 #if USE_SIMD_SAT
     /*if (*bandSplit) {
@@ -365,7 +372,8 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     if (*bandSplit) {
         for (auto& b : m_Proc.bandBuffer) {
             b.copyFrom(0, 0, const_cast<float*>(osBlock.getChannelPointer(0)), osBlock.getNumSamples());
-            b.copyFrom(1, 0, const_cast<float*>(osBlock.getChannelPointer(1)), osBlock.getNumSamples());
+            if (totalNumInputChannels > 1)
+                b.copyFrom(1, 0, const_cast<float*>(osBlock.getChannelPointer(1)), osBlock.getNumSamples());
         }
     }
 #endif
@@ -441,13 +449,16 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
         numSamples, static_cast<int>(Vec2::size()));
 #endif
 
-    oversample[osIndex].processSamplesDown(outBlock);
+    if (totalNumInputChannels > 1)
+        oversample[osIndex].processSamplesDown(outBlock);
+    else
+        oversampleMono[osIndex].processSamplesDown(outBlock);
 
-    if (*width != 1.0) {
+    if (*width != 1.0 && totalNumOutputChannels > 1) {
         if (*monoWidth && (*m_Proc.bandWidth[0] > 1.f || *m_Proc.bandWidth[1] > 1.f || *m_Proc.bandWidth[2] > 1.f ||
             *m_Proc.bandWidth[3] > 1.f))
             widener.widenBlock(outBlock, *width, false);
-        else if (buffer.getNumChannels() < 2)
+        else if (totalNumInputChannels < 2)
             widener.widenBlock(outBlock, *width, true);
         else
             widener.widenBlock(outBlock, *width, *monoWidth);
