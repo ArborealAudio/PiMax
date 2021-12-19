@@ -260,7 +260,7 @@ void MaximizerAudioProcessor::parameterChanged(const String& parameterID, float 
         suspendProcessing(true);
         for (auto& b : m_Proc.bandBuffer)
             b.setSize(getTotalNumInputChannels(), numSamples * oversample[osIndex].getOversamplingFactor(),
-                false, false, true);
+                false, false, false);
         suspendProcessing(false);
 
         dsp::ProcessSpec newSpec{ lastSampleRate, uint32(numSamples * oversample[osIndex].getOversamplingFactor()),
@@ -324,6 +324,9 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
 
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear(i, 0, buffer.getNumSamples());
+
+    if (numSamples != buffer.getNumSamples())
+        numSamples = buffer.getNumSamples();
     
     bypassBuffer.makeCopyOf(buffer);
     bufferCopied = true;
