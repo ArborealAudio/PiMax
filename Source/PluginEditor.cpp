@@ -30,7 +30,7 @@ ResponseCurveComponent::ResponseCurveComponent(MaximizerAudioProcessor& p) : aud
         sliders.emplace_back(std::make_unique<CrossoverSlider>());
         addChildComponent(*sliders[i]);
         sliders[i]->setMouseDragSensitivity(400);
-        sliders[i]->setTooltip("Adjusts crossover frequency of the adjacent bands.");
+        sliders[i]->setTooltip("Adjusts crossover frequency of the adjacent bands. Right/Ctrl-click to remove a crossover.");
         sliders[i]->onValueChange = [this] { sliderValueChanged = true; };
         lowPass.emplace_back();
         highPass.emplace_back();
