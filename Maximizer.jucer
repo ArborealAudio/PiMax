@@ -2,7 +2,7 @@
 
 <JUCERPROJECT id="HMsJ6B" name="PiMax" projectType="audioplug" useAppConfig="0"
               jucerFormatVersion="1" companyName="Arboreal Audio" pluginFormats="buildAU,buildVST,buildVST3"
-              cppLanguageStandard="latest" displaySplashScreen="0" version="1.0.1"
+              cppLanguageStandard="latest" displaySplashScreen="0" version="1.0.2"
               companyCopyright="(c) 2021 Arboreal Audio" companyWebsite="arborealaudio.com"
               companyEmail="contact@arborealaudio.com" pluginManufacturerCode="Arau">
   <MAINGROUP id="C1sQx6" name="PiMax">
@@ -112,7 +112,7 @@
   <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1" JUCE_VST3_CAN_REPLACE_VST2="0"
                JUCE_DSP_ENABLE_SNAP_TO_ZERO="0"/>
   <EXPORTFORMATS>
-    <VS2019 targetFolder="Builds/VisualStudio2019">
+    <VS2019 targetFolder="Builds/VisualStudio2019" IPP1ALibrary="Static_Library">
       <CONFIGURATIONS>
         <CONFIGURATION isDebug="1" name="Debug" targetName="PiMax" enablePluginBinaryCopyStep="1"/>
         <CONFIGURATION isDebug="0" name="Release" targetName="PiMax" enablePluginBinaryCopyStep="1"/>
