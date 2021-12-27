@@ -103,8 +103,8 @@ public:
 
     //[UserVariables]   -- You can add your own custom variables in this section.
     GainSlider gain__slider, outVol__slider;
-    Slider curve__slider, mixSlider;
-    WidthSlider widthSlider;
+    Slider curve__slider;
+    WidthSlider widthSlider, mixSlider;
     TextButton distButton, bandSplit__textButton, linearPhaseButton, hq, renderHQ, autoGain, bypass;
     ComboBox clipBox;
     PresetComp presetComp;

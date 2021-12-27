@@ -186,7 +186,6 @@ UI::UI (MaximizerAudioProcessor& p) : audioProcessor(p), gain__slider(false), ou
     addAndMakeVisible(widthSlider);
     widthSlider.setSliderStyle(Slider::SliderStyle::RotaryVerticalDrag);
     widthSlider.setLookAndFeel(&widthLNF);
-    widthSlider.setPaintingIsUnclipped(true);
     widthLNF.setLabelType(KnobLNF::LabelType::Width);
     widthSlider.setSliderSnapsToMousePosition(false);
     widthSlider.setTooltip("Widens or narrows the stereo image.\n\n"
@@ -207,6 +206,13 @@ UI::UI (MaximizerAudioProcessor& p) : audioProcessor(p), gain__slider(false), ou
     mixLNF.setLabelType(KnobLNF::LabelType::Mix);
     mixSlider.setSliderSnapsToMousePosition(false);
     mixSlider.setTooltip("Blends processed output with the dry input signal.");
+    mixSlider.altDown = *p.delta; mixLNF.altDown = *p.delta;
+    mixSlider.onAltClick = [&]
+    {
+        mixLNF.altDown = mixSlider.altDown;
+        auto delta = p.apvts.getParameterAsValue("delta");
+        delta = mixSlider.altDown;
+    };
     mixSlider.setBounds(480, 300, 50, 75);
 
     addAndMakeVisible(presetComp);

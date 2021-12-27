@@ -520,16 +520,6 @@ class KnobLNF : public LookAndFeel_V4
 {
 public:
 
-    /*KnobLNF()
-    {
-        setDefaultSansSerifTypeface(getTypefaceForFont(getCustomFont(FontStyle::Regular)));
-    }
-
-    Typeface::Ptr getTypefaceForFont(const Font& f)
-    {
-        return Typeface::createSystemTypefaceFor(f);
-    }*/
-
     enum class LabelType
     {
         Width,
@@ -608,17 +598,24 @@ private:
             mouseOver = false;
 
         Rectangle<int> textBounds{ x, (int)centerY - 4, width, 10 };
-        //const Font font(Font::getDefaultSansSerifFontName(), 12.f, Font::bold);
         g.setFont(getCustomFont(FontStyle::Regular).withHeight(12.f));
         g.setColour(Colours::floralwhite);
         if (type == LabelType::Width) {
-            if (altDown)
+            if (altDown) {
                 g.setColour(Colours::burlywood);
-
-            g.drawFittedText("Width", textBounds, Justification::centred, 1, 1.f);
+                g.drawFittedText("M Width", textBounds, Justification::centred, 1, 1.f);
+            }
+            else
+                g.drawFittedText("Width", textBounds, Justification::centred, 1, 1.f);
         }
-        else if (type == LabelType::Mix)
-            g.drawFittedText("Mix", textBounds, Justification::centred, 1, 1.f);
+        else if (type == LabelType::Mix) {
+            if (altDown) {
+                g.setColour(Colours::burlywood);
+                g.drawFittedText("Delta", textBounds, Justification::centred, 1, 1.f);
+            }
+            else
+                g.drawFittedText("Mix", textBounds, Justification::centred, 1, 1.f);
+        }
         else if (type == LabelType::InGain)
             g.drawFittedText("In", textBounds, Justification::centred, 1, 1.f);
         else if (type == LabelType::OutGain)
@@ -627,7 +624,6 @@ private:
 
     void drawLabel(Graphics& g, Label& label) override
     {
-        //const Font font(Font::getDefaultSansSerifFontName(), 15.f, Font::plain);
         g.setFont(getCustomFont(FontStyle::Regular).withHeight(15.f));
         if (mono)
             g.setColour(Colours::palevioletred);
