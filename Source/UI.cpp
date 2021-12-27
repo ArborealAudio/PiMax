@@ -205,7 +205,8 @@ UI::UI (MaximizerAudioProcessor& p) : audioProcessor(p), gain__slider(false), ou
     mixSlider.setLookAndFeel(&mixLNF);
     mixLNF.setLabelType(KnobLNF::LabelType::Mix);
     mixSlider.setSliderSnapsToMousePosition(false);
-    mixSlider.setTooltip("Blends processed output with the dry input signal.");
+    mixSlider.setTooltip("Blends processed output with the dry input signal. Alt / Option-click to enable Delta mode,"
+        " which subtracts the dry signal from the processed signal, allowing you to hear what PiMax is adding to the input signal.");
     mixSlider.altDown = *p.delta; mixLNF.altDown = *p.delta;
     mixSlider.onAltClick = [&]
     {
