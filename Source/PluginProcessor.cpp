@@ -43,6 +43,7 @@ MaximizerAudioProcessor::MaximizerAudioProcessor()
     mix = apvts.getRawParameterValue("mix");
     autoGain = apvts.getRawParameterValue("autoGain");
     bypass = apvts.getRawParameterValue("bypass");
+    delta = apvts.getRawParameterValue("delta");
 
     for (int i = 0; i < 3; ++i) {
         crossovers[i] = apvts.getRawParameterValue("crossover" + std::to_string(i));
@@ -498,6 +499,9 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
 
     mixer.setWetMixProportion(*mix);
     mixer.mixWetSamples(outBlock);
+
+    if (*delta)
+        processDelta(buffer, gain_raw * halfPi, output_raw);
     
     processBlockBypassed(buffer, midiMessages);
 }
@@ -540,6 +544,25 @@ void MaximizerAudioProcessor::processBlockBypassed(AudioBuffer<float>& buffer, M
     
     lastBypass = *bypass;
     bufferCopied = false;
+}
+
+void MaximizerAudioProcessor::processDelta(AudioBuffer<float>& buffer, float inGain, float outGain)
+{
+    for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
+    {
+        auto* data = buffer.getWritePointer(ch);
+        auto* dryData = bypassBuffer.getWritePointer(ch);
+
+        for (int i = 0; i < buffer.getNumSamples(); ++i)
+        {
+            bypassDelay.pushSample(ch, dryData[i]);
+            dryData[i] = bypassDelay.popSample(ch);
+            if (!*autoGain)
+                data[i] = ((data[i] / inGain) / outGain) - dryData[i];
+            else
+                data[i] = (data[i] / outGain) - dryData[i];
+        }
+    }
 }
 
 //==============================================================================
@@ -695,6 +718,8 @@ AudioProcessorValueTreeState::ParameterLayout MaximizerAudioProcessor::createPar
         ("autoGain", "Auto Gain", false));
     params.emplace_back(std::make_unique<AudioParameterBool>
         ("bypass", "Bypass", false));
+    params.emplace_back(std::make_unique<AudioParameterBool>
+        ("delta", "Delta", false));
 
     return { params.begin(), params.end() };
 }

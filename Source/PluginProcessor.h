@@ -102,7 +102,7 @@ public:
 
     AudioProcessorValueTreeState apvts;
 
-    std::atomic<float>* bandSplit, *monoWidth,
+    std::atomic<float>* bandSplit, *monoWidth, *delta,
         *gain_dB, *curve, *output_dB, *clip, *distIndex, *autoGain, *linearPhase;
     std::array<std::atomic<float>*, 3> crossovers;
 
@@ -145,6 +145,8 @@ public:
 private:
 
     void checkActivation();
+
+    void processDelta(AudioBuffer<float>& buffer, float inGain, float outGain);
 
     AudioProcessorValueTreeState::ParameterLayout createParams();
 
