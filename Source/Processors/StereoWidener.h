@@ -168,8 +168,8 @@ public:
 				delay[0].pushSample(0, xn);
 				delay[1].pushSample(1, xn);
 
-				T xn_DL = delay[0].popSample(0, -1, true);
-				T xn_DR = delay[1].popSample(1, -1, true);
+				T xn_DL = delay[0].popSample(0);
+				T xn_DR = delay[1].popSample(1);
 
 				T s_D = xn_DL - xn_DR;
 
