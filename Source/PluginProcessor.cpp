@@ -22,6 +22,7 @@ MaximizerAudioProcessor::MaximizerAudioProcessor()
                        ), apvts(*this, nullptr, "Parameters", createParams()), mixer(44100),
                         mPi(apvts), m_Proc(apvts)
 #endif
+
 {
     lastUIWidth = 720;
     lastUIHeight = 480;
@@ -149,7 +150,7 @@ void MaximizerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
 
     dsp::ProcessSpec spec{lastSampleRate, uint32(oversample[osIndex].getOversamplingFactor() * samplesPerBlock),
         (uint32)getTotalNumInputChannels()};
-    
+        
     bypassBuffer.setSize(getTotalNumInputChannels(), samplesPerBlock);
     bypassDelay.prepare(spec);
 
@@ -333,6 +334,8 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     bufferCopied = true;
 
     dsp::AudioBlock<float> block(buffer);
+    if (totalNumInputChannels < totalNumOutputChannels)
+        block = block.getSingleChannelBlock(0);
     dsp::ProcessContextReplacing<float> context(block);
     const auto& inputBlock = context.getInputBlock();
     auto& outBlock = context.getOutputBlock();
@@ -511,7 +514,17 @@ void MaximizerAudioProcessor::processBlockBypassed(AudioBuffer<float>& buffer, M
     /*return if not bypass & unchanged or switched on mid-buffer*/
     if ((!*bypass && !lastBypass) || !bufferCopied)
         return;
+    
     /*push to our delay buffer & pop delayed sample*/
+    if (getTotalNumInputChannels() < getTotalNumOutputChannels()) {
+        auto in = bypassBuffer.getWritePointer(0);
+        auto in_1 = bypassBuffer.getWritePointer(1);
+        for (int i = 0; i < bypassBuffer.getNumSamples(); ++i) {
+            bypassDelay.pushSample(0, in[i]);
+            in[i] = bypassDelay.popSample(0);
+            in_1[i] = in[i];
+        }
+    }
     else {
         for (int ch = 0; ch < bypassBuffer.getNumChannels(); ++ch) {
             auto in = bypassBuffer.getWritePointer(ch);
