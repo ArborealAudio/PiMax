@@ -167,13 +167,13 @@ struct MultibandProcessor
             outinc[i] = (outGain[i] - lastOutGain[i]) / (float)numSamples;
         }
 
-        for (int ch = 0; ch < inputBlock.getNumChannels(); ++ch) {
-            
+        for (int ch = 0; ch < inputBlock.getNumChannels(); ++ch)
+        {
             auto bandPtr = inputBlock.getChannelPointer(ch);
-            for (int i = 0; i < numSamples; ++i) {
-
-                for (int n = 0; n <= numBands; ++n) {
-
+            for (int i = 0; i < numSamples; ++i)
+            {
+                for (int n = 0; n <= numBands; ++n)
+                {
                     if (n != numBands) {
                         if (n == 0)
                             bands[n].processSample(ch, bandPtr[i], out[0], out[1]);
@@ -214,7 +214,8 @@ struct MultibandProcessor
         }
         
         /*ensure last gains are set to cooked value of corresponding atomics*/
-        for (int i = 0; i <= numBands; ++i) {
+        for (int i = 0; i <= numBands; ++i)
+        {
             lastInGain[i] = gain[i];
             lastOutGain[i] = outGain[i];
         }
@@ -222,13 +223,23 @@ struct MultibandProcessor
         /*widen any bands which need to be*/
         for (int i = 0; i <= numBands ; ++i)
         {
-            if (*bandWidth[i] != 1.0 && inputBlock.getNumChannels() > 1) {
-                if (*bandWidth[i] != lastBandWidth[i]) {
-                    bandWidener[i].widenBufferWithRamp(bandBuffer[i], lastBandWidth[i], *bandWidth[i], *monoWidth);
-                    lastBandWidth[i] = *bandWidth[i];
+            if (*bandWidth[i] != 1.0) {
+                if (inputBlock.getNumChannels() > 1) {
+                    if (*bandWidth[i] != lastBandWidth[i]) {
+                        bandWidener[i].widenBufferWithRamp(bandBuffer[i], lastBandWidth[i], *bandWidth[i], *monoWidth);
+                        lastBandWidth[i] = *bandWidth[i];
+                    }
+                    else
+                        bandWidener[i].widenBuffer(bandBuffer[i], *bandWidth[i], *monoWidth);
                 }
-                else
-                    bandWidener[i].widenBuffer(bandBuffer[i], *bandWidth[i], *monoWidth);
+                else {
+                    if (*bandWidth[i] != lastBandWidth[i]) {
+                        bandWidener[i].widenBufferWithRamp(bandBuffer[i], lastBandWidth[i], *bandWidth[i], true);
+                        lastBandWidth[i] = *bandWidth[i];
+                    }
+                    else
+                        bandWidener[i].widenBuffer(bandBuffer[i], *bandWidth[i], true);
+                }
             }
         }
 
@@ -237,7 +248,7 @@ struct MultibandProcessor
         if (*soloBand[0] || *soloBand[1] || *soloBand[2] || *soloBand[3]) {
             for (int channel = 0; channel < inputBlock.getNumChannels(); ++channel)
             {
-                for (int i = 0; i < inputBlock.getNumSamples(); ++i)
+                for (int i = 0; i < numSamples; ++i)
                 {
                     yn = 0.0;
 #if USE_SIMD_SAT
@@ -266,7 +277,7 @@ struct MultibandProcessor
         if (!*soloBand[0] && !*soloBand[1] && !*soloBand[2] && !*soloBand[3]) {
             for (int channel = 0; channel < inputBlock.getNumChannels(); ++channel)
             {
-                for (int i = 0; i < inputBlock.getNumSamples(); ++i)
+                for (int i = 0; i < numSamples; ++i)
                 {
                     yn = 0.0;
 #if USE_SIMD_SAT
