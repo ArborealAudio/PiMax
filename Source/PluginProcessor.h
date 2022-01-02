@@ -181,48 +181,6 @@ private:
     
     dsp::DelayLine<float> bypassDelay {44100};
 
-#if USE_SIMD_SAT
-    using Vec2 = dsp::SIMDRegister<float>;
-
-    dsp::AudioBlock<Vec2> interleaved;
-    dsp::AudioBlock<float> zero;
-
-    HeapBlock<char> interleavedBlockData, zeroData;
-    HeapBlock<const float*> channelPointers{ Vec2::size() };
-
-    template <typename T>
-    static void interleaveSamples(const T** source, T* dest, int numSamples, int numChannels)
-    {
-        for (int chan = 0; chan < numChannels; ++chan)
-        {
-            auto i = chan;
-            auto src = source[chan];
-
-            for (int j = 0; j < numSamples; ++j)
-            {
-                dest[i] = src[j];
-                i += numChannels;
-            }
-        }
-    }
-
-    template <typename T>
-    static void deinterleaveSamples(const T* source, T** dest, int numSamples, int numChannels)
-    {
-        for (int chan = 0; chan < numChannels; ++chan)
-        {
-            auto i = chan;
-            auto dst = dest[chan];
-
-            for (int j = 0; j < numSamples; ++j)
-            {
-                dst[j] = source[i];
-                i += numChannels;
-            }
-        }
-    }
-#endif
-
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MaximizerAudioProcessor)
 };
