@@ -11,7 +11,7 @@
 
 //==============================================================================
 MaximizerAudioProcessor::MaximizerAudioProcessor()
-#ifndef JucePlugin_PreferredChannelConfigurations
+//#ifndef JucePlugin_PreferredChannelConfigurations
      : AudioProcessor (BusesProperties()
                      #if ! JucePlugin_IsMidiEffect
                       #if ! JucePlugin_IsSynth
@@ -21,7 +21,7 @@ MaximizerAudioProcessor::MaximizerAudioProcessor()
                      #endif
                        ), apvts(*this, nullptr, "Parameters", createParams()), mixer(44100),
                         mPi(apvts), m_Proc(apvts)
-#endif
+//#endif
 
 {
     lastUIWidth = 720;
@@ -150,9 +150,7 @@ void MaximizerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
 
     dsp::ProcessSpec spec{lastSampleRate, uint32(oversample[osIndex].getOversamplingFactor() * samplesPerBlock),
         (uint32)getTotalNumInputChannels()};
-    
-    DBG("os factor: " << oversample[osIndex].getOversamplingFactor());
-    
+        
     auto mixerSpec = spec;
     mixerSpec.numChannels = (uint32)getTotalNumOutputChannels();
         
@@ -192,7 +190,7 @@ void MaximizerAudioProcessor::releaseResources()
 {
 }
 
-#ifndef JucePlugin_PreferredChannelConfigurations
+//#ifndef JucePlugin_PreferredChannelConfigurations
 bool MaximizerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
   #if JucePlugin_IsMidiEffect
@@ -228,7 +226,7 @@ bool MaximizerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts
 //    return true;
   #endif
 }
-#endif
+//#endif
 
 inline void MaximizerAudioProcessor::updateOversample() noexcept
 {
@@ -336,16 +334,15 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     if (numSamples != buffer.getNumSamples())
         numSamples = buffer.getNumSamples();
     
+    /*if mono->stereo, copy left channel into right*/
+    if (totalNumInputChannels < totalNumOutputChannels)
+        buffer.copyFrom(1, 0, buffer.getReadPointer(0), numSamples);
+    
     bypassBuffer.makeCopyOf(buffer);
     bufferCopied = true;
 
     dsp::AudioBlock<float> block(buffer);
-    dsp::AudioBlock<float> mbStereo(buffer);
-    dsp::AudioBlock<float> stereoOut(buffer);
-//    if (totalNumInputChannels < totalNumOutputChannels)
-//        block = block.getSingleChannelBlock(0);
     dsp::ProcessContextReplacing<float> context(block);
-    const auto& inputBlock = context.getInputBlock();
     auto& outBlock = context.getOutputBlock();
 
     mixer.pushDrySamples(dsp::AudioBlock<float> (buffer));
@@ -366,27 +363,23 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     inputMeter.measureBlock(buffer);
 
     dsp::AudioBlock<float> osBlock;
-    //if (totalNumInputChannels > 1)
+    if (totalNumOutputChannels > 1)
         osBlock = oversample[osIndex].processSamplesUp(dsp::AudioBlock<float>(buffer));
-//    else
-//        osBlock = oversampleMono[osIndex].processSamplesUp(inputBlock);
+    else
+        osBlock = oversampleMono[osIndex].processSamplesUp(dsp::AudioBlock<float>(buffer));
     
-    mbStereo.copyFrom(osBlock);
-    if (totalNumInputChannels < 2) {
-        auto left = mbStereo.getSingleChannelBlock(0);
-        auto right = mbStereo.getSingleChannelBlock(1);
-        right = left;
-    }
+//    mbStereo.copyFrom(osBlock);
+//    if (totalNumInputChannels < 2) {
+//        auto left = mbStereo.getSingleChannelBlock(0);
+//        auto right = mbStereo.getSingleChannelBlock(1);
+//        right = left;
+//    }
 
     if (*bandSplit) {
         for (auto& b : m_Proc.bandBuffer) {
             b.copyFrom(0, 0, const_cast<float*>(osBlock.getChannelPointer(0)), osBlock.getNumSamples());
-            if (totalNumOutputChannels > 1) {
-                if (totalNumInputChannels < totalNumOutputChannels)
-                    b.copyFrom(1, 0, const_cast<float*>(osBlock.getChannelPointer(0)), osBlock.getNumSamples());
-                else
-                    b.copyFrom(1, 0, const_cast<float*>(osBlock.getChannelPointer(1)), osBlock.getNumSamples());
-            }
+            if (totalNumOutputChannels > 1)
+                b.copyFrom(1, 0, const_cast<float*>(osBlock.getChannelPointer(1)), osBlock.getNumSamples());
         }
     }
 
@@ -423,10 +416,10 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
             m_Proc.addBands(osContext);
     }
 
-    //if (totalNumInputChannels > 1)
+    if (totalNumOutputChannels > 1)
         oversample[osIndex].processSamplesDown(outBlock);
-//    else
-//        oversampleMono[osIndex].processSamplesDown(outBlock);
+    else
+        oversampleMono[osIndex].processSamplesDown(outBlock);
     
     if (*width != 1.0 && totalNumOutputChannels > 1) {
         if (*monoWidth && (*m_Proc.bandWidth[0] > 1.f || *m_Proc.bandWidth[1] > 1.f || *m_Proc.bandWidth[2] > 1.f ||
@@ -470,8 +463,10 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     mixer.setWetMixProportion(*mix);
     mixer.mixWetSamples(dsp::AudioBlock<float> (buffer));
     
-    if (totalNumInputChannels < totalNumOutputChannels && (*width <= 1.0 && (*m_Proc.bandWidth[0] <= 1.0 && *m_Proc.bandWidth[1] <= 1.0 && *m_Proc.bandWidth[2] <= 1.0 && *m_Proc.bandWidth[3] <= 1.0)))
-        buffer.copyFrom(1, 0, buffer.getReadPointer(0), buffer.getNumSamples()); //copy left->right if no wideners are active
+    if (totalNumInputChannels < totalNumOutputChannels) {
+        if (*width <= 1.0 && (*m_Proc.bandWidth[0] <= 1.0 && *m_Proc.bandWidth[1] <= 1.0 && *m_Proc.bandWidth[2] <= 1.0 && *m_Proc.bandWidth[3] <= 1.0))
+            buffer.copyFrom(1, 0, buffer.getReadPointer(0), buffer.getNumSamples()); //copy left->right if no wideners are active
+    }
 
     if (*delta)
         processDelta(buffer, gain_raw * halfPi, output_raw);

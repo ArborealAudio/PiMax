@@ -4,7 +4,8 @@
               jucerFormatVersion="1" companyName="Arboreal Audio" pluginFormats="buildAU,buildVST,buildVST3"
               cppLanguageStandard="latest" displaySplashScreen="0" version="1.0.2"
               companyCopyright="(c) 2021 Arboreal Audio" companyWebsite="arborealaudio.com"
-              companyEmail="contact@arborealaudio.com" pluginManufacturerCode="Arau">
+              companyEmail="contact@arborealaudio.com" pluginManufacturerCode="Arau"
+              pluginChannelConfigs="{1, 1}, {1, 2}, {2, 2}">
   <MAINGROUP id="C1sQx6" name="PiMax">
     <GROUP id="{696D5D65-36E5-2635-0882-CAC75D7874E4}" name="Source">
       <GROUP id="{B3CD073D-D104-63E6-F84E-6EB41EEA0766}" name="Presets">
