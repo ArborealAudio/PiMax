@@ -244,9 +244,6 @@ inline void MaximizerAudioProcessor::updateOversample() noexcept
 
 void MaximizerAudioProcessor::parameterChanged(const String& parameterID, float newValue)
 {
-    if (trialEnded && !checkUnlock())
-        return;
-
     if (parameterID == "hq" || parameterID == "renderHQ" || parameterID == "linearPhase") {
         if (*renderHQ && isNonRealtime()) {
             osIndex = 2;
