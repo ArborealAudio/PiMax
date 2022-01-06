@@ -179,6 +179,8 @@ private:
     bool lastBypass = false;
     bool bufferCopied = false;
     
+    std::atomic<bool> bbuf_resized = false;
+    
     dsp::DelayLine<float> bypassDelay {44100};
 
     //==============================================================================

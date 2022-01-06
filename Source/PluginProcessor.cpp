@@ -149,7 +149,7 @@ void MaximizerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
         lastSampleRate = sampleRate;
 
     dsp::ProcessSpec spec{lastSampleRate, uint32(oversample[osIndex].getOversamplingFactor() * samplesPerBlock),
-        (uint32)getTotalNumInputChannels()};
+        (uint32)getTotalNumOutputChannels()};
         
     auto mixerSpec = spec;
     mixerSpec.numChannels = (uint32)getTotalNumOutputChannels();
@@ -168,11 +168,13 @@ void MaximizerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
     m_Proc.initCrossovers();
     m_Proc.setOversamplingFactor(oversample[osIndex].getOversamplingFactor());
 
+    bbuf_resized = false;
     for (auto& b : m_Proc.bandBuffer) {
-        suspendProcessing(true);
+        //suspendProcessing(true);
         b.setSize(getTotalNumOutputChannels(), samplesPerBlock * oversample[osIndex].getOversamplingFactor());
-        suspendProcessing(false);
+        //suspendProcessing(false);
     }
+    bbuf_resized = true;
     
     filterLength = m_Proc.linBand[0].size;
 
@@ -263,18 +265,20 @@ void MaximizerAudioProcessor::parameterChanged(const String& parameterID, float 
             lastSampleRate = lastDownSampleRate;
         }
 
+        bbuf_resized = false;
         suspendProcessing(true);
         for (auto& b : m_Proc.bandBuffer)
             b.setSize(getTotalNumOutputChannels(), numSamples * oversample[osIndex].getOversamplingFactor(),
                 false, false, false);
-        suspendProcessing(false);
+        //suspendProcessing(false);
 
         dsp::ProcessSpec newSpec{ lastSampleRate, uint32(numSamples * oversample[osIndex].getOversamplingFactor()),
-            (uint32)getTotalNumInputChannels() };
+            (uint32)getTotalNumOutputChannels() };
         m_Proc.setOversamplingFactor(oversample[osIndex].getOversamplingFactor());
-        if (*bandSplit)
-            suspendProcessing(true);
+//        if (*bandSplit)
+//            suspendProcessing(true);
         m_Proc.updateSpecs(newSpec);
+        bbuf_resized = true;
         suspendProcessing(false);
         mPi.prepare();
     }
@@ -375,7 +379,7 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
 //        right = left;
 //    }
 
-    if (*bandSplit) {
+    if (*bandSplit && bbuf_resized) {
         for (auto& b : m_Proc.bandBuffer) {
             b.copyFrom(0, 0, const_cast<float*>(osBlock.getChannelPointer(0)), osBlock.getNumSamples());
             if (totalNumOutputChannels > 1)
@@ -409,7 +413,7 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
             }
         }
     }
-    else {
+    else if (*bandSplit && bbuf_resized) {
         if (*linearPhase)
             m_Proc.addBandsConvolution(osContext);
         else
@@ -422,7 +426,7 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
         oversampleMono[osIndex].processSamplesDown(outBlock);
     
     if (*width != 1.0 && totalNumOutputChannels > 1) {
-        if (*monoWidth && (*m_Proc.bandWidth[0] > 1.f || *m_Proc.bandWidth[1] > 1.f || *m_Proc.bandWidth[2] > 1.f ||
+        if (*monoWidth && *bandSplit && (*m_Proc.bandWidth[0] > 1.f || *m_Proc.bandWidth[1] > 1.f || *m_Proc.bandWidth[2] > 1.f ||
             *m_Proc.bandWidth[3] > 1.f))
             widener.widenBuffer(buffer, *width, false);
         else if (totalNumInputChannels < 2)
