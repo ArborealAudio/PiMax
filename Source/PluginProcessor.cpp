@@ -244,7 +244,7 @@ inline void MaximizerAudioProcessor::updateOversample() noexcept
 
 void MaximizerAudioProcessor::parameterChanged(const String& parameterID, float newValue)
 {
-    if (trialEnded)
+    if (trialEnded && !checkUnlock())
         return;
 
     if (parameterID == "hq" || parameterID == "renderHQ" || parameterID == "linearPhase") {
@@ -295,9 +295,6 @@ void MaximizerAudioProcessor::parameterChanged(const String& parameterID, float 
             }
         }
     }
-
-    if (!checkUnlock())
-        suspendProcessing(true);
 }
 
 void MaximizerAudioProcessor::valueTreeRedirected(ValueTree& treeWhichHasBeenChanged)
