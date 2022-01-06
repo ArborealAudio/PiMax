@@ -441,59 +441,62 @@ struct TopButtonLNF : public LookAndFeel_V4
     {
         auto bounds = b.getLocalBounds();
 
-        if (type == Type::Regular) {
-            if (b.isMouseOver() && !b.getToggleState()) {
-                g.setColour(Colour(0xa7a7a7a7).withAlpha(0.75f));
-                g.fillRoundedRectangle(bounds.toFloat(), 7.f);
+        switch (type) {
+            case Type::Regular:
+                if (b.isMouseOver() && !b.getToggleState()) {
+                    g.setColour(Colour(0xa7a7a7a7).withAlpha(0.75f));
+                    g.fillRoundedRectangle(bounds.toFloat(), 7.f);
+                }
+                else if (b.getToggleState()) {
+                    g.setColour(Colours::seagreen.withAlpha(0.33f));
+                    g.fillRoundedRectangle(bounds.toFloat(), 7.f);
+                }
+                else {
+                    g.setColour(Colour(0xa7a7a7a7));
+                    g.drawRoundedRectangle(bounds.toFloat().reduced(2.f), 7.f, 1.f);
+                }
+                break;
+            case Type::Toggle:
+                if (b.getToggleState())
+                    g.setColour(Colours::seagreen.withAlpha(0.33f));
+                else
+                    g.setColour(Colours::seagreen);
+            {
+                Path p;
+                p.addRoundedRectangle((float)bounds.getX(), (float)bounds.getY(),
+                    (float)bounds.getWidth(), (float)bounds.getHeight(),
+                    7.f, 7.f, true, false, true, false);
+                g.fillPath(p);
             }
-            else if (b.getToggleState()) {
-                g.setColour(Colours::seagreen.withAlpha(0.33f));
-                g.fillRoundedRectangle(bounds.toFloat(), 7.f);
-            }
-            else {
-                g.setColour(Colour(0xa7a7a7a7));
-                g.drawRoundedRectangle(bounds.toFloat().reduced(2.f), 7.f, 1.f);
-            }
-        }
-        else if (type == Type::Toggle) {
-            if (b.getToggleState())
-                g.setColour(Colours::seagreen.withAlpha(0.33f));
-            else
-                g.setColour(Colours::seagreen);
-
-            Path p;
-            p.addRoundedRectangle((float)bounds.getX(), (float)bounds.getY(),
-                (float)bounds.getWidth(), (float)bounds.getHeight(),
-                7.f, 7.f, true, false, true, false);
-            g.fillPath(p);
-        }
-        else if (type == Type::Auto) {
-            if (b.isMouseOver() && !b.getToggleState()) {
-                g.setColour(Colour(0xa7a7a7a7).withAlpha(0.75f));
-                g.fillRoundedRectangle(bounds.toFloat(), 7.f);
-            }
-            else if (b.getToggleState()) {
-                g.setColour(Colours::teal.withAlpha(0.5f));
-                g.fillRoundedRectangle(bounds.toFloat(), 7.f);
-            }
-            else {
-                g.setColour(Colour(0xa7a7a7a7));
-                g.drawRoundedRectangle(bounds.toFloat().reduced(2.f), 7.f, 1.f);
-            }
-        }
-        else if (type == Type::Bypass) {
-            if (b.isMouseOver() && !b.getToggleState()) {
-                g.setColour(Colour(0xa7a7a7a7).withAlpha(0.75f));
-                g.fillRoundedRectangle(bounds.toFloat(), 7.f);
-            }
-            else if (b.getToggleState()) {
-                g.setColour(Colours::mediumorchid.withAlpha(0.33f));
-                g.fillRoundedRectangle(bounds.toFloat(), 7.f);
-            }
-            else {
-                g.setColour(Colour(0xa7a7a7a7));
-                g.drawRoundedRectangle(bounds.toFloat().reduced(2.f), 7.f, 1.f);
-            }
+                break;
+            case Type::Auto:
+                if (b.isMouseOver() && !b.getToggleState()) {
+                    g.setColour(Colour(0xa7a7a7a7).withAlpha(0.75f));
+                    g.fillRoundedRectangle(bounds.toFloat(), 7.f);
+                }
+                else if (b.getToggleState()) {
+                    g.setColour(Colours::teal.withAlpha(0.5f));
+                    g.fillRoundedRectangle(bounds.toFloat(), 7.f);
+                }
+                else {
+                    g.setColour(Colour(0xa7a7a7a7));
+                    g.drawRoundedRectangle(bounds.toFloat().reduced(2.f), 7.f, 1.f);
+                }
+                break;
+            case Type::Bypass:
+                if (b.isMouseOver() && !b.getToggleState()) {
+                    g.setColour(Colour(0xa7a7a7a7).withAlpha(0.75f));
+                    g.fillRoundedRectangle(bounds.toFloat(), 7.f);
+                }
+                else if (b.getToggleState()) {
+                    g.setColour(Colours::mediumorchid.withAlpha(0.33f));
+                    g.fillRoundedRectangle(bounds.toFloat(), 7.f);
+                }
+                else {
+                    g.setColour(Colour(0xa7a7a7a7));
+                    g.drawRoundedRectangle(bounds.toFloat().reduced(2.f), 7.f, 1.f);
+                }
+                break;
         }
 
     }
@@ -600,42 +603,62 @@ private:
         Rectangle<int> textBounds{ x, (int)centerY - 4, width, 10 };
         g.setFont(getCustomFont(FontStyle::Regular).withHeight(12.f));
         g.setColour(Colours::floralwhite);
-        if (type == LabelType::Width) {
-            if (altDown) {
-                g.setColour(Colours::burlywood);
-                g.drawFittedText("M Width", textBounds, Justification::centred, 1, 1.f);
-            }
-            else
-                g.drawFittedText("Width", textBounds, Justification::centred, 1, 1.f);
+        
+        switch (type) {
+            case LabelType::Width:
+                if (altDown) {
+                    g.setColour(Colours::burlywood);
+                    g.drawFittedText("M Width", textBounds, Justification::centred, 1, 1.f);
+                }
+                else {
+                    g.drawFittedText("Width", textBounds, Justification::centred, 1, 1.f);
+                }
+                break;
+                
+            case LabelType::Mix:
+                if (altDown) {
+                    g.setColour(Colours::burlywood);
+                    g.drawFittedText("Delta", textBounds, Justification::centred, 1, 1.f);
+                }
+                else
+                    g.drawFittedText("Mix", textBounds, Justification::centred, 1, 1.f);
+                break;
+                
+            case LabelType::InGain:
+                g.drawFittedText("In", textBounds, Justification::centred, 1, 1.f);
+                break;
+            case LabelType::OutGain:
+                g.drawFittedText("Out", textBounds, Justification::centred, 1, 1.f);
+                break;
         }
-        else if (type == LabelType::Mix) {
-            if (altDown) {
-                g.setColour(Colours::burlywood);
-                g.drawFittedText("Delta", textBounds, Justification::centred, 1, 1.f);
-            }
-            else
-                g.drawFittedText("Mix", textBounds, Justification::centred, 1, 1.f);
-        }
-        else if (type == LabelType::InGain)
-            g.drawFittedText("In", textBounds, Justification::centred, 1, 1.f);
-        else if (type == LabelType::OutGain)
-            g.drawFittedText("Out", textBounds, Justification::centred, 1, 1.f);
     }
 
     void drawLabel(Graphics& g, Label& label) override
     {
         g.setFont(getCustomFont(FontStyle::Regular).withHeight(15.f));
-        if (mono)
+        
+        switch ((int)mono) {
+            case 1:
             g.setColour(Colours::palevioletred);
-        else
+            break;
+            case 0:
             g.setColour(Colours::floralwhite);
+            break;
+        }
 
         auto textBounds = label.getLocalBounds();
         auto text = label.getText();
-        if (type == LabelType::Mix || type == LabelType::Width)
-            text.append("%", 1);
-        else if (type == LabelType::InGain || type == LabelType::OutGain)
-            text.append(" dB", 3);
+        
+        switch (type) {
+            case (LabelType::Mix):
+            case (LabelType::Width):
+                text.append("%", 1);
+                break;
+            case (LabelType::InGain):
+            case (LabelType::OutGain):
+                text.append(" dB", 3);
+                break;
+        }
         if (mouseOver || label.isMouseOver()) {
             g.drawFittedText(text, textBounds, Justification::centred, 1, 1.f);
         }
