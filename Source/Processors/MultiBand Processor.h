@@ -79,6 +79,9 @@ struct MultibandProcessor
             band.prepare(newSpec);
 
         initCrossovers();
+        
+        for (auto& w: bandWidener)
+            w.prepare(newSpec);
 
         for (auto& m : mPi)
             m.prepare();
