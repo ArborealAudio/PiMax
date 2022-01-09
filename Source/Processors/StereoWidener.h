@@ -35,6 +35,9 @@ public:
 	template <typename T>
 	inline void widenBuffer(AudioBuffer<T>& buffer, float width, bool isMono)
 	{
+        if (buffer.getNumChannels() < 2)
+            return;
+        
 		auto channelData = buffer.getArrayOfWritePointers();
 		dsp::AudioBlock<T> block(channelData, buffer.getNumChannels(), buffer.getNumSamples());
 
@@ -48,6 +51,9 @@ public:
     template <typename T>
     inline void widenBufferWithRamp(AudioBuffer<T>& buffer, float beginWidth, float endWidth, bool isMono)
     {
+        if (buffer.getNumChannels() < 2)
+            return;
+        
         auto channelData = buffer.getArrayOfWritePointers();
         dsp::AudioBlock<T> block(channelData, buffer.getNumChannels(), buffer.getNumSamples());
 
@@ -157,28 +163,26 @@ public:
 	template <typename T>
 	dsp::AudioBlock<T> widenMonoSource(const dsp::AudioBlock<T>& block, float width)
 	{
-		auto& input = block;
-		auto output = input;
+		auto output = block;
 		auto mix = 0.5 * (width - 1.0);
 
-			for (int i = 0; i < input.getNumSamples(); ++i)
+			for (int i = 0; i < block.getNumSamples(); ++i)
 			{
-				auto xn = input.getSample(0, i);
+				auto xn = block.getSample(0, i);
 
 				delay[0].pushSample(0, xn);
 				delay[1].pushSample(1, xn);
 
-				T xn_DL = delay[0].popSample(0, -1, true);
-				T xn_DR = delay[1].popSample(1, -1, true);
+				T xn_DL = delay[0].popSample(0);
+				T xn_DR = delay[1].popSample(1);
 
-				T s_D = xn_DL - xn_DR;
+				T s_D = mix * (xn_DL - xn_DR);
 
-				T yn_L = (s_D * mix) + xn;
-				T yn_R = xn - (s_D * mix);
-
+				T yn_L = s_D + xn;
+				T yn_R = xn - s_D;
+                
 				output.setSample(0, i, yn_L);
-                if (block.getNumChannels() > 1)
-                    output.setSample(1, i, yn_R);
+                output.setSample(1, i, yn_R);
 			}
 
 		return output;
@@ -188,14 +192,13 @@ public:
     dsp::AudioBlock<T> widenMonoSourceWithRamp(const dsp::AudioBlock<T>& block, float beginWidth,
                                                float endWidth)
     {
-        auto& input = block;
-        auto output = input;
+        auto output = block;
         
         auto inc = (endWidth - beginWidth) / (float)block.getNumSamples();
 
-            for (int i = 0; i < input.getNumSamples(); ++i)
+            for (int i = 0; i < block.getNumSamples(); ++i)
             {
-                auto xn = input.getSample(0, i);
+                auto xn = block.getSample(0, i);
                 
                 delay[0].pushSample(0, xn);
                 delay[1].pushSample(1, xn);
@@ -203,17 +206,16 @@ public:
                 T xn_DL = delay[0].popSample(0, -1, true);
                 T xn_DR = delay[1].popSample(1, -1, true);
 
-                T s_D = xn_DL - xn_DR;
-                
                 auto mix = 0.5 * (beginWidth - 1.0);
                 beginWidth += inc;
+                
+                T s_D = mix * (xn_DL - xn_DR);
 
-                T yn_L = (s_D * mix) + xn;
-                T yn_R = xn - (s_D * mix);
+                T yn_L = s_D + xn;
+                T yn_R = xn - s_D;
 
                 output.setSample(0, i, yn_L);
-                if (block.getNumChannels() > 1)
-                    output.setSample(1, i, yn_R);
+                output.setSample(1, i, yn_R);
             }
 
         return output;

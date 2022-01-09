@@ -64,15 +64,22 @@ struct UnlockStatus
         return state.getProperty("value");
     }
 
-    /*0 = failed key | 1 = failed orderNum | 2 = success*/
+    /*0 = failed key | 1 = failed orderNum | 2 = success | 3 = activations maxed*/
     inline int authorize(const String& key, const String& email)
     {
+        if (key.isEmpty())
+            return 0;
+        if (email.isEmpty())
+            return 1;
+
         auto keyResponse = readReplyForKey(key, false);
         DBG(keyResponse);
-        if (keyResponse == "fail")
-            return 0;
 
         auto keyTree = createValueTreeFromJSON(keyResponse);
+
+        auto success = keyTree.getChildWithName("success").getProperty("property0");
+        if (!success)
+            return 0;
 
         auto orderId = keyTree.getChildWithName("orderId").getProperty("property0");
 
@@ -86,10 +93,15 @@ struct UnlockStatus
         owner.append(" ", 1);
         owner += orderTree.getChildWithName("last_name").getProperty("property0").toString();
         
-        state.setProperty("value", orderEmail == email, nullptr);
+        if (orderEmail == email) {
+            auto activationResponse = createValueTreeFromJSON(readReplyForKey(key, true));
+            auto activationCount = activationResponse.getChildWithName("timesActivated").getProperty("property0");
+            auto activationLim = activationResponse.getChildWithName("timesActivatedMax").getProperty("property0");
+            if (activationCount >= activationLim)
+                return 3;
+        }
 
-        if (orderEmail == email)
-            readReplyForKey(key, true);
+        state.setProperty("value", orderEmail == email, nullptr);
 
         return 1 + (orderEmail == email);
     }
@@ -199,7 +211,7 @@ private:
     inline ValueTree createValueTreeFromJSON(const String& data)
     {
         return createValueTreeFromJSON(JSON::parse(data));
-    }    
+    }
 
     ValueTree state{ "UNLOCKED", {{"value", 0}} };
 
@@ -313,8 +325,14 @@ struct UnlockForm : Component
             email.setTextToShowWhenEmpty("email not found", Colours::red);
             repaint();
         }
-        else {
+        else if (result == 2) {
             successRepaint = true;
+            repaint();
+        }
+        else {
+            key.unfocusAllComponents();
+            key.setText("", false);
+            key.setTextToShowWhenEmpty("Activations maxed!", Colours::red);
             repaint();
         }
     }
@@ -376,15 +394,11 @@ struct ActivationComponent : Component, Timer
     void setImage(const Image& newImage)
     {
         img = newImage;
-        needBlur = true;
 
         auto bounds = getParentComponent()->getLocalArea(this, unlockForm.getBounds());
         img = img.getClippedImage(bounds);
 
-        if (needBlur) {
-            gin::applyStackBlur(img, 35);
-            needBlur = false;
-        }
+        needBlur = true;
 
         showForm();
     }
@@ -401,6 +415,10 @@ struct ActivationComponent : Component, Timer
     {
         if (unlockForm.isVisible())
         {
+            if (needBlur) {
+                gin::applyStackBlur(img, 35);
+                needBlur = false;
+            }
             g.drawImage(img, unlockForm.getBounds().toFloat(), RectanglePlacement::centred);
         }
     }
@@ -419,7 +437,6 @@ struct ActivationComponent : Component, Timer
             if (onUnlock != nullptr)
                 onUnlock(true);
         }
-        repaint();
     }
     
     bool hitTest(int x, int y) override
@@ -439,11 +456,10 @@ struct ActivationComponent : Component, Timer
 private:
     void showForm()
     {
-        unlockForm.setVisible(true);
+        if (!unlockForm.isVisible())
+            unlockForm.setVisible(true);
         unlockForm.toFront(true);
         unlockForm.unfocusAllComponents();
-        needBlur = true;
-        repaint();
     }
 
     inline void unlockApp()
@@ -451,6 +467,7 @@ private:
         unlockButton.setEnabled(false);
         unlockButton.setVisible(false);
         status.writeHashKey();
+        repaint();
     }
 
     Image img;

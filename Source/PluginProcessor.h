@@ -53,10 +53,9 @@ public:
     void prepareToPlay(double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;
 
-#ifndef JucePlugin_PreferredChannelConfigurations
+//#ifndef JucePlugin_PreferredChannelConfigurations
     bool isBusesLayoutSupported(const BusesLayout& layouts) const override;
-#endif
-
+//#endif
     void processBlock(juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
     void processBlockBypassed(AudioBuffer<float>&, MidiBuffer&) override;
 
@@ -102,7 +101,7 @@ public:
 
     AudioProcessorValueTreeState apvts;
 
-    std::atomic<float>* bandSplit, *monoWidth,
+    std::atomic<float>* bandSplit, *monoWidth, *delta,
         *gain_dB, *curve, *output_dB, *clip, *distIndex, *autoGain, *linearPhase;
     std::array<std::atomic<float>*, 3> crossovers;
 
@@ -115,6 +114,13 @@ public:
         {dsp::Oversampling<float>(2)},
         {dsp::Oversampling<float>(2, 2, dsp::Oversampling<float>::FilterType::filterHalfBandPolyphaseIIR, false, true)},
         {dsp::Oversampling<float>(2, 2, dsp::Oversampling<float>::FilterType::filterHalfBandFIREquiripple, true, true)}
+    } };
+
+    std::array<dsp::Oversampling<float>, 3> oversampleMono
+    { {
+        {dsp::Oversampling<float>(1)},
+        {dsp::Oversampling<float>(1, 2, dsp::Oversampling<float>::FilterType::filterHalfBandPolyphaseIIR, false, true)},
+        {dsp::Oversampling<float>(1, 2, dsp::Oversampling<float>::FilterType::filterHalfBandFIREquiripple, true, true)}
     } };
 
     int osIndex = 0;
@@ -138,6 +144,8 @@ public:
 private:
 
     void checkActivation();
+
+    void processDelta(AudioBuffer<float>& buffer, float inGain, float outGain);
 
     AudioProcessorValueTreeState::ParameterLayout createParams();
 
@@ -171,49 +179,9 @@ private:
     bool lastBypass = false;
     bool bufferCopied = false;
     
+    std::atomic<bool> bbuf_resized = false;
+    
     dsp::DelayLine<float> bypassDelay {44100};
-
-#if USE_SIMD_SAT
-    using Vec2 = dsp::SIMDRegister<float>;
-
-    dsp::AudioBlock<Vec2> interleaved;
-    dsp::AudioBlock<float> zero;
-
-    HeapBlock<char> interleavedBlockData, zeroData;
-    HeapBlock<const float*> channelPointers{ Vec2::size() };
-
-    template <typename T>
-    static void interleaveSamples(const T** source, T* dest, int numSamples, int numChannels)
-    {
-        for (int chan = 0; chan < numChannels; ++chan)
-        {
-            auto i = chan;
-            auto src = source[chan];
-
-            for (int j = 0; j < numSamples; ++j)
-            {
-                dest[i] = src[j];
-                i += numChannels;
-            }
-        }
-    }
-
-    template <typename T>
-    static void deinterleaveSamples(const T* source, T** dest, int numSamples, int numChannels)
-    {
-        for (int chan = 0; chan < numChannels; ++chan)
-        {
-            auto i = chan;
-            auto dst = dest[chan];
-
-            for (int j = 0; j < numSamples; ++j)
-            {
-                dst[j] = source[i];
-                i += numChannels;
-            }
-        }
-    }
-#endif
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MaximizerAudioProcessor)

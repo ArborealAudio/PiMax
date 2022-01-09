@@ -30,7 +30,7 @@ ResponseCurveComponent::ResponseCurveComponent(MaximizerAudioProcessor& p) : aud
         sliders.emplace_back(std::make_unique<CrossoverSlider>());
         addChildComponent(*sliders[i]);
         sliders[i]->setMouseDragSensitivity(400);
-        sliders[i]->setTooltip("Adjusts crossover frequency of the adjacent bands.");
+        sliders[i]->setTooltip("Adjusts crossover frequency of the adjacent bands. Right/Ctrl-click to remove a crossover.");
         sliders[i]->onValueChange = [this] { sliderValueChanged = true; };
         lowPass.emplace_back();
         highPass.emplace_back();
@@ -1050,6 +1050,7 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(MaximizerAudioProce
         splash.setImage(createComponentSnapshot(getLocalBounds()));
     };
 
+    addChildComponent(activationComp);
     activationComp.onButtonClick = [this]
     {
         activationComp.setImage(createComponentSnapshot(getLocalBounds()));
@@ -1063,6 +1064,7 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(MaximizerAudioProce
     if (!p.checkUnlock()) {
         downloadManager.setVisible(false);
         activationComp.setImage(createComponentSnapshot(getLocalBounds()));
+        activationComp.setVisible(true);
     }
     else {
         splash.setOwner(activationComp.getOwner(true));
@@ -1113,7 +1115,6 @@ std::vector<Component*> MaximizerAudioProcessorEditor::getComps()
         &ui,
         &responseCurveComponent,
         &waveshaperComponent,
-        &splash,
-        &activationComp
+        &splash
     };
 }

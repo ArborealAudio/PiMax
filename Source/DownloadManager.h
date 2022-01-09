@@ -60,7 +60,7 @@ struct DownloadManager : Component
             DBG("Current: " << String(ProjectInfo::versionString).removeCharacters("."));
             DBG("Latest: " << latestVersion);
             
-            return String(ProjectInfo::versionString).removeCharacters(".") != latestVersion;
+            return String(ProjectInfo::versionString).removeCharacters(".") < latestVersion;
         }
         else
             return false;
