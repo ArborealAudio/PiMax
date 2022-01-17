@@ -12,6 +12,66 @@
 #include <JuceHeader.h>
 #include "UI/LookAndFeel.h"
 
+namespace strix
+{
+    const Identifier rootId = "root";
+    const Identifier propertyId = "property";
+
+    inline void setProperty(ValueTree& source, const Identifier& id, const var& v)
+    {
+        jassert(id.isValid() && !v.isVoid());
+        source.setProperty(id, v, nullptr);
+    }
+
+    inline void appendValueTree(ValueTree& parent, const Identifier& id, const var& v)
+    {
+        if (!parent.isValid() || id.isNull() || v.isVoid())
+            return;
+
+        if (auto* ar = v.getArray())
+        {
+            for (const auto& item : *ar)
+            {
+                ValueTree child(rootId);
+                parent.appendChild(child, nullptr);
+                appendValueTree(child, propertyId, item);
+            }
+
+            return;
+        }
+
+        if (auto* object = v.getDynamicObject())
+        {
+            ValueTree child(id);
+            parent.appendChild(child, nullptr);
+
+            for (const auto& prop : object->getProperties())
+                appendValueTree(parent, prop.name, prop.value);
+
+            return;
+        }
+
+        ValueTree child(id);
+        parent.appendChild(child, nullptr);
+        setProperty(child, Identifier(String("property") + String(parent.getNumProperties())), v);
+    }
+
+    inline ValueTree createValueTreeFromJSON(const var& json)
+    {
+        if (json.isVoid())
+            return {};
+
+        ValueTree root(rootId);
+        appendValueTree(root, rootId, json);
+        return root;
+    }
+
+    inline ValueTree createValueTreeFromJSON(const String& data)
+    {
+        return createValueTreeFromJSON(JSON::parse(data));
+    }
+}
+
 struct UnlockStatus
 {
     UnlockStatus() = default;
@@ -75,7 +135,7 @@ struct UnlockStatus
         auto keyResponse = readReplyForKey(key, false);
         DBG(keyResponse);
 
-        auto keyTree = createValueTreeFromJSON(keyResponse);
+        auto keyTree = strix::createValueTreeFromJSON(keyResponse);
 
         auto success = keyTree.getChildWithName("success").getProperty("property0");
         if (!success)
@@ -85,7 +145,7 @@ struct UnlockStatus
 
         auto orderResponse = readReplyForOrderNo(orderId);
 
-        auto orderTree = createValueTreeFromJSON(orderResponse);
+        auto orderTree = strix::createValueTreeFromJSON(orderResponse);
 
         auto orderEmail = orderTree.getChildWithName("email").getProperty("property0").toString();
         owner = orderTree.getChildWithName("first_name").getProperty("property0").toString();
@@ -94,7 +154,7 @@ struct UnlockStatus
         owner += orderTree.getChildWithName("last_name").getProperty("property0").toString();
         
         if (orderEmail == email) {
-            auto activationResponse = createValueTreeFromJSON(readReplyForKey(key, true));
+            auto activationResponse = strix::createValueTreeFromJSON(readReplyForKey(key, true));
             auto activationCount = activationResponse.getChildWithName("timesActivated").getProperty("property0");
             auto activationLim = activationResponse.getChildWithName("timesActivatedMax").getProperty("property0");
             if (activationCount >= activationLim)
@@ -102,6 +162,8 @@ struct UnlockStatus
         }
 
         state.setProperty("value", orderEmail == email, nullptr);
+
+        m_key = key;
 
         return 1 + (orderEmail == email);
     }
@@ -124,6 +186,8 @@ struct UnlockStatus
                 xml.setAttribute("uuid", String(ids[i].hashCode64()));
 
             xml.setAttribute("owner", owner);
+
+            xml.setAttribute("key", m_key);
 
             xml.writeTo(dir);
             dir.setReadOnly(true);
@@ -156,66 +220,9 @@ struct UnlockStatus
 
 private:
 
-    const Identifier rootId = "root";
-    const Identifier propertyId = "property";
-
-    inline void setProperty(ValueTree& source, const Identifier& id, const var& v)
-    {
-        jassert(id.isValid() && !v.isVoid());
-        source.setProperty(id, v, nullptr);
-    }
-
-    inline void appendValueTree(ValueTree& parent, const Identifier& id, const var& v)
-    {
-        if (!parent.isValid() || id.isNull() || v.isVoid())
-            return;
-
-        if (auto* ar = v.getArray())
-        {
-            for (const auto& item : *ar)
-            {
-                ValueTree child(rootId);
-                parent.appendChild(child, nullptr);
-                appendValueTree(child, propertyId, item);
-            }
-
-            return;
-        }
-
-        if (auto* object = v.getDynamicObject())
-        {
-            ValueTree child(id);
-            parent.appendChild(child, nullptr);
-
-            for (const auto& prop : object->getProperties())
-                appendValueTree(parent, prop.name, prop.value);
-
-            return;
-        }
-
-        ValueTree child(id);
-        parent.appendChild(child, nullptr);
-        setProperty(child, Identifier(String("property") + String(parent.getNumProperties())), v);
-    }
-
-    inline ValueTree createValueTreeFromJSON(const var& json)
-    {
-        if (json.isVoid())
-            return {};
-
-        ValueTree root(rootId);
-        appendValueTree(root, rootId, json);
-        return root;
-    }
-
-    inline ValueTree createValueTreeFromJSON(const String& data)
-    {
-        return createValueTreeFromJSON(JSON::parse(data));
-    }
-
     ValueTree state{ "UNLOCKED", {{"value", 0}} };
 
-    String owner;
+    String owner, m_key;
 };
 
 struct UnlockForm : Component
@@ -281,7 +288,7 @@ struct UnlockForm : Component
                 if (textBounds.contains(getMouseXYRelative())) {
                     setMouseCursor(MouseCursor::PointingHandCursor);
                     if (isMouseButtonDown()) {
-                        URL("https://arborealaudio.com").launchInDefaultBrowser();
+                        URL("https://arborealaudio.com/product/pimax").launchInDefaultBrowser();
                         return;
                     }
                 }
