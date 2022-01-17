@@ -42,7 +42,8 @@
 */
 class MaximizerAudioProcessor : public AudioProcessor,
                                 public AudioProcessorValueTreeState::Listener,
-                                public ValueTree::Listener
+                                public ValueTree::Listener,
+                                HighResolutionTimer
 {
 public:
     //==============================================================================
@@ -84,6 +85,7 @@ public:
     void setStateInformation(const void* data, int sizeInBytes) override;
 
     void parameterChanged(const String& parameterID, float newValue) override;
+    void hiResTimerCallback() override;
     void valueTreeRedirected(ValueTree& treeWhichHasBeenChanged) override;
     std::function<void()> onPresetChange;
 
@@ -179,7 +181,8 @@ private:
     bool lastBypass = false;
     bool bufferCopied = false;
     
-    std::atomic<bool> bbuf_resized = false;
+    std::atomic<bool> needs_resize = false, crossover_changed = false;
+    int crossover_changedID = 0;
     
     dsp::DelayLine<float> bypassDelay {44100};
 

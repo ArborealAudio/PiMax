@@ -95,25 +95,18 @@ struct MultibandProcessor
                 bands[i].updateFilter(lastSampleRate * 0.5 - 1.0);
             else
                 bands[i].updateFilter(*crossovers[i]);
-            bands[i].reset();
 
             if (*crossovers[i] > (lastSampleRate * 0.5))
                 linBand[i].initFilters(lastSampleRate * 0.5 - 1.0, lastSampleRate, 2);
             else
                 linBand[i].initFilters(*crossovers[i], lastSampleRate, 2);
-            //lastCrossover[i] = *crossovers[i];
-            linBand[i].reset();
         }
-        //lastNumBands = numBands;
     }
 
     inline void updateAllCrossovers(int newNumBands) noexcept
     {
         numBands = newNumBands;
 
-        //coeffsUpdated[0] = false;
-        //coeffsUpdated[1] = false;
-        //coeffsUpdated[2] = false;
         for (int i = 0; i < 3; ++i) {
             if (!*linearPhase) {
                 bands[i].updateFilter(*crossovers[i]);
@@ -122,10 +115,8 @@ struct MultibandProcessor
 
             else {
                 linBand[i].setParams(*crossovers[i], lastSampleRate, 2);
-                //linBand[i].reset();
             }
         }
-        //lastNumBands = numBands;
     }
 
     inline void updateCrossoverNonLin(int crossover) noexcept
@@ -199,7 +190,7 @@ struct MultibandProcessor
                             if (*autoGain)
                                 out[n] *= 1.0 / gain[n];
                         }
-                        out[n] /= halfPi;
+                        //out[n] /= halfPi;
                     }
                     if (*muteBand[n])
                         out[n] = 0.0;
@@ -361,7 +352,7 @@ struct MultibandProcessor
                             if (*autoGain)
                                 bandPtr[i] *= 1.0 / gain;
                         }
-                        bandPtr[i] /= halfPi - (1.f / (float)(numBands + 1));
+                        //bandPtr[i] /= halfPi - (1.f / (float)(numBands + 1));
                     }
                     if (*muteBand[n])
                         bandPtr[i] = 0.0;

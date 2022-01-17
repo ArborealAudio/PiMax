@@ -71,6 +71,8 @@ MaximizerAudioProcessor::~MaximizerAudioProcessor()
         apvts.removeParameterListener("crossover" + std::to_string(i), this);
 
     apvts.state.removeListener(this);
+
+    stopTimer();
 }
 
 //==============================================================================
@@ -138,6 +140,9 @@ void MaximizerAudioProcessor::changeProgramName (int index, const juce::String& 
 //==============================================================================
 void MaximizerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
+    if (isTimerRunning())
+        stopTimer();
+
     numSamples = samplesPerBlock;
     lastDownSampleRate = sampleRate;
     
@@ -168,13 +173,12 @@ void MaximizerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
     m_Proc.initCrossovers();
     m_Proc.setOversamplingFactor(oversample[osIndex].getOversamplingFactor());
 
-    bbuf_resized = false;
     for (auto& b : m_Proc.bandBuffer) {
-        //suspendProcessing(true);
-        b.setSize(getTotalNumOutputChannels(), samplesPerBlock * oversample[osIndex].getOversamplingFactor());
-        //suspendProcessing(false);
+        suspendProcessing(true);
+        b.setSize(getTotalNumOutputChannels(), samplesPerBlock * oversample[osIndex].getOversamplingFactor(), false,
+            true);
+        suspendProcessing(false);
     }
-    bbuf_resized = true;
     
     filterLength = m_Proc.linBand[0].size;
 
@@ -186,10 +190,12 @@ void MaximizerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
 
     widener.prepare(spec);
 
+    startTimer(7);
 }
 
 void MaximizerAudioProcessor::releaseResources()
 {
+    mPi.prepare();
 }
 
 //#ifndef JucePlugin_PreferredChannelConfigurations
@@ -262,35 +268,41 @@ void MaximizerAudioProcessor::parameterChanged(const String& parameterID, float 
             lastSampleRate = lastDownSampleRate;
         }
 
-        bbuf_resized = false;
-        suspendProcessing(true);
-        for (auto& b : m_Proc.bandBuffer)
-            b.setSize(getTotalNumOutputChannels(), numSamples * oversample[osIndex].getOversamplingFactor(),
-                false, false, false);
-        //suspendProcessing(false);
+        //suspendProcessing(true);
+        needs_resize = true;
 
-        dsp::ProcessSpec newSpec{ lastSampleRate, uint32(numSamples * oversample[osIndex].getOversamplingFactor()),
-            (uint32)getTotalNumOutputChannels() };
-        m_Proc.setOversamplingFactor(oversample[osIndex].getOversamplingFactor());
-//        if (*bandSplit)
-//            suspendProcessing(true);
-        m_Proc.updateSpecs(newSpec);
-        bbuf_resized = true;
-        suspendProcessing(false);
         mPi.prepare();
     }
 
-    else if (*bandSplit) {
-        if (parameterID.contains("crossover")) {
-            if (!*linearPhase) {
-                m_Proc.updateCrossoverNonLin(parameterID.getTrailingIntValue());
-                m_Proc.updateCrossoverLin(parameterID.getTrailingIntValue());
-            }
-            else {
-                m_Proc.updateCrossoverLin(parameterID.getTrailingIntValue());
-                m_Proc.updateCrossoverNonLin(parameterID.getTrailingIntValue());
-            }
+    if (parameterID.contains("crossover")) {
+        //crossover_changed = true;
+        crossover_changedID = parameterID.getTrailingIntValue();
+        if (!*linearPhase) {
+            m_Proc.updateCrossoverNonLin(crossover_changedID);
+            m_Proc.updateCrossoverLin(crossover_changedID);
         }
+        else {
+            m_Proc.updateCrossoverLin(crossover_changedID);
+            m_Proc.updateCrossoverNonLin(crossover_changedID);
+        }
+    }
+}
+
+void MaximizerAudioProcessor::hiResTimerCallback()
+{
+
+    if (crossover_changed)
+    {
+        if (!*linearPhase) {
+            m_Proc.updateCrossoverNonLin(crossover_changedID);
+            m_Proc.updateCrossoverLin(crossover_changedID);
+        }
+        else {
+            m_Proc.updateCrossoverLin(crossover_changedID);
+            m_Proc.updateCrossoverNonLin(crossover_changedID);
+        }
+
+        crossover_changed = false;
     }
 }
 
@@ -368,15 +380,22 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
         osBlock = oversample[osIndex].processSamplesUp(dsp::AudioBlock<float>(buffer));
     else
         osBlock = oversampleMono[osIndex].processSamplesUp(dsp::AudioBlock<float>(buffer));
-    
-//    mbStereo.copyFrom(osBlock);
-//    if (totalNumInputChannels < 2) {
-//        auto left = mbStereo.getSingleChannelBlock(0);
-//        auto right = mbStereo.getSingleChannelBlock(1);
-//        right = left;
-//    }
 
-    if (*bandSplit && bbuf_resized) {
+    if (needs_resize)
+    {
+        for (auto& b : m_Proc.bandBuffer)
+            b.setSize(getTotalNumOutputChannels(), numSamples * oversample[osIndex].getOversamplingFactor(),
+                false, false, true);
+
+        dsp::ProcessSpec newSpec{ lastSampleRate, uint32(numSamples * oversample[osIndex].getOversamplingFactor()),
+            (uint32)getTotalNumOutputChannels() };
+        m_Proc.setOversamplingFactor(oversample[osIndex].getOversamplingFactor());
+        m_Proc.updateSpecs(newSpec);
+
+        needs_resize = false;
+    }
+
+    if (*bandSplit && !needs_resize) {
         for (auto& b : m_Proc.bandBuffer) {
             b.copyFrom(0, 0, const_cast<float*>(osBlock.getChannelPointer(0)), osBlock.getNumSamples());
             if (totalNumOutputChannels > 1)
@@ -410,7 +429,7 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
             }
         }
     }
-    else if (*bandSplit && bbuf_resized) {
+    else if (*bandSplit && !needs_resize) {
         if (*linearPhase)
             m_Proc.addBandsConvolution(osContext);
         else
@@ -746,7 +765,9 @@ void MaximizerAudioProcessor::checkActivation()
     if (!host.isGarageBand()) {
         if (dir.exists() && !checkUnlock()) {
             auto xml = parseXML(dir);
-            isUnlocked = uuid == xml->getStringAttribute("uuid");
+            isUnlocked = (uuid == xml->getStringAttribute("uuid") && xml->getStringAttribute("owner") != " ");
+            if (xml->hasAttribute("key"))
+                isUnlocked = xml->getStringAttribute("key") != " ";
         }
     }
     else {
