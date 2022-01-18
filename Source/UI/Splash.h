@@ -89,9 +89,10 @@ struct Splash : Component
             logo->drawWithin(g, clipArea.reduced(50.f), RectanglePlacement::yTop, 1.f);
 
             g.setFont(getCustomFont(FontStyle::Regular).withHeight(16.f));
+            Time time(Time::getCurrentTime());
             g.drawFittedText("Licensed to: " + name +
                 "\nv" + String(ProjectInfo::versionString) + 
-                "\n(c) Arboreal Audio 2021",
+                "\n(c) Arboreal Audio " + String(time.getYear()),
                 clipArea.withTrimmedTop(150.f).toNearestInt(),
                 Justification::centred, 3, 1.f);
 
