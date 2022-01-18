@@ -65,6 +65,14 @@ struct MultibandProcessor
             m.prepare();
     }
 
+    void reset()
+    {
+        for (auto& band : bands)
+            band.reset();
+        for (auto& lb : linBand)
+            lb.reset();
+    }
+
     void updateSpecs(const dsp::ProcessSpec& newSpec)
     {
         lastSampleRate = newSpec.sampleRate;
