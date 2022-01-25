@@ -57,28 +57,7 @@ struct DownloadManager : Component
         {
             auto json = strix::createValueTreeFromJSON(stream->readEntireStreamAsString());
             
-            for (int i = 0; i < json.getNumChildren(); ++i) {
-                auto child = json.getChild(i);
-                if (child.getNumChildren() > 0) {
-                    DBG(child.getType());
-                    for (int j = 0; j < child.getNumChildren(); ++j) {
-                        DBG(child.getChild(j).getType());
-                        DBG(child.getChild(j).getProperty("property0").toString());
-                    }
-                }
-                else
-                    DBG(child.getProperty("property0").toString());
-            }
-
-            auto changesArray = json.getChildWithName("changes");
-
-            if (changesArray.isValid()) {
-                for (int i = 0; i < changesArray.getNumChildren(); ++i)
-                {
-                    changes.add(changesArray.getChild(i).getProperty("property0").toString());
-                    DBG(changes[i]);
-                }
-            }
+            changes = json.getChildWithName("changes").getProperty("property0");
 
             auto latestVersion = json.getChildWithName("version").getProperty("property0");
             
@@ -112,16 +91,14 @@ struct DownloadManager : Component
             g.setColour(Colours::darkslategrey);
             g.fillRoundedRectangle(getLocalBounds().toFloat(), 15.f);
             
-            g.setFont(getCustomFont(FontStyle::Regular).withHeight(17.f));
+            g.setFont(getCustomFont(FontStyle::Regular).withHeight(14.f));
             g.setColour(Colour(0xa7a7a7a7));
 
-            auto textbounds = Rectangle<int>{ getLocalBounds().withTrimmedBottom(getHeight() / 2).reduced(10) };
+            auto textbounds = Rectangle<int>{ getLocalBounds().withTrimmedBottom(70) };
 
             if (!downloadFinished.load()) {
                 if (!isDownloading.load())
-                    g.drawFittedText("A new update is available! Would you like to download?",
-                        textbounds, Justification::centred,
-                        7, 1.f);
+                    g.drawFittedText("A new update is available! Would you like to download?\n\nChanges:\n" + changes, textbounds, Justification::centredTop, 10, 0.f);
                 else
                     g.drawFittedText("Downloading... " + String(downloadProgress.load(), 2) + "%",
                         textbounds, Justification::centred,
@@ -181,7 +158,7 @@ private:
     std::atomic<float> downloadProgress;
     std::atomic<bool> downloadFinished = false;
 
-    StringArray changes;
+    String changes;
 
     std::function<void(gin::DownloadManager::DownloadResult)> result =
         [this](gin::DownloadManager::DownloadResult download)
