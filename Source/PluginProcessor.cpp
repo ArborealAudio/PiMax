@@ -45,6 +45,7 @@ MaximizerAudioProcessor::MaximizerAudioProcessor()
     autoGain = apvts.getRawParameterValue("autoGain");
     bypass = apvts.getRawParameterValue("bypass");
     delta = apvts.getRawParameterValue("delta");
+    boost = apvts.getRawParameterValue("boost");
 
     for (int i = 0; i < 3; ++i) {
         crossovers[i] = apvts.getRawParameterValue("crossover" + std::to_string(i));
@@ -378,6 +379,9 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     else
         buffer.applyGain(gain_raw);
 
+    if (*boost)
+        buffer.applyGain(3.f);
+
     inputMeter.measureBlock(buffer);
 
     dsp::AudioBlock<float> osBlock;
@@ -476,6 +480,9 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
             buffer.applyGainRamp(0, buffer.getNumSamples(), 1.0 / (m_lastGain * halfPi), 1.0 / (gain_raw * halfPi));
         else
             buffer.applyGain(1.0 / (gain_raw * halfPi));
+
+        if (*boost)
+            buffer.applyGain(1.f / 3.f);
     }
 
     if (output_raw != lastOutGain) {
@@ -744,6 +751,7 @@ AudioProcessorValueTreeState::ParameterLayout MaximizerAudioProcessor::createPar
             }, [widthRange](const String& text) { return text.getFloatValue() / 100.f; }));
     params.emplace_back(std::make_unique<AudioParameterBool>
         ("autoGain", "Auto Gain", false));
+    params.emplace_back(std::make_unique<AudioParameterBool>("boost", "Input Boost", false));
     params.emplace_back(std::make_unique<AudioParameterBool>
         ("bypass", "Bypass", false));
     params.emplace_back(std::make_unique<AudioParameterBool>

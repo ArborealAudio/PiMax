@@ -171,7 +171,7 @@ private:
 
     float m_lastGain = 0.0;
 
-    std::atomic<float>* hq, *renderHQ, *width, *mix, *bypass;
+    std::atomic<float>* hq, *renderHQ, *width, *mix, *bypass, *boost;
     
     float lastInputGain = 0.0, lastOutGain = 0.0;
 
