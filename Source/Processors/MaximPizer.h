@@ -6,7 +6,7 @@ class MaximPizer
 
 	AudioProcessorValueTreeState& apvts;
 
-	std::atomic<float>* curve, *clip, *type;
+	std::atomic<float>* curve, *clip, *type, *boost;
 
 #if USE_SIMD_SAT
 	using Vec2 = dsp::SIMDRegister<float>;
@@ -22,6 +22,7 @@ public:
 		curve = apvts.getRawParameterValue("curve");
 		clip = apvts.getRawParameterValue("clipType");
 		type = apvts.getRawParameterValue("distType");
+		boost = apvts.getRawParameterValue("boost");
 	}
 
 	void prepare()
@@ -125,6 +126,8 @@ public:
 	{
 		T yn, x1, x2;
 		double k = *curve;
+		if (*boost)
+			k *= k;
 
 		/*DC offset for asym (need to ramp offset incase of switch)*/
 		xn += *type == 1 ? 0.1 : 0.0;
