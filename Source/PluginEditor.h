@@ -231,7 +231,7 @@ private:
     DownloadManager downloadManager;
 
     std::unique_ptr<AudioProcessorValueTreeState::ButtonAttachment> renderButtonAttach, hqAttachment,
-        bandSplitAttachment, linearPhaseAttachment, distAttachment, autoGainAttach, bypassAttach;
+        bandSplitAttachment, linearPhaseAttachment, distAttachment, autoGainAttach, bypassAttach, boostAttach;
     std::vector<std::unique_ptr<AudioProcessorValueTreeState::ButtonAttachment>> muteBandAttach, soloBandAttach, bypassBandAttach;
     std::unique_ptr<AudioProcessorValueTreeState::SliderAttachment> gainAttachment, outVolAttachment, curveAttachment,
         widthAttachment, mixAttachment;

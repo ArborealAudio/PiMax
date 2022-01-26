@@ -91,6 +91,13 @@ UI::UI (MaximizerAudioProcessor& p) : audioProcessor(p), gain__slider(false), ou
     autoGain.setTooltip("Toggles automatic gain compensation for both the full signal and any multiband gain.");
     autoGain.setBounds(538, 50, 40, 25);
 
+    addAndMakeVisible(boost);
+    boost.setClickingTogglesState(true);
+    boost.setLookAndFeel(&bypassLNF);
+    boost.setButtonText("Input Boost");
+    boost.setTooltip("12dB input boost, and increases Curve value exponentially.");
+    boost.setBounds(278, 68, 55, 23);
+
     addAndMakeVisible(bypass);
     bypass.setClickingTogglesState(true);
     bypass.setLookAndFeel(&bypassLNF);
@@ -256,6 +263,7 @@ UI::~UI()
     bandSplit__textButton.setLookAndFeel(nullptr);
     autoGain.setLookAndFeel(nullptr);
     bypass.setLookAndFeel(nullptr);
+    boost.setLookAndFeel(nullptr);
     linearPhaseButton.setLookAndFeel(nullptr);
     widthSlider.setLookAndFeel(nullptr);
     mixSlider.setLookAndFeel(nullptr);
