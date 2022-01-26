@@ -105,7 +105,7 @@ public:
     GainSlider gain__slider, outVol__slider;
     Slider curve__slider;
     WidthSlider widthSlider, mixSlider;
-    TextButton distButton, bandSplit__textButton, linearPhaseButton, hq, renderHQ, autoGain, bypass, boost;
+    TextButton distButton, bandSplit__textButton, linearPhaseButton, hq, renderHQ, autoGain, bypass;
     ComboBox clipBox;
     PresetComp presetComp;
 

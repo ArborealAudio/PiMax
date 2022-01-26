@@ -91,14 +91,6 @@ UI::UI (MaximizerAudioProcessor& p) : audioProcessor(p), gain__slider(false), ou
     autoGain.setTooltip("Toggles automatic gain compensation for both the full signal and any multiband gain.");
     autoGain.setBounds(538, 50, 40, 25);
 
-    addAndMakeVisible(boost);
-    boost.setClickingTogglesState(true);
-    boost.setLookAndFeel(&bypassLNF);
-    boost.setButtonText("Input Boost");
-    boost.setTooltip("12dB input boost, and increases Curve value exponentially.");
-    //boost.setBounds(278, 68, 55, 23);
-    boost.setSize(55, 23);
-
     addAndMakeVisible(bypass);
     bypass.setClickingTogglesState(true);
     bypass.setLookAndFeel(&bypassLNF);
@@ -118,6 +110,8 @@ UI::UI (MaximizerAudioProcessor& p) : audioProcessor(p), gain__slider(false), ou
         " pushed further. In Symmetric mode, this can generate dropout-like artifacts.\n\n"
         "Positive values: a more compressed and warmer saturation.");
     curve__slider.setSize(248, 25);
+
+    //curve__slider.setBounds(getLocalBounds().getCentreX(), 275, 248, 40);
 
     addAndMakeVisible(distButton);
     distButton.setClickingTogglesState(true);
@@ -162,6 +156,7 @@ UI::UI (MaximizerAudioProcessor& p) : audioProcessor(p), gain__slider(false), ou
         "Useful for when intermodulation distortion is an issue, such as processing a full mix with heavy"
         " low-end content.");
     bandSplit__textButton.setSize(88, 32);
+    //bandSplit__textButton.setBounds(244, 328, 88, 32);
 
     addAndMakeVisible(hq);
     hq.setClickingTogglesState(true);
@@ -244,7 +239,6 @@ UI::UI (MaximizerAudioProcessor& p) : audioProcessor(p), gain__slider(false), ou
     //[Constructor] You can add your own custom stuff here..
     curve__slider.setCentrePosition(getLocalBounds().getCentreX(), 1.2 * 295.f);
     bandSplit__textButton.setCentrePosition(getLocalBounds().getCentreX(), 1.2 * 344.f);
-    boost.setCentrePosition(getLocalBounds().getCentreX(), 1.2 * 80.f);
     //[/Constructor]
 }
 
@@ -262,7 +256,6 @@ UI::~UI()
     bandSplit__textButton.setLookAndFeel(nullptr);
     autoGain.setLookAndFeel(nullptr);
     bypass.setLookAndFeel(nullptr);
-    boost.setLookAndFeel(nullptr);
     linearPhaseButton.setLookAndFeel(nullptr);
     widthSlider.setLookAndFeel(nullptr);
     mixSlider.setLookAndFeel(nullptr);
