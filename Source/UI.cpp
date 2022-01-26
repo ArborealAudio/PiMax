@@ -96,7 +96,7 @@ UI::UI (MaximizerAudioProcessor& p) : audioProcessor(p), gain__slider(false), ou
     boost.setLookAndFeel(&bypassLNF);
     boost.setButtonText("Input Boost");
     boost.setTooltip("12dB input boost, and increases Curve value exponentially.");
-    boost.setBounds(278, 68, 55, 23);
+    boost.setSize(55, 23);
 
     addAndMakeVisible(bypass);
     bypass.setClickingTogglesState(true);
@@ -246,6 +246,7 @@ UI::UI (MaximizerAudioProcessor& p) : audioProcessor(p), gain__slider(false), ou
     //[Constructor] You can add your own custom stuff here..
     curve__slider.setCentrePosition(getLocalBounds().getCentreX(), 1.2 * 295.f);
     bandSplit__textButton.setCentrePosition(getLocalBounds().getCentreX(), 1.2 * 344.f);
+    boost.setCentrePosition(getLocalBounds().getCentreX(), 1.2 * 80.f);
     //[/Constructor]
 }
 
