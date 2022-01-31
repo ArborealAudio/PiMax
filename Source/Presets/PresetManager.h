@@ -47,7 +47,7 @@ struct PresetManager
 
     bool savePreset(const String& filename, const File& parentDir)
     {
-        auto file = parentDir.getChildFile(filename).withFileExtension("aap");
+        auto file = parentDir.getChildFile(File::createLegalFileName(filename)).withFileExtension("aap");
         if (!file.existsAsFile())
             file.create();
         
