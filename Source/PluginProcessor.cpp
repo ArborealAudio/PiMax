@@ -623,7 +623,7 @@ void MaximizerAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     auto xml = state.createXml();
     xml->setAttribute("uiWidth", lastUIWidth);
     xml->setAttribute("uiHeight", lastUIHeight);
-    //xml->setAttribute("numBands", numBands);
+    xml->setAttribute("numBands", numBands);
     xml->setAttribute("preset", currentPreset);
     //presetModified = manager->compareStates(currentPreset);
     //xml->setAttribute("presetModified", presetModified);
@@ -639,12 +639,16 @@ void MaximizerAudioProcessor::setStateInformation (const void* data, int sizeInB
     if (xmlState.get() != nullptr) {
         lastUIWidth = xmlState->getIntAttribute("uiWidth", lastUIWidth);
         lastUIHeight = xmlState->getIntAttribute("uiHeight", lastUIHeight);
-        //numBands = xmlState->getIntAttribute("numBands", numBands);
+        numBands = xmlState->getIntAttribute("numBands", numBands);
+        if (numBands < 1)
+            numBands == 1;
         currentPreset = xmlState->getStringAttribute("preset");
         //presetModified = xmlState->getBoolAttribute("presetModified");
         //if (xmlState->hasTagName(apvts.state.getType()))
         apvts.replaceState(ValueTree::fromXml(*xmlState));
-        updateNumBands(apvts.state.getChildWithProperty("id", "numBands").getProperty("value"));
+        auto numBandsTree = apvts.state.getChildWithProperty("id", "numBands");
+        if (numBandsTree.isValid())
+            updateNumBands(numBandsTree.getProperty("value"));
     }
 }
 
