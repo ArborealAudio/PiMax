@@ -222,19 +222,38 @@ bool MaximizerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts
     // This checks if the input layout matches the output layout
    #if ! JucePlugin_IsSynth
 //    if (layouts.getMainOutputChannelSet() != layouts.getMainInputChannelSet())
-//        return false;
-    if (layouts.getMainOutputChannelSet() == AudioChannelSet::mono()) {
-        // Mono
-        if (layouts.getMainInputChannelSet() == AudioChannelSet::mono())
-            return true;
+//      return false;
+    PluginHostType host;
+    
+    if (host.isBitwigStudio())
+    {
+        if (layouts.getMainOutputChannelSet() == AudioChannelSet::stereo()) {
+            if (layouts.getMainInputChannelSet() == AudioChannelSet::stereo())
+                return true;
+        }
+        else {
+            if (layouts.getMainOutputChannelSet() == AudioChannelSet::mono())
+                if (layouts.getMainInputChannelSet() == AudioChannelSet::mono())
+                    return true;
+        }
     }
-    else if (layouts.getMainOutputChannelSet() == AudioChannelSet::stereo()) {
-        // Mono-to-stereo OR stereo-to-stereo
-        if ((layouts.getMainInputChannelSet() == AudioChannelSet::mono()) ||
-                (layouts.getMainInputChannelSet() == AudioChannelSet::stereo()))
-            return true;
+    else
+    {
+        if (layouts.getMainOutputChannelSet() == AudioChannelSet::stereo()) {
+            // Mono-to-stereo OR stereo-to-stereo
+            if ((layouts.getMainInputChannelSet() == AudioChannelSet::stereo()) ||
+                    (layouts.getMainInputChannelSet() == AudioChannelSet::mono()))
+                return true;
+        }
+        else if (layouts.getMainOutputChannelSet() == AudioChannelSet::mono()) {
+            // Mono
+            if (layouts.getMainInputChannelSet() == AudioChannelSet::mono())
+                return true;
+        }
     }
+    
     return false;
+
    #endif
 
 //    return true;
@@ -407,9 +426,11 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
 
         if (!needs_resize) {
             for (auto& b : m_Proc.bandBuffer) {
-                b.copyFrom(0, 0, const_cast<float*>(osBlock.getChannelPointer(0)), osBlock.getNumSamples());
-                if (totalNumOutputChannels > 1)
-                    b.copyFrom(1, 0, const_cast<float*>(osBlock.getChannelPointer(1)), osBlock.getNumSamples());
+                if (b.getNumSamples() == osBlock.getNumSamples()) {
+                    b.copyFrom(0, 0, const_cast<float*>(osBlock.getChannelPointer(0)), osBlock.getNumSamples());
+                    if (totalNumOutputChannels > 1)
+                        b.copyFrom(1, 0, const_cast<float*>(osBlock.getChannelPointer(1)), osBlock.getNumSamples());
+                }
             }
         }
     }
