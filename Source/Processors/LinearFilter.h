@@ -337,12 +337,6 @@ namespace strix
             changeIIRCoeffs(freq, sampleRate);
 
             recordImpulseResponse();
-
-        #if! USE_CONVOLUTION
-            setFIRCoeffs();
-        /*#else
-            loadBuffers();*/
-        #endif
         }
 
         template <typename T>
