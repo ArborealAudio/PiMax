@@ -483,10 +483,8 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
             widener.widenBuffer(buffer, *width, *monoWidth);
     }
 
-    int hqLinBandLatency = buffer.getNumSamples() > 256 ? 1090 - (buffer.getNumSamples() - 256) : 1090;
-
     (*linearPhase && *bandSplit) ?
-        setLatencySamples(1535 + (osIndex > 1 ? - hqLinBandLatency : 0)) :
+        setLatencySamples(osIndex > 1 ? 1596 : 6143) :
         setLatencySamples(oversample[osIndex].getLatencyInSamples());
     
     bypassDelay.setDelay(getLatencySamples());

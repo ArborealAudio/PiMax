@@ -463,9 +463,9 @@ struct MultibandProcessor
 
     std::array<strix::FIRThread, 3> linBand
     { {
-        {strix::FIRThread(true, 512, q)},
-        {strix::FIRThread(false, 512, q)},
-        {strix::FIRThread(false, 512, q)}
+        {strix::FIRThread(true,  2048, q)},
+        {strix::FIRThread(false, 2048, q)},
+        {strix::FIRThread(false, 2048, q)}
     } };
 
     std::array<StereoWidener, 4> bandWidener;
