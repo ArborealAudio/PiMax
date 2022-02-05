@@ -390,7 +390,6 @@ namespace strix
         std::vector<double> lastCoeffHigh;
 
     private:
-        using vec = dsp::SIMDRegister<float>;
 
         int oversampleFactor = 0;
         int set = 0;
@@ -400,17 +399,10 @@ namespace strix
         std::vector<float> lowinc;
         std::vector<float> highinc;
 
-#if USE_SIMD_SAT
-        OwnedArray<dsp::IIR::Filter<vec>> iirLow[2];
-        OwnedArray<dsp::IIR::Filter<float>> iirLowPulse;
-        OwnedArray<dsp::IIR::Filter<vec>> iirHigh[2];
-        OwnedArray<dsp::IIR::Filter<float>> iirHighPulse;
-#else
         OwnedArray<dsp::IIR::Filter<float>> iirLow[2];
         OwnedArray<dsp::IIR::Filter<float>> iirHigh[2];
         OwnedArray<dsp::IIR::Filter<float>> iirLowPulse;
         OwnedArray<dsp::IIR::Filter<float>> iirHighPulse;
-#endif
         
         ReferenceCountedArray<dsp::IIR::Coefficients<float>> iirLowCoeffs;
         ReferenceCountedArray<dsp::IIR::Coefficients<float>> iirHighCoeffs;

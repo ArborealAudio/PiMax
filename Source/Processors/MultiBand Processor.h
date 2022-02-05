@@ -34,10 +34,6 @@ struct MultibandProcessor
         autoGain = apvts.getRawParameterValue("autoGain");
     }
 
-    ~MultibandProcessor()
-    {
-    }
-
     void prepare(const dsp::ProcessSpec& spec)
     {
         lastSampleRate = spec.sampleRate;
@@ -45,12 +41,8 @@ struct MultibandProcessor
         for (auto& band : bands)
             band.prepare(spec);
 
-        auto linSpec = spec;
-#if! USE_CONVOLUTION
-        linSpec.numChannels = 1;
-#endif
         for (int i = 0; i < 3; ++i)
-            linBand[i].prepare(linSpec);
+            linBand[i].prepare(spec);
 
         for (auto& w : bandWidener)
             w.prepare(spec);
@@ -71,6 +63,8 @@ struct MultibandProcessor
             band.reset();
         for (auto& lb : linBand)
             lb.reset();
+
+        xm1[0] = 0.0, xm1[1] = 0.0, ym1[0] = 0.0, ym1[1] = 0.0;
     }
 
     void updateSpecs(const dsp::ProcessSpec& newSpec)
@@ -80,9 +74,6 @@ struct MultibandProcessor
         for (auto& band : bands)
             band.prepare(newSpec);
 
-        coeffsUpdated[0] = false;
-        coeffsUpdated[1] = false;
-        coeffsUpdated[2] = false;
         for (auto& band : linBand)
             band.prepare(newSpec);
 
@@ -134,7 +125,6 @@ struct MultibandProcessor
 
     inline void updateCrossoverLin(int crossover) noexcept
     {
-        coeffsUpdated[crossover] = false;
         linBand[crossover].setParams(*crossovers[crossover], lastSampleRate, 2);
     }
 
@@ -379,17 +369,14 @@ struct MultibandProcessor
         /*widen bands*/
         for (int i = 0; i <= numBands; ++i)
         {
-            //float inc = 0;
             if (*bandWidth[i] != 1.0 && inputBlock.getNumChannels() > 1) {
-                //if (lastBandWidth[i] != *bandWidth[i]) {
-                //    auto inc = (*bandWidth[i] - lastBandWidth[i]) / (float)(lastSampleRate / numSamples);
-                //    bandWidener[i].widenBlock(band[i], lastBandWidth[i], *monoWidth);
-                //    lastBandWidth[i] += inc;
-                //}
-                //else
-                bandWidener[i].widenBlock(band[i], *bandWidth[i], *monoWidth);
+                if (lastBandWidth[i] != *bandWidth[i]) {
+                    bandWidener[i].widenBufferWithRamp(bandBuffer[i], lastBandWidth[i], *bandWidth[i], *monoWidth);
+                    lastBandWidth[i] = *bandWidth[i];
+                }
+                else
+                    bandWidener[i].widenBlock(band[i], *bandWidth[i], *monoWidth);
             }
-            //band[i] = bandWidener[i].widenBlock(band[i], *bandWidth[i], *monoWidth);
         }
 
         const double r = 1.0 - (1.0 / (float)(oversampleFactor * 1000.0));
@@ -452,7 +439,6 @@ struct MultibandProcessor
         }
     }
 
-
     std::array<std::atomic<float>*, 4> muteBand, soloBand, bypassBand, bandInGain, bandOutGain, bandWidth;
     std::array<float, 4> lastInGain, lastOutGain, lastBandWidth;
     std::array<std::atomic<float>*, 3> crossovers;
@@ -470,23 +456,18 @@ struct MultibandProcessor
 
     std::array<StereoWidener, 4> bandWidener;
 
-#if USE_SIMD_SAT
-    std::array<AudioBuffer<vec>, 4> bandBuffer;
-#else
     std::array<AudioBuffer<float>, 4> bandBuffer;
-#endif
+
 private:
 
     int numBands = 2;
     int oversampleFactor = 0;
 
     double lastSampleRate = 0.0;
-#if USE_SIMD_SAT
-    vec xm1[2], ym1[2];
-#else
+
     double xm1[2]{ 0.0, 0.0 };
     double ym1[2]{ 0.0, 0.0 };
-#endif
+
     bool coeffsUpdated[3];
 
     std::atomic<float>* linearPhase, *curve, *clip, *distIndex, *monoWidth, *autoGain;
