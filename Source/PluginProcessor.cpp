@@ -52,6 +52,9 @@ MaximizerAudioProcessor::MaximizerAudioProcessor()
         apvts.addParameterListener("crossover" + std::to_string(i), this);
     }
 
+    for (auto& b : m_Proc.bandBuffer)
+        b.setSize(getTotalNumOutputChannels(), 16384);
+
     apvts.state.appendChild(numBandsTree, nullptr);
 
     apvts.state.addListener(this);
@@ -156,10 +159,7 @@ void MaximizerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
 
     dsp::ProcessSpec spec{lastSampleRate, uint32(oversample[osIndex].getOversamplingFactor() * samplesPerBlock),
         (uint32)getTotalNumOutputChannels()};
-        
-    auto mixerSpec = spec;
-    mixerSpec.numChannels = (uint32)getTotalNumOutputChannels();
-        
+                
     bypassBuffer.setSize(getTotalNumOutputChannels(), samplesPerBlock);
     bypassDelay.prepare(spec);
 
@@ -175,15 +175,15 @@ void MaximizerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
     m_Proc.setOversamplingFactor(oversample[osIndex].getOversamplingFactor());
 
     for (auto& b : m_Proc.bandBuffer) {
-        suspendProcessing(true);
+        //suspendProcessing(true);
         b.setSize(getTotalNumOutputChannels(), samplesPerBlock * oversample[osIndex].getOversamplingFactor(), false,
-            true);
-        suspendProcessing(false);
+            false, true);
+        //suspendProcessing(false);
     }
     
     filterLength = m_Proc.linBand[0].size;
 
-    mixer.prepare(mixerSpec);
+    mixer.prepare(spec);
     mixer.setMixingRule(dsp::DryWetMixingRule::linear);
 
     inputMeter.resize(2, sampleRate * 0.1 / samplesPerBlock);
@@ -202,6 +202,7 @@ void MaximizerAudioProcessor::releaseResources()
     lastInputGain = 1.f;
     lastOutGain = 1.f;
     m_lastGain = 1.f;
+    xm1[0] = 0.0, xm1[1] = 0.0, ym1[0] = 0.0, ym1[1] = 0.0;
 }
 
 //#ifndef JucePlugin_PreferredChannelConfigurations
@@ -293,7 +294,6 @@ void MaximizerAudioProcessor::parameterChanged(const String& parameterID, float 
             lastSampleRate = lastDownSampleRate;
         }
 
-        //suspendProcessing(true);
         needs_resize = true;
 
         mPi.prepare();
@@ -315,7 +315,6 @@ void MaximizerAudioProcessor::parameterChanged(const String& parameterID, float 
 
 void MaximizerAudioProcessor::hiResTimerCallback()
 {
-
     if (crossover_changed)
     {
         if (!*linearPhase) {
@@ -399,7 +398,7 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
         buffer.applyGain(gain_raw);
 
     if (*boost)
-        buffer.applyGain(3.f);
+        buffer.applyGain(3.98f);
 
     inputMeter.measureBlock(buffer);
 
@@ -413,8 +412,7 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     {
         if (needs_resize) {
             for (auto& b : m_Proc.bandBuffer)
-                b.setSize(getTotalNumOutputChannels(), numSamples * oversample[osIndex].getOversamplingFactor(),
-                    false, false, true);
+                b.setSize(getTotalNumOutputChannels(), numSamples * oversample[osIndex].getOversamplingFactor(), false, false, true);
 
             dsp::ProcessSpec newSpec{ lastSampleRate, uint32(numSamples * oversample[osIndex].getOversamplingFactor()),
                 (uint32)getTotalNumOutputChannels() };
@@ -424,13 +422,11 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
             needs_resize = false;
         }
 
-        if (!needs_resize) {
-            for (auto& b : m_Proc.bandBuffer) {
-                if (b.getNumSamples() == osBlock.getNumSamples()) {
-                    b.copyFrom(0, 0, const_cast<float*>(osBlock.getChannelPointer(0)), osBlock.getNumSamples());
-                    if (totalNumOutputChannels > 1)
-                        b.copyFrom(1, 0, const_cast<float*>(osBlock.getChannelPointer(1)), osBlock.getNumSamples());
-                }
+        for (auto& b : m_Proc.bandBuffer) {
+            if (b.getNumSamples() == osBlock.getNumSamples()) {
+                b.copyFrom(0, 0, const_cast<float*>(osBlock.getChannelPointer(0)), osBlock.getNumSamples());
+                if (totalNumOutputChannels > 1)
+                    b.copyFrom(1, 0, const_cast<float*>(osBlock.getChannelPointer(1)), osBlock.getNumSamples());
             }
         }
     }
@@ -501,7 +497,7 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
             buffer.applyGain(1.0 / (gain_raw * halfPi));
 
         if (*boost)
-            buffer.applyGain(1.f / 3.f);
+            buffer.applyGain(1.f / 3.98f);
     }
 
     if (output_raw != lastOutGain) {
