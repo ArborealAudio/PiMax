@@ -91,7 +91,11 @@ struct DownloadManager : Component
             g.setColour(Colours::darkslategrey);
             g.fillRoundedRectangle(getLocalBounds().toFloat(), 15.f);
             
+#if !JUCE_MAC
             g.setFont(getCustomFont(FontStyle::Regular).withHeight(14.f));
+#else
+            g.setFont(getCustomFont(FontStyle::Regular).withHeight(13.f));
+#endif
             g.setColour(Colour(0xa7a7a7a7));
 
             auto textbounds = Rectangle<int>{ getLocalBounds().withTrimmedBottom(70) };
