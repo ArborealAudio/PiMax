@@ -169,11 +169,11 @@ private:
 
     double lastSampleRate = 0.0, lastK = 0.0;
 
-    float m_lastGain = 0.0;
+    float m_lastGain = 1.0;
 
     std::atomic<float>* hq, *renderHQ, *width, *mix, *bypass, *boost;
     
-    float lastInputGain = 0.0, lastOutGain = 0.0;
+    float lastInputGain = 1.0, lastOutGain = 1.0;
 
     foleys::LevelMeterSource inputMeter, outputMeter;
     

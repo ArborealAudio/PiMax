@@ -487,10 +487,10 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
 
     mixer.setWetLatency(getLatencySamples());
 
-    if (*autoGain && *output_dB == 0.0)
-        output_raw = 0.999;
-
     if (*autoGain) {
+        if (*output_dB == 0.0)
+            output_raw = 0.999;
+
         if (gainRamped)
             buffer.applyGainRamp(0, buffer.getNumSamples(), 1.0 / (m_lastGain * halfPi), 1.0 / (gain_raw * halfPi));
         else
