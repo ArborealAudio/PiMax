@@ -225,18 +225,12 @@ bool MaximizerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts
 //    if (layouts.getMainOutputChannelSet() != layouts.getMainInputChannelSet())
 //      return false;
     PluginHostType host;
-    
+
     if (host.isBitwigStudio())
     {
-        if (layouts.getMainOutputChannelSet() == AudioChannelSet::stereo()) {
-            if (layouts.getMainInputChannelSet() == AudioChannelSet::stereo())
-                return true;
-        }
-        else {
-            if (layouts.getMainOutputChannelSet() == AudioChannelSet::mono())
-                if (layouts.getMainInputChannelSet() == AudioChannelSet::mono())
-                    return true;
-        }
+        if (layouts.getMainOutputChannelSet() == AudioChannelSet::stereo() &&
+            layouts.getMainInputChannelSet() == AudioChannelSet::stereo())
+            return true;
     }
     else
     {
@@ -294,7 +288,19 @@ void MaximizerAudioProcessor::parameterChanged(const String& parameterID, float 
             lastSampleRate = lastDownSampleRate;
         }
 
-        needs_resize = true;
+        if (parameterID != "linearPhase") {
+            needs_resize = true;
+            
+            for (auto& b : m_Proc.bandBuffer)
+                b.setSize(getTotalNumOutputChannels(), numSamples * oversample[osIndex].getOversamplingFactor(), false, false, true);
+
+            dsp::ProcessSpec newSpec{ lastSampleRate, uint32(numSamples * oversample[osIndex].getOversamplingFactor()),
+                (uint32)getTotalNumOutputChannels() };
+            m_Proc.setOversamplingFactor(oversample[osIndex].getOversamplingFactor());
+            m_Proc.updateSpecs(newSpec);
+
+            needs_resize = false;
+        }
 
         mPi.prepare();
     }
@@ -408,19 +414,19 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     else
         osBlock = oversampleMono[osIndex].processSamplesUp(dsp::AudioBlock<float>(buffer));
 
-    if (*bandSplit)
+    if (*bandSplit && !needs_resize)
     {
-        if (needs_resize) {
-            for (auto& b : m_Proc.bandBuffer)
-                b.setSize(getTotalNumOutputChannels(), numSamples * oversample[osIndex].getOversamplingFactor(), false, false, true);
-
-            dsp::ProcessSpec newSpec{ lastSampleRate, uint32(numSamples * oversample[osIndex].getOversamplingFactor()),
-                (uint32)getTotalNumOutputChannels() };
-            m_Proc.setOversamplingFactor(oversample[osIndex].getOversamplingFactor());
-            m_Proc.updateSpecs(newSpec);
-
-            needs_resize = false;
-        }
+//        if (needs_resize) {
+//            for (auto& b : m_Proc.bandBuffer)
+//                b.setSize(getTotalNumOutputChannels(), numSamples * oversample[osIndex].getOversamplingFactor(), false, false, true);
+//
+//            dsp::ProcessSpec newSpec{ lastSampleRate, uint32(numSamples * oversample[osIndex].getOversamplingFactor()),
+//                (uint32)getTotalNumOutputChannels() };
+//            m_Proc.setOversamplingFactor(oversample[osIndex].getOversamplingFactor());
+//            m_Proc.updateSpecs(newSpec);
+//
+//            needs_resize = false;
+//        }
 
         for (auto& b : m_Proc.bandBuffer) {
             if (b.getNumSamples() == osBlock.getNumSamples()) {
