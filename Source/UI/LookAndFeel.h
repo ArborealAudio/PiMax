@@ -417,7 +417,8 @@ struct TopButtonLNF : public LookAndFeel_V4
         Regular,
         Toggle,
         Auto,
-        Bypass
+        Bypass,
+        Boost
     };
 
     Type type;
@@ -426,15 +427,6 @@ struct TopButtonLNF : public LookAndFeel_V4
     {
         type = newType;
     }
-    /*TopButtonLNF()
-    {
-        setDefaultSansSerifTypeface(getTypefaceForFont(getCustomFont(FontStyle::Regular)));
-    }
-
-    Typeface::Ptr getTypefaceForFont(const Font& f)
-    {
-        return Typeface::createSystemTypefaceFor(f);
-    }*/
 
     void drawButtonBackground(Graphics& g, Button& b, const Colour& backgroundColour,
         bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown) override
@@ -490,6 +482,20 @@ struct TopButtonLNF : public LookAndFeel_V4
                 }
                 else if (b.getToggleState()) {
                     g.setColour(Colours::mediumorchid.withAlpha(0.33f));
+                    g.fillRoundedRectangle(bounds.toFloat(), 7.f);
+                }
+                else {
+                    g.setColour(Colour(0xa7a7a7a7));
+                    g.drawRoundedRectangle(bounds.toFloat().reduced(2.f), 7.f, 1.f);
+                }
+                break;
+            case Type::Boost:
+                if (b.isMouseOver() && !b.getToggleState()) {
+                    g.setColour(Colour(0xa7a7a7a7).withAlpha(0.75f));
+                    g.fillRoundedRectangle(bounds.toFloat(), 7.f);
+                }
+                else if (b.getToggleState()) {
+                    g.setColour(Colours::red.withAlpha(0.33f));
                     g.fillRoundedRectangle(bounds.toFloat(), 7.f);
                 }
                 else {

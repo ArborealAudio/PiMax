@@ -93,10 +93,15 @@ UI::UI (MaximizerAudioProcessor& p) : audioProcessor(p), gain__slider(false), ou
 
     addAndMakeVisible(boost);
     boost.setClickingTogglesState(true);
-    boost.setLookAndFeel(&bypassLNF);
+    boost.setLookAndFeel(&boostLNF);
+    boostLNF.setType(TopButtonLNF::Type::Boost);
     boost.setButtonText("Input Boost");
     boost.setTooltip("12dB input boost, and increases Curve value exponentially.");
+#if !JUCE_MAC
     boost.setSize(55, 23);
+#else
+    boost.setSize(60, 23);
+#endif
 
     addAndMakeVisible(bypass);
     bypass.setClickingTogglesState(true);

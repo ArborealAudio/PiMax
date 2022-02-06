@@ -114,7 +114,7 @@ public:
     GainSliderLNF inGainLNF, outGainLNF;
     ComboBoxLNF hqBoxLNF, clipBoxLNF;
     BottomButtonLNF bottomButtonLNF;
-    TopButtonLNF distLNF, bandSplitLNF, autoGainLNF, bypassLNF;
+    TopButtonLNF distLNF, bandSplitLNF, autoGainLNF, bypassLNF, boostLNF;
     CurveSliderLNF curveLNF;
     KnobLNF widthLNF, mixLNF;
     foleys::LevelMeter inputMeter{ foleys::LevelMeter::Minimal }, outputMeter{ foleys::LevelMeter::Minimal };
