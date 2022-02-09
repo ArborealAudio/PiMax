@@ -306,7 +306,6 @@ void MaximizerAudioProcessor::parameterChanged(const String& parameterID, float 
     }
 
     if (parameterID.contains("crossover")) {
-        //crossover_changed = true;
         crossover_changedID = parameterID.getTrailingIntValue();
         if (!*linearPhase) {
             m_Proc.updateCrossoverNonLin(crossover_changedID);
@@ -316,23 +315,6 @@ void MaximizerAudioProcessor::parameterChanged(const String& parameterID, float 
             m_Proc.updateCrossoverLin(crossover_changedID);
             m_Proc.updateCrossoverNonLin(crossover_changedID);
         }
-    }
-}
-
-void MaximizerAudioProcessor::hiResTimerCallback()
-{
-    if (crossover_changed)
-    {
-        if (!*linearPhase) {
-            m_Proc.updateCrossoverNonLin(crossover_changedID);
-            m_Proc.updateCrossoverLin(crossover_changedID);
-        }
-        else {
-            m_Proc.updateCrossoverLin(crossover_changedID);
-            m_Proc.updateCrossoverNonLin(crossover_changedID);
-        }
-
-        crossover_changed = false;
     }
 }
 
@@ -358,7 +340,7 @@ void MaximizerAudioProcessor::updateNumBands(int newNumBands) noexcept
     auto val = apvts.state.getChildWithProperty("id", "numBands");
     val.setProperty("value", numBands, nullptr);
 
-    if (onPresetChange != nullptr)
+    if (onPresetChange != nullptr && hasEditor())
         onPresetChange();
 }
 

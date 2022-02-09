@@ -42,8 +42,7 @@
 */
 class MaximizerAudioProcessor : public AudioProcessor,
                                 public AudioProcessorValueTreeState::Listener,
-                                public ValueTree::Listener,
-                                HighResolutionTimer
+                                public ValueTree::Listener
 {
 public:
     //==============================================================================
@@ -85,7 +84,6 @@ public:
     void setStateInformation(const void* data, int sizeInBytes) override;
 
     void parameterChanged(const String& parameterID, float newValue) override;
-    void hiResTimerCallback() override;
     void valueTreeRedirected(ValueTree& treeWhichHasBeenChanged) override;
     std::function<void()> onPresetChange;
 
