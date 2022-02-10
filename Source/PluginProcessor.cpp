@@ -288,17 +288,8 @@ void MaximizerAudioProcessor::parameterChanged(const String& parameterID, float 
             lastSampleRate = lastDownSampleRate;
         }
 
-        if (parameterID != "linearPhase") {
+        if (parameterID != "linearPhase")
             needs_resize = true;
-            /*for (auto& b : m_Proc.bandBuffer)
-                b.setSize(getTotalNumOutputChannels(), numSamples * oversample[osIndex].getOversamplingFactor(), false, false, true);
-
-            dsp::ProcessSpec newSpec{ lastSampleRate, uint32(numSamples * oversample[osIndex].getOversamplingFactor()),
-                (uint32)getTotalNumOutputChannels() };
-            m_Proc.setOversamplingFactor(oversample[osIndex].getOversamplingFactor());
-            m_Proc.updateSpecs(newSpec);*/
-            /*needs_resize = false;*/
-        }
 
         mPi.prepare();
     }
@@ -394,7 +385,7 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     else
         osBlock = oversampleMono[osIndex].processSamplesUp(dsp::AudioBlock<float>(buffer));
 
-    if (*bandSplit/* && !needs_resize*/)
+    if (*bandSplit)
     {
         if (needs_resize) {
             for (auto& b : m_Proc.bandBuffer)
@@ -406,7 +397,6 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
             m_Proc.updateSpecs(newSpec);
 
             needs_resize = false;
-            return;
         }
 
         for (auto& b : m_Proc.bandBuffer) {
