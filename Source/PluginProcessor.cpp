@@ -63,6 +63,8 @@ MaximizerAudioProcessor::MaximizerAudioProcessor()
     outputMeter.setMaxHoldMS(1000);
 
     checkActivation();
+
+    startTimer(200);
 }
 
 MaximizerAudioProcessor::~MaximizerAudioProcessor()
@@ -76,7 +78,7 @@ MaximizerAudioProcessor::~MaximizerAudioProcessor()
 
     apvts.state.removeListener(this);
 
-    //stopTimer();
+    stopTimer();
 }
 
 //==============================================================================
@@ -288,8 +290,12 @@ void MaximizerAudioProcessor::parameterChanged(const String& parameterID, float 
             lastSampleRate = lastDownSampleRate;
         }
 
-        if (parameterID != "linearPhase")
+        if (parameterID != "linearPhase") {
             needs_resize = true;
+            /*while (needs_resize) {
+                asyncCall.process();
+            }*/
+        }
 
         mPi.prepare();
     }
@@ -388,22 +394,18 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     if (*bandSplit)
     {
         if (needs_resize) {
-            for (auto& b : m_Proc.bandBuffer)
-                b.setSize(getTotalNumOutputChannels(), numSamples * oversample[osIndex].getOversamplingFactor(), false, false, true);
-
-            dsp::ProcessSpec newSpec{ lastSampleRate, uint32(numSamples * oversample[osIndex].getOversamplingFactor()),
-                (uint32)getTotalNumOutputChannels() };
-            m_Proc.setOversamplingFactor(oversample[osIndex].getOversamplingFactor());
-            m_Proc.updateSpecs(newSpec);
-
+            asyncCall.callAsync([this] { updateBandSpecs(); });
             needs_resize = false;
+            needs_update = true;
         }
 
-        for (auto& b : m_Proc.bandBuffer) {
-            if (b.getNumSamples() == osBlock.getNumSamples()) {
-                b.copyFrom(0, 0, const_cast<float*>(osBlock.getChannelPointer(0)), osBlock.getNumSamples());
-                if (totalNumOutputChannels > 1)
-                    b.copyFrom(1, 0, const_cast<float*>(osBlock.getChannelPointer(1)), osBlock.getNumSamples());
+        if (!needs_update) {
+            for (auto& b : m_Proc.bandBuffer) {
+                if (b.getNumSamples() == osBlock.getNumSamples()) {
+                    b.copyFrom(0, 0, const_cast<float*>(osBlock.getChannelPointer(0)), osBlock.getNumSamples());
+                    if (totalNumOutputChannels > 1)
+                        b.copyFrom(1, 0, const_cast<float*>(osBlock.getChannelPointer(1)), osBlock.getNumSamples());
+                }
             }
         }
     }
@@ -434,7 +436,7 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
             }
         }
     }
-    else if (*bandSplit && !needs_resize) {
+    else if (*bandSplit && !needs_update) {
         if (*linearPhase)
             m_Proc.addBandsConvolution(osContext);
         else
@@ -590,6 +592,17 @@ void MaximizerAudioProcessor::processDelta(AudioBuffer<float>& buffer, float inG
             }
         }
     }
+}
+
+void MaximizerAudioProcessor::updateBandSpecs()
+{
+    for (auto& b : m_Proc.bandBuffer)
+        b.setSize(getTotalNumOutputChannels(), numSamples * oversample[osIndex].getOversamplingFactor(), false, false, true);
+
+    dsp::ProcessSpec newSpec{ lastSampleRate, uint32(numSamples * oversample[osIndex].getOversamplingFactor()),
+        (uint32)getTotalNumOutputChannels() };
+    m_Proc.setOversamplingFactor(oversample[osIndex].getOversamplingFactor());
+    m_Proc.updateSpecs(newSpec);
 }
 
 //==============================================================================

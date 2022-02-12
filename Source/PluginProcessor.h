@@ -20,6 +20,7 @@
 #include "ff_meters-master/ff_meters.h"
 #include "Presets/PresetManager.h"
 #include "OnlineActivation.h"
+#include "farbot/AsyncCaller.hpp"
 
 #ifndef NDEBUG
 #define X(textToWrite)                                                         \
@@ -42,7 +43,8 @@
 */
 class MaximizerAudioProcessor : public AudioProcessor,
                                 public AudioProcessorValueTreeState::Listener,
-                                public ValueTree::Listener
+                                public ValueTree::Listener,
+                                Timer
 {
 public:
     //==============================================================================
@@ -86,6 +88,8 @@ public:
     void parameterChanged(const String& parameterID, float newValue) override;
     void valueTreeRedirected(ValueTree& treeWhichHasBeenChanged) override;
     std::function<void()> onPresetChange;
+
+    void timerCallback() override { if (needs_update && asyncCall.process()) needs_update = false; }
 
     inline void updateOversample() noexcept;
 
@@ -143,9 +147,13 @@ public:
 
 private:
 
+    farbot::AsyncCaller<farbot::fifo_options::concurrency::single> asyncCall;
+
     void checkActivation();
 
     void processDelta(AudioBuffer<float>& buffer, float inGain, float outGain);
+
+    void updateBandSpecs();
 
     AudioProcessorValueTreeState::ParameterLayout createParams();
 
@@ -179,7 +187,7 @@ private:
     bool lastBypass = false;
     bool bufferCopied = false;
     
-    std::atomic<bool> needs_resize = false, crossover_changed = false;
+    std::atomic<bool> needs_resize = false, crossover_changed = false, needs_update = false;
     int crossover_changedID = 0;
     
     dsp::DelayLine<float> bypassDelay {44100};
