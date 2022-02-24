@@ -791,7 +791,7 @@ void MaximizerAudioProcessor::checkActivation()
     if (!host.isGarageBand()) {
         if (dir.exists() && !checkUnlock()) {
             auto xml = parseXML(dir);
-            isUnlocked = (uuid == xml->getStringAttribute("uuid") && xml->getStringAttribute("owner") != " ");
+            isUnlocked = (uuid == xml->getStringAttribute("uuid"));
             if (xml->hasAttribute("key"))
                 isUnlocked = xml->getStringAttribute("key") != " ";
         }
