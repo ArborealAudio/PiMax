@@ -224,8 +224,6 @@ bool MaximizerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts
 
     // This checks if the input layout matches the output layout
    #if ! JucePlugin_IsSynth
-//    if (layouts.getMainOutputChannelSet() != layouts.getMainInputChannelSet())
-//      return false;
     PluginHostType host;
 
     if (host.isBitwigStudio())
@@ -239,7 +237,7 @@ bool MaximizerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts
         if (layouts.getMainOutputChannelSet() == layouts.getMainInputChannelSet())
             return true;
         else if (layouts.getMainOutputChannelSet() == AudioChannelSet::stereo()) {
-            // Mono-to-stereo OR stereo-to-stereo
+            // Mono-to-stereo
             if (layouts.getMainInputChannelSet() == AudioChannelSet::mono())
                 return true;
         }
@@ -249,7 +247,6 @@ bool MaximizerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts
 
    #endif
 
-//    return true;
   #endif
 }
 #endif
