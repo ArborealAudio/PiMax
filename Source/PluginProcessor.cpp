@@ -146,9 +146,6 @@ void MaximizerAudioProcessor::changeProgramName (int index, const juce::String& 
 //==============================================================================
 void MaximizerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-    //if (isTimerRunning())
-    //    stopTimer();
-
     numSamples = samplesPerBlock;
     lastDownSampleRate = sampleRate;
     
@@ -177,10 +174,8 @@ void MaximizerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
     m_Proc.setOversamplingFactor(oversample[osIndex].getOversamplingFactor());
 
     for (auto& b : m_Proc.bandBuffer) {
-        //suspendProcessing(true);
         b.setSize(getTotalNumOutputChannels(), samplesPerBlock * oversample[osIndex].getOversamplingFactor(), false,
             false, true);
-        //suspendProcessing(false);
     }
     
     filterLength = m_Proc.linBand[0].size;
@@ -192,8 +187,6 @@ void MaximizerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
     outputMeter.resize(2, sampleRate * 0.1 / samplesPerBlock);
 
     widener.prepare(spec);
-
-    //startTimer(7);
 }
 
 void MaximizerAudioProcessor::releaseResources()
