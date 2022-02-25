@@ -11,7 +11,7 @@
 
 //==============================================================================
 MaximizerAudioProcessor::MaximizerAudioProcessor()
-//#ifndef JucePlugin_PreferredChannelConfigurations
+#ifndef JucePlugin_PreferredChannelConfigurations
      : AudioProcessor (BusesProperties()
                      #if ! JucePlugin_IsMidiEffect
                       #if ! JucePlugin_IsSynth
@@ -21,7 +21,7 @@ MaximizerAudioProcessor::MaximizerAudioProcessor()
                      #endif
                        ), apvts(*this, nullptr, "Parameters", createParams()), mixer(44100),
                         mPi(apvts), m_Proc(apvts)
-//#endif
+#endif
 
 {
     lastUIWidth = 720;
@@ -207,7 +207,7 @@ void MaximizerAudioProcessor::releaseResources()
     xm1[0] = 0.0, xm1[1] = 0.0, ym1[0] = 0.0, ym1[1] = 0.0;
 }
 
-//#ifndef JucePlugin_PreferredChannelConfigurations
+#ifndef JucePlugin_PreferredChannelConfigurations
 bool MaximizerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
   #if JucePlugin_IsMidiEffect
@@ -236,14 +236,10 @@ bool MaximizerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts
     }
     else
     {
-        if (layouts.getMainOutputChannelSet() == AudioChannelSet::stereo()) {
+        if (layouts.getMainOutputChannelSet() == layouts.getMainInputChannelSet())
+            return true;
+        else if (layouts.getMainOutputChannelSet() == AudioChannelSet::stereo()) {
             // Mono-to-stereo OR stereo-to-stereo
-            if ((layouts.getMainInputChannelSet() == AudioChannelSet::stereo()) ||
-                    (layouts.getMainInputChannelSet() == AudioChannelSet::mono()))
-                return true;
-        }
-        else if (layouts.getMainOutputChannelSet() == AudioChannelSet::mono()) {
-            // Mono
             if (layouts.getMainInputChannelSet() == AudioChannelSet::mono())
                 return true;
         }
@@ -256,7 +252,7 @@ bool MaximizerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts
 //    return true;
   #endif
 }
-//#endif
+#endif
 
 inline void MaximizerAudioProcessor::updateOversample() noexcept
 {

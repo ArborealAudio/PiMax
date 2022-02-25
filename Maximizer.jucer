@@ -153,8 +153,10 @@
     </VS2019>
     <XCODE_MAC targetFolder="Builds/MacOSX" hardenedRuntime="1" keepCustomXcodeSchemes="1">
       <CONFIGURATIONS>
-        <CONFIGURATION isDebug="1" name="Debug" targetName="PiMax" auBinaryLocation="/Library/Audio/Plug-Ins/Components"/>
-        <CONFIGURATION isDebug="0" name="Release" targetName="PiMax" auBinaryLocation="/Library/Audio/Plug-Ins/Components"/>
+        <CONFIGURATION isDebug="1" name="Debug" targetName="PiMax" auBinaryLocation="/Library/Audio/Plug-Ins/Components"
+                       macOSDeploymentTarget="10.9" osxCompatibility="10.9 SDK"/>
+        <CONFIGURATION isDebug="0" name="Release" targetName="PiMax" auBinaryLocation="/Library/Audio/Plug-Ins/Components"
+                       macOSDeploymentTarget="10.9" osxCompatibility="10.9 SDK"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
         <MODULEPATH id="juce_audio_basics" path="../../../../../../JUCE/modules"/>
