@@ -19,11 +19,6 @@ struct Splash : Component
         logo->setBounds(bounds.toNearestInt());
     }
 
-    void setOwner(const String& nameToDisplay)
-    {
-        name = nameToDisplay;
-    }
-
     void paint(Graphics& g) override
     {
         Rectangle<float> bounds{ 12.f, 12.f, 66.f, 65.f };
@@ -89,9 +84,9 @@ struct Splash : Component
             logo->drawWithin(g, clipArea.reduced(50.f), RectanglePlacement::yTop, 1.f);
 
             g.setFont(getCustomFont(FontStyle::Regular).withHeight(16.f));
-            g.drawFittedText("Licensed to: " + name +
-                "\nv" + String(ProjectInfo::versionString) + 
-                "\n(c) Arboreal Audio 2021",
+            Time time(Time::getCurrentTime());
+            g.drawFittedText(String(ProjectInfo::versionString) + 
+                "\n(c) Arboreal Audio " + String(time.getYear()),
                 clipArea.withTrimmedTop(150.f).toNearestInt(),
                 Justification::centred, 3, 1.f);
 
@@ -119,6 +114,4 @@ private:
     Image img;
 
     std::unique_ptr<Drawable> logo;
-
-    String name;
 };

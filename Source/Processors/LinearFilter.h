@@ -325,32 +325,6 @@ namespace strix
 
         }
 
-        //inline void setFIRCoeffs() noexcept
-        //{
-        //    for (int i = 0; i < size; ++i)
-        //    {
-        //        for (auto& f : firLow)
-        //            f.coefficients->coefficients.set(i, firCoeffLow[i]);
-
-        //        for (auto& f : firHigh)
-        //            f.coefficients->coefficients.set(i, firCoeffHigh[i]);
-        //    }
-        //}
-
-        /*inline void copyLastCoeffs() noexcept
-        {
-            for (int i = 0; i < 2; ++i)
-            {
-                *lastIIRLow[i].coefficients = *iirLow[i][0]->coefficients;
-                *lastIIRHigh[i].coefficients = *iirHigh[i][0]->coefficients;
-
-        #if! USE_CONVOLUTION
-                *lastFIRLow[i].coefficients = *firLow[i].coefficients;
-                *lastFIRHigh[i].coefficients = *firHigh[i].coefficients;
-        #endif
-            }
-        }*/
-
         inline void initFilter(double freq, double sampleRate) noexcept
         {
             createIIRCoeffs(freq, sampleRate);
@@ -363,12 +337,6 @@ namespace strix
             changeIIRCoeffs(freq, sampleRate);
 
             recordImpulseResponse();
-
-        #if! USE_CONVOLUTION
-            setFIRCoeffs();
-        /*#else
-            loadBuffers();*/
-        #endif
         }
 
         template <typename T>
@@ -411,34 +379,6 @@ namespace strix
             convHigh.process(context);
         }
 
-        /*inline double processLowPass(int channel, double input) noexcept
-        {
-            input = iirLow[channel][0]->processSample(input);
-
-            return firLow[channel].processSample(input);
-        }
-
-        inline double processLastLowPass(int channel, double input) noexcept
-        {
-            input = lastIIRLow[channel].processSample(input);
-
-            return lastFIRLow[channel].processSample(input);
-        }
-
-        inline double processHighPass(int channel, double input) noexcept
-        {
-            input = iirHigh[channel][0]->processSample(input);
-
-            return firHigh[channel].processSample(input);
-        }
-
-        inline double processLastHighPass(int channel, double input) noexcept
-        {
-            input = lastIIRHigh[channel].processSample(input);
-
-            return lastFIRHigh[channel].processSample(input);
-        }*/
-
         int size = 0;
         double sampleRate = 44100.0;
         int numSamples = 0;
@@ -450,8 +390,6 @@ namespace strix
         std::vector<double> lastCoeffHigh;
 
     private:
-        //const double i_Coeff = exp(log(0.01f) / (100 * 44100.0 * 0.001));
-        using vec = dsp::SIMDRegister<float>;
 
         int oversampleFactor = 0;
         int set = 0;
@@ -461,25 +399,14 @@ namespace strix
         std::vector<float> lowinc;
         std::vector<float> highinc;
 
-#if USE_SIMD_SAT
-        OwnedArray<dsp::IIR::Filter<vec>> iirLow[2];
-        OwnedArray<dsp::IIR::Filter<float>> iirLowPulse;
-        OwnedArray<dsp::IIR::Filter<vec>> iirHigh[2];
-        OwnedArray<dsp::IIR::Filter<float>> iirHighPulse;
-#else
         OwnedArray<dsp::IIR::Filter<float>> iirLow[2];
         OwnedArray<dsp::IIR::Filter<float>> iirHigh[2];
         OwnedArray<dsp::IIR::Filter<float>> iirLowPulse;
         OwnedArray<dsp::IIR::Filter<float>> iirHighPulse;
-        //std::array<dsp::IIR::Filter<double>, 2> lastIIRLow;
-        //std::array<dsp::IIR::Filter<double>, 2> lastIIRHigh;
-#endif
         
         ReferenceCountedArray<dsp::IIR::Coefficients<float>> iirLowCoeffs;
         ReferenceCountedArray<dsp::IIR::Coefficients<float>> iirHighCoeffs;
 
-        //std::array<dsp::FIR::Filter<double>, 2> firLow;
-        //std::array<dsp::FIR::Filter<double>, 2> firHigh;
 
         dsp::Convolution convLow, convHigh;
 

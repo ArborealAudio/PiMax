@@ -12,150 +12,8 @@
 #include <JuceHeader.h>
 #include "UI/LookAndFeel.h"
 
-struct UnlockStatus
+namespace strix
 {
-    UnlockStatus() = default;
-
-    juce::URL getURL()
-    {
-        return URL("https://arborealaudio.com/");
-    }
-
-    String readReplyForKey(const juce::String& key, bool activate)
-    {
-        URL url(getURL()
-            .withNewSubPath("wp-json/lmfwc/v2/licenses/" + key)
-            .withParameter("consumer_key", "ck_2ce7d78fab4ee7db66e6b5ee17f045111bdc3d00")
-            .withParameter("consumer_secret", "cs_b8548efc0a05b35817bce7f994e20008cbafb751"));
-
-        if (activate)
-            url = url.withNewSubPath("wp-json/lmfwc/v2/licenses/activate/" + key);
-
-        DBG("Trying to unlock via URL: " << url.toString(true));
-
-        if (auto stream = URL(url).createInputStream(URL::InputStreamOptions(URL::ParameterHandling::inAddress)))
-        {
-            return stream->readEntireStreamAsString();
-        }
-
-        return {};
-    }
-
-    /*check for valid order no*/
-    String readReplyForOrderNo(const juce::String& orderNo)
-    {
-        juce::URL url(getURL()
-            .withNewSubPath("wp-json/wc/v3/orders/" + orderNo)
-            .withParameter("consumer_key", "ck_afdaee27c41b45d26e864d0b2dad05d7d6bc9ee6")
-            .withParameter("consumer_secret", "cs_0160660cf7a03dfab1e016a6922bf1b7a942e16f"));
-
-        DBG("Trying to unlock via URL: " << url.toString(true));
-
-        if (auto stream = URL(url).createInputStream(URL::InputStreamOptions(URL::ParameterHandling::inAddress)))
-        {
-            return stream->readEntireStreamAsString();
-        }
-
-        return {};
-    }
-
-    inline var isUnlocked()
-    {
-        return state.getProperty("value");
-    }
-
-    /*0 = failed key | 1 = failed orderNum | 2 = success | 3 = activations maxed*/
-    inline int authorize(const String& key, const String& email)
-    {
-        if (key.isEmpty())
-            return 0;
-        if (email.isEmpty())
-            return 1;
-
-        auto keyResponse = readReplyForKey(key, false);
-        DBG(keyResponse);
-
-        auto keyTree = createValueTreeFromJSON(keyResponse);
-
-        auto success = keyTree.getChildWithName("success").getProperty("property0");
-        if (!success)
-            return 0;
-
-        auto orderId = keyTree.getChildWithName("orderId").getProperty("property0");
-
-        auto orderResponse = readReplyForOrderNo(orderId);
-
-        auto orderTree = createValueTreeFromJSON(orderResponse);
-
-        auto orderEmail = orderTree.getChildWithName("email").getProperty("property0").toString();
-        owner = orderTree.getChildWithName("first_name").getProperty("property0").toString();
-        
-        owner.append(" ", 1);
-        owner += orderTree.getChildWithName("last_name").getProperty("property0").toString();
-        
-        if (orderEmail == email) {
-            auto activationResponse = createValueTreeFromJSON(readReplyForKey(key, true));
-            auto activationCount = activationResponse.getChildWithName("timesActivated").getProperty("property0");
-            auto activationLim = activationResponse.getChildWithName("timesActivatedMax").getProperty("property0");
-            if (activationCount >= activationLim)
-                return 3;
-        }
-
-        state.setProperty("value", orderEmail == email, nullptr);
-
-        return 1 + (orderEmail == email);
-    }
-
-    inline void writeHashKey()
-    {
-        if (isUnlocked())
-        {
-            auto dir = File(File::getSpecialLocation(File::SpecialLocationType::userApplicationDataDirectory)
-                .getFullPathName() + "/Arboreal Audio/PiMax/License/license.aal");
-
-            if (!dir.exists())
-                dir.create();
-
-            auto ids = OnlineUnlockStatus::MachineIDUtilities::getLocalMachineIDs();
-
-            XmlElement xml{ "Key" };
-
-            for (int i = 0; i < ids.size(); ++i)
-                xml.setAttribute("uuid", String(ids[i].hashCode64()));
-
-            xml.setAttribute("owner", owner);
-
-            xml.writeTo(dir);
-            dir.setReadOnly(true);
-            
-        #if JUCE_MAC
-            auto dirGB = File("~/Music/Audio Music Apps/Arboreal Audio/PiMax/License/license.aal");
-            auto gbuuid = File("~/Music/Audio Music Apps").getFileIdentifier();
-
-            if (!dirGB.exists())
-                dirGB.create();
-            
-            XmlElement xmlGB{"Key"};
-            
-            for (int i = 0; i < ids.size(); ++i)
-                xmlGB.setAttribute("uuid", String(ids[i].hashCode64()));
-            
-            xmlGB.setAttribute("GBuuid", String(gbuuid));
-
-            xmlGB.setAttribute("owner", owner);
-
-            xmlGB.writeTo(dirGB);
-        #endif
-        }
-    }
-
-    String getOwner()
-    {
-        return owner;
-    }
-
-private:
-
     const Identifier rootId = "root";
     const Identifier propertyId = "property";
 
@@ -212,10 +70,146 @@ private:
     {
         return createValueTreeFromJSON(JSON::parse(data));
     }
+}
+
+struct UnlockStatus
+{
+    UnlockStatus() = default;
+
+    juce::URL getURL()
+    {
+        return URL("https://arborealaudio.com/");
+    }
+
+    String readReplyForKey(const juce::String& key, bool activate)
+    {
+        URL url(getURL()
+            .withNewSubPath("wp-json/lmfwc/v2/licenses/" + key)
+            .withParameter("consumer_key", "ck_2ce7d78fab4ee7db66e6b5ee17f045111bdc3d00")
+            .withParameter("consumer_secret", "cs_b8548efc0a05b35817bce7f994e20008cbafb751"));
+
+        if (activate)
+            url = url.withNewSubPath("wp-json/lmfwc/v2/licenses/activate/" + key);
+
+        DBG("Trying to unlock via URL: " << url.toString(true));
+
+        if (auto stream = URL(url).createInputStream(URL::InputStreamOptions(URL::ParameterHandling::inAddress)))
+        {
+            return stream->readEntireStreamAsString();
+        }
+
+        return {};
+    }
+
+    /*check for valid order no*/
+    String readReplyForOrderNo(const juce::String& orderNo)
+    {
+        juce::URL url(getURL()
+            .withNewSubPath("wp-json/wc/v3/orders/" + orderNo)
+            .withParameter("consumer_key", "ck_afdaee27c41b45d26e864d0b2dad05d7d6bc9ee6")
+            .withParameter("consumer_secret", "cs_0160660cf7a03dfab1e016a6922bf1b7a942e16f"));
+
+        DBG("Trying to unlock via URL: " << url.toString(true));
+
+        if (auto stream = URL(url).createInputStream(URL::InputStreamOptions(URL::ParameterHandling::inAddress)))
+        {
+            return stream->readEntireStreamAsString();
+        }
+
+        return {};
+    }
+
+    inline var isUnlocked()
+    {
+        return state.getProperty("value");
+    }
+
+    /*0 = failed key | 1 = success | 2 = activations maxed*/
+    inline int authorize(const String& key)
+    {
+        if (key.isEmpty())
+            return 0;
+
+        auto keyResponse = readReplyForKey(key, false);
+        DBG(keyResponse);
+
+        auto keyTree = strix::createValueTreeFromJSON(keyResponse);
+
+        auto success = keyTree.getChildWithName("success").getProperty("property0");
+        if (!success)
+            return 0;
+
+        //auto orderId = keyTree.getChildWithName("orderId").getProperty("property0");
+
+        //auto orderResponse = readReplyForOrderNo(orderId);
+
+        //auto orderTree = strix::createValueTreeFromJSON(orderResponse);
+
+        //auto orderEmail = orderTree.getChildWithName("email").getProperty("property0").toString();
+        //owner = orderTree.getChildWithName("first_name").getProperty("property0").toString();
+        //
+        //owner.append(" ", 1);
+        //owner += orderTree.getChildWithName("last_name").getProperty("property0").toString();
+        
+        auto activationResponse = strix::createValueTreeFromJSON(readReplyForKey(key, true));
+        auto activationCount = activationResponse.getChildWithName("timesActivated").getProperty("property0");
+        auto activationLim = activationResponse.getChildWithName("timesActivatedMax").getProperty("property0");
+        if (activationCount >= activationLim)
+            return 2;
+
+        state.setProperty("value", success, nullptr);
+
+        m_key = key;
+
+        return (int)success;
+    }
+
+    inline void writeHashKey()
+    {
+        if (isUnlocked())
+        {
+            auto dir = File(File::getSpecialLocation(File::SpecialLocationType::userApplicationDataDirectory)
+                .getFullPathName() + "/Arboreal Audio/PiMax/License/license.aal");
+
+            if (!dir.exists())
+                dir.create();
+
+            auto ids = OnlineUnlockStatus::MachineIDUtilities::getLocalMachineIDs();
+
+            XmlElement xml{ "Key" };
+
+            for (int i = 0; i < ids.size(); ++i)
+                xml.setAttribute("uuid", String(ids[i].hashCode64()));
+
+            xml.setAttribute("key", m_key);
+
+            xml.writeTo(dir);
+            dir.setReadOnly(true);
+            
+        #if JUCE_MAC
+            auto dirGB = File("~/Music/Audio Music Apps/Arboreal Audio/PiMax/License/license.aal");
+            auto gbuuid = File("~/Music/Audio Music Apps").getFileIdentifier();
+
+            if (!dirGB.exists())
+                dirGB.create();
+            
+            XmlElement xmlGB{"Key"};
+            
+            for (int i = 0; i < ids.size(); ++i)
+                xmlGB.setAttribute("uuid", String(ids[i].hashCode64()));
+            
+            xmlGB.setAttribute("GBuuid", String(gbuuid));
+
+            xmlGB.writeTo(dirGB);
+        #endif
+        }
+    }
+
+private:
 
     ValueTree state{ "UNLOCKED", {{"value", 0}} };
 
-    String owner;
+    String m_key;
 };
 
 struct UnlockForm : Component
@@ -226,9 +220,6 @@ struct UnlockForm : Component
         addAndMakeVisible(key);
         key.setTextToShowWhenEmpty("serial number", Colours::grey);
         key.applyFontToAllText(getCustomFont(FontStyle::Regular).withHeight(15.f));
-        addAndMakeVisible(email);
-        email.setTextToShowWhenEmpty("email address", Colours::grey);
-        email.applyFontToAllText(getCustomFont(FontStyle::Regular).withHeight(15.f));
 
         lnf.setType(TopButtonLNF::Type::Regular);
         addAndMakeVisible(reg);
@@ -257,8 +248,6 @@ struct UnlockForm : Component
             g.drawFittedText(userInstructions, getLocalBounds().withTrimmedBottom(300), Justification::centred, 4);
             if (key.isTextInputActive())
                 key.applyColourToAllText(Colours::white);
-            if (email.isTextInputActive())
-                email.applyColourToAllText(Colours::white);
 
             if (trialRemaining_ms > 0) {
                 auto timeRemaining = (Time::getCurrentTime() + RelativeTime::milliseconds(trialRemaining_ms)
@@ -281,7 +270,7 @@ struct UnlockForm : Component
                 if (textBounds.contains(getMouseXYRelative())) {
                     setMouseCursor(MouseCursor::PointingHandCursor);
                     if (isMouseButtonDown()) {
-                        URL("https://arborealaudio.com").launchInDefaultBrowser();
+                        URL("https://arborealaudio.com/product/pimax").launchInDefaultBrowser();
                         return;
                     }
                 }
@@ -291,7 +280,6 @@ struct UnlockForm : Component
         }
         else {
             key.setVisible(false);
-            email.setVisible(false);
             reg.setVisible(false);
             close.setEnabled(true);
             g.drawText("Thank you for your purchase.", getLocalBounds(), Justification::centred);
@@ -301,7 +289,6 @@ struct UnlockForm : Component
     void resized() override
     {
         key.centreWithSize(150, 25);
-        email.centreWithSize(150, 25);
         reg.centreWithSize(68, 25);
         close.centreWithSize(50, 25);
         key.setBounds(key.getBounds().translated(0, -60));
@@ -311,7 +298,7 @@ struct UnlockForm : Component
 
     void runAuth()
     {
-        auto result = status.authorize(key.getText(), email.getText());
+        auto result = status.authorize(key.getText());
 
         if (result == 0) {
             key.unfocusAllComponents();
@@ -320,12 +307,6 @@ struct UnlockForm : Component
             repaint();
         }
         else if (result == 1) {
-            email.unfocusAllComponents();
-            email.setText("", false);
-            email.setTextToShowWhenEmpty("email not found", Colours::red);
-            repaint();
-        }
-        else if (result == 2) {
             successRepaint = true;
             repaint();
         }
@@ -347,7 +328,7 @@ private:
 
     int64 trialRemaining_ms;
 
-    TextEditor key, email;
+    TextEditor key;
 
     TopButtonLNF lnf;
     TextButton reg{ "Register" },
@@ -381,7 +362,6 @@ struct ActivationComponent : Component, Timer
                 dir = File("~/Music/Audio Music Apps/Arboreal Audio/PiMax/License/license.aal");
 
             auto xml = parseXML(dir);
-            owner = xml->getStringAttribute("owner");
         }
         unlockButton.onClick = [this] { if (onButtonClick != nullptr) onButtonClick(); };
         unlockButton.setBounds(90, 30, 62, 28);
@@ -401,14 +381,6 @@ struct ActivationComponent : Component, Timer
         needBlur = true;
 
         showForm();
-    }
-
-    String getOwner(bool alreadyActivated)
-    {
-        if (!alreadyActivated)
-            return status.getOwner();
-        else
-            return owner;
     }
 
     void paint(Graphics& g) override
@@ -480,8 +452,6 @@ private:
     var isUnlocked = false;
 
     bool needBlur = false;
-
-    String owner;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ActivationComponent)
 };

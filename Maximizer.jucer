@@ -2,10 +2,9 @@
 
 <JUCERPROJECT id="HMsJ6B" name="PiMax" projectType="audioplug" useAppConfig="0"
               jucerFormatVersion="1" companyName="Arboreal Audio" pluginFormats="buildAU,buildVST,buildVST3"
-              cppLanguageStandard="latest" displaySplashScreen="0" version="1.0.2"
-              companyCopyright="(c) 2021 Arboreal Audio" companyWebsite="arborealaudio.com"
-              companyEmail="contact@arborealaudio.com" pluginManufacturerCode="Arau"
-              pluginChannelConfigs="{1, 1}, {1, 2}, {2, 2}">
+              cppLanguageStandard="latest" displaySplashScreen="0" version="1.0.4"
+              companyCopyright="(c) 2022 Arboreal Audio" companyWebsite="arborealaudio.com"
+              companyEmail="contact@arborealaudio.com" pluginManufacturerCode="Arau">
   <MAINGROUP id="C1sQx6" name="PiMax">
     <GROUP id="{696D5D65-36E5-2635-0882-CAC75D7874E4}" name="Source">
       <GROUP id="{B3CD073D-D104-63E6-F84E-6EB41EEA0766}" name="Presets">
@@ -47,6 +46,19 @@
       <GROUP id="{B9A5C6FA-7C6B-46C0-23E0-28F365B8EE67}" name="UI">
         <FILE id="rvcxWa" name="LookAndFeel.h" compile="0" resource="0" file="Source/UI/LookAndFeel.h"/>
         <FILE id="eblXKu" name="Splash.h" compile="0" resource="0" file="Source/UI/Splash.h"/>
+      </GROUP>
+      <GROUP id="{E557B425-688C-8D2A-106D-EF6ADED03781}" name="farbot">
+        <GROUP id="{7E8F1B3D-6010-91DC-92FA-CBCE1C0EA29E}" name="detail">
+          <FILE id="AL4vyb" name="fifo.tcc" compile="0" resource="1" file="Source/farbot/detail/fifo.tcc"/>
+          <FILE id="LxMvBB" name="RealtimeObject.tcc" compile="0" resource="1"
+                file="Source/farbot/detail/RealtimeObject.tcc"/>
+        </GROUP>
+        <FILE id="Kp3e2H" name="AsyncCaller.hpp" compile="0" resource="0" file="Source/farbot/AsyncCaller.hpp"/>
+        <FILE id="KvQUVK" name="fifo.hpp" compile="0" resource="0" file="Source/farbot/fifo.hpp"/>
+        <FILE id="sM1l3R" name="RealtimeObject.hpp" compile="0" resource="0"
+              file="Source/farbot/RealtimeObject.hpp"/>
+        <FILE id="JDaH2f" name="RealtimeTraits.hpp" compile="0" resource="0"
+              file="Source/farbot/RealtimeTraits.hpp"/>
       </GROUP>
       <GROUP id="{A057AE5C-FC08-BD90-1321-1455950ED7BE}" name="ff_meters-master">
         <GROUP id="{F526CB96-CB11-C89B-1D63-A711E8199B61}" name="LevelMeter">
@@ -141,8 +153,10 @@
     </VS2019>
     <XCODE_MAC targetFolder="Builds/MacOSX" hardenedRuntime="1" keepCustomXcodeSchemes="1">
       <CONFIGURATIONS>
-        <CONFIGURATION isDebug="1" name="Debug" targetName="PiMax" auBinaryLocation="/Library/Audio/Plug-Ins/Components"/>
-        <CONFIGURATION isDebug="0" name="Release" targetName="PiMax" auBinaryLocation="/Library/Audio/Plug-Ins/Components"/>
+        <CONFIGURATION isDebug="1" name="Debug" targetName="PiMax" auBinaryLocation="/Library/Audio/Plug-Ins/Components"
+                       macOSDeploymentTarget="10.9" osxCompatibility="10.9 SDK"/>
+        <CONFIGURATION isDebug="0" name="Release" targetName="PiMax" auBinaryLocation="/Library/Audio/Plug-Ins/Components"
+                       macOSDeploymentTarget="10.9" osxCompatibility="10.9 SDK"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
         <MODULEPATH id="juce_audio_basics" path="../../../../../../JUCE/modules"/>

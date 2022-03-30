@@ -105,7 +105,7 @@ public:
     GainSlider gain__slider, outVol__slider;
     Slider curve__slider;
     WidthSlider widthSlider, mixSlider;
-    TextButton distButton, bandSplit__textButton, linearPhaseButton, hq, renderHQ, autoGain, bypass;
+    TextButton distButton, bandSplit__textButton, linearPhaseButton, hq, renderHQ, autoGain, bypass, boost;
     ComboBox clipBox;
     PresetComp presetComp;
 
@@ -114,7 +114,7 @@ public:
     GainSliderLNF inGainLNF, outGainLNF;
     ComboBoxLNF hqBoxLNF, clipBoxLNF;
     BottomButtonLNF bottomButtonLNF;
-    TopButtonLNF distLNF, bandSplitLNF, autoGainLNF, bypassLNF;
+    TopButtonLNF distLNF, bandSplitLNF, autoGainLNF, bypassLNF, boostLNF;
     CurveSliderLNF curveLNF;
     KnobLNF widthLNF, mixLNF;
     foleys::LevelMeter inputMeter{ foleys::LevelMeter::Minimal }, outputMeter{ foleys::LevelMeter::Minimal };

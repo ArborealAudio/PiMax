@@ -1028,14 +1028,13 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(MaximizerAudioProce
         bypassBandAttach.emplace_back(std::make_unique<AudioProcessorValueTreeState::ButtonAttachment>(p.apvts,
             "bypassBand" + std::to_string(i), *responseCurveComponent.bypass[i]));
     }
-    hqAttachment = std::make_unique<AudioProcessorValueTreeState::ButtonAttachment>(p.apvts,
-        "hq", ui.hq);
+    hqAttachment = std::make_unique<AudioProcessorValueTreeState::ButtonAttachment>(p.apvts, "hq", ui.hq);
     renderButtonAttach = std::make_unique<AudioProcessorValueTreeState::ButtonAttachment>(p.apvts,
         "renderHQ", ui.renderHQ);
     linearPhaseAttachment = std::make_unique<AudioProcessorValueTreeState::ButtonAttachment>(p.apvts,
         "linearPhase", ui.linearPhaseButton);
-    mixAttachment = std::make_unique<AudioProcessorValueTreeState::SliderAttachment>(p.apvts, "mix",
-        ui.mixSlider);    
+    mixAttachment = std::make_unique<AudioProcessorValueTreeState::SliderAttachment>(p.apvts, "mix", ui.mixSlider);    
+    boostAttach = std::make_unique<AudioProcessorValueTreeState::ButtonAttachment>(p.apvts, "boost", ui.boost);
 
     setResizable(true, true);
     getConstrainer()->setMinimumSize(450, 300);
@@ -1058,16 +1057,12 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(MaximizerAudioProce
     activationComp.onUnlock = [&](var unlocked)
     {
         p.isUnlocked = unlocked;
-        splash.setOwner(activationComp.getOwner(false));
     };
 
     if (!p.checkUnlock()) {
         downloadManager.setVisible(false);
         activationComp.setImage(createComponentSnapshot(getLocalBounds()));
         activationComp.setVisible(true);
-    }
-    else {
-        splash.setOwner(activationComp.getOwner(true));
     }
 
     addChildComponent(downloadManager);

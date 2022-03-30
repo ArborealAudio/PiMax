@@ -110,8 +110,8 @@ struct PresetComp : Component
             editor.setVisible(false);
 
             if (manager.savePreset(name, manager.userDir)) {
-                box.setText(name, NotificationType::sendNotificationSync);
                 loadPresets();
+                box.setText(name, NotificationType::sendNotificationSync);
                 currentPreset = name;
             }
             else

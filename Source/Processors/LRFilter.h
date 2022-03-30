@@ -13,18 +13,12 @@ public:
 		}
 		bands[0].setType(dsp::LinkwitzRileyFilterType::highpass);
 		bands[1].setType(dsp::LinkwitzRileyFilterType::lowpass);
-		bands[2].setType(dsp::LinkwitzRileyFilterType::allpass);
-		bands[3].setType(dsp::LinkwitzRileyFilterType::allpass);
 	}
 
 	void updateFilter(float crossoverFreq)
 	{
 		for (auto& band : bands)
 			band.setCutoffFrequency(crossoverFreq);
-		/*bands[0].setCutoffFrequency(crossoverFreq);
-		bands[1].setCutoffFrequency(crossoverFreq);
-		bands[2].setCutoffFrequency(crossoverFreq / 2.0);
-		bands[3].setCutoffFrequency(crossoverFreq * 2.0);*/
 	}
 
 	double getCutoffFreq()
@@ -36,16 +30,8 @@ public:
 	{
 		for (auto& band : bands)
 			band.reset();
-
 	}
 
-	/*processes an allpass filter*/
-	template <typename T>
-	void processAllpass(int channel, T& lowInput, T& highInput)
-	{
-		lowInput = bands[2].processSample(channel, lowInput);
-		highInput = bands[3].processSample(channel, highInput);
-	}
 
 	/*processes the first filter object and returns the high-pass output*/
 	template <typename T>
@@ -74,7 +60,7 @@ private:
 #if USE_SIMD_SAT
 	std::array<dsp::LinkwitzRileyFilter<dsp::SIMDRegister<float>>, 4> bands;
 #else
-	std::array<dsp::LinkwitzRileyFilter<float>, 4> bands;
+	std::array<dsp::LinkwitzRileyFilter<float>, 2> bands;
 #endif
 	double lastSampleRate = 0.0;
 

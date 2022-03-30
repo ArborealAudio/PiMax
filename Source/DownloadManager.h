@@ -11,7 +11,7 @@
 #pragma once
 
 const String versionURL
-{ "https://arborealaudio.com/wp-json/twentytwentyone-child/v1/pimax-version" };
+{ "https://arborealaudio.com/wp-content/versions/PiMax-latest.json" };
 
 const String downloadURLWin
 { "https://arborealaudio.com/wp-content/downloads/PiMax-windows.exe" };
@@ -55,12 +55,16 @@ struct DownloadManager : Component
     {
         if (auto stream = URL(versionURL).createInputStream(URL::InputStreamOptions(URL::ParameterHandling::inAddress)))
         {
-            auto latestVersion = stream->readEntireStreamAsString();
+            auto json = strix::createValueTreeFromJSON(stream->readEntireStreamAsString());
+            
+            changes = json.getChildWithName("changes").getProperty("property0");
+
+            auto latestVersion = json.getChildWithName("version").getProperty("property0");
             
             DBG("Current: " << String(ProjectInfo::versionString).removeCharacters("."));
-            DBG("Latest: " << latestVersion);
+            DBG("Latest: " << latestVersion.toString());
             
-            return String(ProjectInfo::versionString).removeCharacters(".") < latestVersion;
+            return String(ProjectInfo::versionString).removeCharacters(".") < latestVersion.toString().removeCharacters(".");
         }
         else
             return false;
@@ -87,16 +91,18 @@ struct DownloadManager : Component
             g.setColour(Colours::darkslategrey);
             g.fillRoundedRectangle(getLocalBounds().toFloat(), 15.f);
             
-            g.setFont(getCustomFont(FontStyle::Regular).withHeight(17.f));
+#if !JUCE_MAC
+            g.setFont(getCustomFont(FontStyle::Regular).withHeight(14.f));
+#else
+            g.setFont(getCustomFont(FontStyle::Regular).withHeight(13.f));
+#endif
             g.setColour(Colour(0xa7a7a7a7));
 
-            auto textbounds = Rectangle<int>{ getLocalBounds().withTrimmedBottom(getHeight() / 2).reduced(10) };
+            auto textbounds = Rectangle<int>{ getLocalBounds().withTrimmedBottom(70) };
 
             if (!downloadFinished.load()) {
                 if (!isDownloading.load())
-                    g.drawFittedText("A new update is available! Would you like to download?",
-                        textbounds, Justification::centred,
-                        7, 1.f);
+                    g.drawFittedText("A new update is available! Would you like to download?\n\nChanges:\n" + changes, textbounds, Justification::centredTop, 10, 0.f);
                 else
                     g.drawFittedText("Downloading... " + String(downloadProgress.load(), 2) + "%",
                         textbounds, Justification::centred,
@@ -156,6 +162,8 @@ private:
     std::atomic<float> downloadProgress;
     std::atomic<bool> downloadFinished = false;
 
+    String changes;
+
     std::function<void(gin::DownloadManager::DownloadResult)> result =
         [this](gin::DownloadManager::DownloadResult download)
     {
@@ -182,32 +190,6 @@ private:
             downloadFinished.store(true);
 #endif
         
-        //if (!stream.write(download.data.getData(), download.data.getSize()))
-        //    downloadStatus.store(false);
-
-//        auto unzip = File(File::getSpecialLocation(File::SpecialLocationType::tempDirectory)
-//                    .getFullPathName() + "/tmp");
-//
-//        if (ZipFile(temp).uncompressTo(unzip)) {
-//
-//            gin::ElevatedFileCopy copy;
-//
-//            copy.deleteFile(temp);
-//
-//            auto vst3 = File(unzip.getFullPathName() + "/Maximizer.vst3");
-//            auto vst = File(unzip.getFullPathName() + "/PiMax.dll");
-//#if JUCE_WINDOWS
-//            copy.moveFile(vst3, File("C:/Program Files/Common Files/VST3/Maximizer.vst3"));/*change filename back!!*/
-//            copy.moveFile(vst3, File("C:/Program Files/Steinberg/VSTPlugins/PiMax.dll"));
-//#endif
-//            auto result = copy.execute(false);
-//            downloadStatus.store(true);
-//        }
-//        else {
-//            DBG("uncompress failed");
-//            downloadStatus.store(false);
-//        }
-
         updated = true;
         if (onUpdateChange != nullptr)
             onUpdateChange(updated);

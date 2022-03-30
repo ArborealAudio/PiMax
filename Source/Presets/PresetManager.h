@@ -47,7 +47,7 @@ struct PresetManager
 
     bool savePreset(const String& filename, const File& parentDir)
     {
-        auto file = parentDir.getChildFile(filename).withFileExtension("aap");
+        auto file = parentDir.getChildFile(File::createLegalFileName(filename)).withFileExtension("aap");
         if (!file.existsAsFile())
             file.create();
         
@@ -93,6 +93,8 @@ struct PresetManager
         auto renderHQ = apvts.state.getChildWithProperty("id", "renderHQ");
         auto newHQ = newstate.getChildWithProperty("id", "hq");
         auto newRenderHQ = newstate.getChildWithProperty("id", "renderHQ");
+        auto bypass = apvts.state.getChildWithProperty("id", "bypass");
+        auto newBypass = newstate.getChildWithProperty("id", "bypass");
 
         if (newHQ.isValid())
             newHQ.copyPropertiesFrom(hq, nullptr);
@@ -101,6 +103,11 @@ struct PresetManager
 
         if (newRenderHQ.isValid())
             newRenderHQ.copyPropertiesFrom(renderHQ, nullptr);
+        else
+            jassertfalse;
+
+        if (newBypass.isValid())
+            newBypass.copyPropertiesFrom(bypass, nullptr);
         else
             jassertfalse;
 

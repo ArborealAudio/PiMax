@@ -91,6 +91,18 @@ UI::UI (MaximizerAudioProcessor& p) : audioProcessor(p), gain__slider(false), ou
     autoGain.setTooltip("Toggles automatic gain compensation for both the full signal and any multiband gain.");
     autoGain.setBounds(538, 50, 40, 25);
 
+    addAndMakeVisible(boost);
+    boost.setClickingTogglesState(true);
+    boost.setLookAndFeel(&boostLNF);
+    boostLNF.setType(TopButtonLNF::Type::Boost);
+    boost.setButtonText("Input Boost");
+    boost.setTooltip("12dB input boost, and increases Curve value exponentially.");
+#if !JUCE_MAC
+    boost.setSize(55, 23);
+#else
+    boost.setSize(60, 23);
+#endif
+
     addAndMakeVisible(bypass);
     bypass.setClickingTogglesState(true);
     bypass.setLookAndFeel(&bypassLNF);
@@ -239,6 +251,7 @@ UI::UI (MaximizerAudioProcessor& p) : audioProcessor(p), gain__slider(false), ou
     //[Constructor] You can add your own custom stuff here..
     curve__slider.setCentrePosition(getLocalBounds().getCentreX(), 1.2 * 295.f);
     bandSplit__textButton.setCentrePosition(getLocalBounds().getCentreX(), 1.2 * 344.f);
+    boost.setCentrePosition(getLocalBounds().getCentreX(), 1.2 * 80.f);
     //[/Constructor]
 }
 
@@ -256,6 +269,7 @@ UI::~UI()
     bandSplit__textButton.setLookAndFeel(nullptr);
     autoGain.setLookAndFeel(nullptr);
     bypass.setLookAndFeel(nullptr);
+    boost.setLookAndFeel(nullptr);
     linearPhaseButton.setLookAndFeel(nullptr);
     widthSlider.setLookAndFeel(nullptr);
     mixSlider.setLookAndFeel(nullptr);
