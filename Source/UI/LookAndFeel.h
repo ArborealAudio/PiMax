@@ -30,31 +30,31 @@ static const Font getCustomFont(FontStyle style)
     
 }
 
-class InputMeterLNF : public foleys::LevelMeterLookAndFeel
-{
-public:
+// class InputMeterLNF : public foleys::LevelMeterLookAndFeel
+// {
+// public:
 
-    juce::Rectangle<float> getMeterClipIndicatorBounds(juce::Rectangle<float> bounds,
-        foleys::LevelMeter::MeterFlags meterType) const override
-    {
-        Rectangle<float> rect;
-        return rect;
-    }
+//     juce::Rectangle<float> getMeterClipIndicatorBounds(juce::Rectangle<float> bounds,
+//         foleys::LevelMeter::MeterFlags meterType) const override
+//     {
+//         Rectangle<float> rect;
+//         return rect;
+//     }
 
-};
+// };
 
-class OutputMeterLNF : public foleys::LevelMeterLookAndFeel
-{
-    juce::Rectangle<float> getMeterClipIndicatorBounds(juce::Rectangle<float> bounds,
-        foleys::LevelMeter::MeterFlags meterType) const override
-    {
-        const auto margin = bounds.getWidth() * 0.05f;
-        const auto w = bounds.getWidth() - margin * 2.0f;
-        return juce::Rectangle<float>(bounds.getX() + margin,
-            bounds.getY() + margin - 1, w, w * 0.55f);
-    }
+// class OutputMeterLNF : public foleys::LevelMeterLookAndFeel
+// {
+//     juce::Rectangle<float> getMeterClipIndicatorBounds(juce::Rectangle<float> bounds,
+//         foleys::LevelMeter::MeterFlags meterType) const override
+//     {
+//         const auto margin = bounds.getWidth() * 0.05f;
+//         const auto w = bounds.getWidth() - margin * 2.0f;
+//         return juce::Rectangle<float>(bounds.getX() + margin,
+//             bounds.getY() + margin - 1, w, w * 0.55f);
+//     }
 
-};
+// };
 
 class CrossoverSliderLNF : public LookAndFeel_V4
 {

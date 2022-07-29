@@ -21,7 +21,6 @@
 
 //[Headers]     -- You can add your own extra header files here --
 #include <JuceHeader.h>
-#include "ff_meters-master/ff_meters.h"
 #include "UI/LookAndFeel.h"
 #include "Presets/PresetComp.h"
 //[/Headers]
@@ -29,11 +28,9 @@
 
 //==============================================================================
 /**
-                                                                    //[Comments]
     An auto-generated component, created by the Projucer.
 
     Describe your class and how it works here!
-                                                                    //[/Comments]
 */
 class UI  : public juce::Component
 {
@@ -43,7 +40,6 @@ public:
     ~UI() override;
 
     //==============================================================================
-    //[UserMethods]     -- You can add your own custom methods in this section.
     struct WidthSlider : public Slider
     {
         bool altDown = false;
@@ -92,8 +88,6 @@ public:
         return presetComp.getCurrentPreset();
     }
 
-    //[/UserMethods]
-
     void paint (juce::Graphics& g) override;
     void resized() override;
 
@@ -101,7 +95,6 @@ public:
     //static const char* g245_png;
     //static const int g245_pngSize;
 
-    //[UserVariables]   -- You can add your own custom variables in this section.
     GainSlider gain__slider, outVol__slider;
     Slider curve__slider;
     WidthSlider widthSlider, mixSlider;
@@ -109,27 +102,21 @@ public:
     ComboBox clipBox;
     PresetComp presetComp;
 
-    OutputMeterLNF outputLNF;
-    InputMeterLNF inputLNF;
+    // OutputMeterLNF outputLNF;
+    // InputMeterLNF inputLNF;
     GainSliderLNF inGainLNF, outGainLNF;
     ComboBoxLNF hqBoxLNF, clipBoxLNF;
     BottomButtonLNF bottomButtonLNF;
     TopButtonLNF distLNF, bandSplitLNF, autoGainLNF, bypassLNF, boostLNF;
     CurveSliderLNF curveLNF;
     KnobLNF widthLNF, mixLNF;
-    foleys::LevelMeter inputMeter{ foleys::LevelMeter::Minimal }, outputMeter{ foleys::LevelMeter::Minimal };
+    strix::VolumeMeterComponent inputMeter, outputMeter;
+    // foleys::LevelMeter inputMeter{ foleys::LevelMeter::Minimal }, outputMeter{ foleys::LevelMeter::Minimal };
     
 
 private:
     MaximizerAudioProcessor& audioProcessor;
 
-    //[/UserVariables]
-    juce::Image cachedImage_g245_png_1;
-
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (UI)
 };
-
-//[EndFile] You can add extra defines here...
-//[/EndFile]
-
