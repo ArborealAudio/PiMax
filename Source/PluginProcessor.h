@@ -16,8 +16,8 @@
 #include "Processors/MaximPizer.h"
 #include "Processors/Waveshapers.h"
 #include "Processors/StereoWidener.h"
-#include "Processors/MultiBand Processor.h"
-#include "ff_meters/ff_meters.h"
+#include "Processors/MultiBandProcessor.h"
+// #include "ff_meters/ff_meters.h"
 #include "Presets/PresetManager.h"
 #include "OnlineActivation.h"
 // #include "farbot/AsyncCaller.hpp"
@@ -43,8 +43,7 @@
 */
 class MaximizerAudioProcessor : public AudioProcessor,
                                 public AudioProcessorValueTreeState::Listener,
-                                public ValueTree::Listener,
-                                Timer
+                                public ValueTree::Listener
 {
 public:
     //==============================================================================
@@ -89,7 +88,7 @@ public:
     void valueTreeRedirected(ValueTree& treeWhichHasBeenChanged) override;
     std::function<void()> onPresetChange;
 
-    void timerCallback() override { if (needs_update && asyncCall.process()) needs_update = false; }
+    // void timerCallback() override { if (needs_update && asyncCall.process()) needs_update = false; }
 
     inline void updateOversample() noexcept;
 
@@ -100,13 +99,14 @@ public:
         return isUnlocked;
     }
 
-    foleys::LevelMeterSource& getInputMeterSource() { return inputMeter; }
-    foleys::LevelMeterSource& getOutputMeterSource() { return outputMeter; }
+    // foleys::LevelMeterSource& getInputMeterSource() { return inputMeter; }
+    // foleys::LevelMeterSource& getOutputMeterSource() { return outputMeter; }
+    strix::VolumeMeterSource &getInputMeterSource() { return inputMeter; }
+    strix::VolumeMeterSource &getOutputMeterSource() { return outputMeter; }
 
     AudioProcessorValueTreeState apvts;
 
-    std::atomic<float>* bandSplit, *monoWidth, *delta,
-        *gain_dB, *curve, *output_dB, *clip, *distIndex, *autoGain, *linearPhase;
+    std::atomic<float>* bandSplit, *monoWidth, *delta, *gain_dB, *curve, *output_dB, *clip, *distIndex, *autoGain, *linearPhase;
     std::array<std::atomic<float>*, 3> crossovers;
 
     int numBands = 2, lastNumBands = 2;
@@ -147,7 +147,7 @@ public:
 
 private:
 
-    farbot::AsyncCaller<farbot::fifo_options::concurrency::single> asyncCall;
+    // farbot::AsyncCaller<farbot::fifo_options::concurrency::single> asyncCall;
 
     void checkActivation();
 
@@ -181,8 +181,9 @@ private:
     
     float lastInputGain = 1.0, lastOutGain = 1.0;
 
-    foleys::LevelMeterSource inputMeter, outputMeter;
-    
+    // foleys::LevelMeterSource inputMeter, outputMeter;
+    strix::VolumeMeterSource inputMeter, outputMeter;
+
     AudioBuffer<float> bypassBuffer;
     bool lastBypass = false;
     bool bufferCopied = false;

@@ -37,9 +37,9 @@ add_subdirectory(Source/Processors)
 add_subdirectory(Source/Presets)
 
 juce_add_modules(
-    "Source/ff_meters"
     "$ENV{HOME}/modules/Gin/modules/gin"
-    "$ENV{HOME}/modules/Gin/modules/gin_gui")
+    "$ENV{HOME}/modules/Gin/modules/gin_gui"
+    "$ENV{HOME}/modules/Arbor_modules")
 
 target_compile_definitions(PiMax
 PUBLIC
@@ -53,6 +53,8 @@ PUBLIC
 juce_add_binary_data(BinaryData SOURCES
     "Source/Resources/arboreal tree.svg"
     "Source/Resources/fonts/Sora-Regular.ttf"
+    "Source/Resources/fonts/Sora-Thin.ttf"
+    "Source/Resources/fonts/Sora-SemiBold.ttf"
     "Source/Presets/Factory Presets/Bass Fattener.aap"
     "Source/Presets/Factory Presets/Bass Quack.aap"
     "Source/Presets/Factory Presets/Broken Gear.aap"
@@ -76,9 +78,11 @@ PRIVATE
     juce::juce_audio_utils
     juce::juce_dsp
     juce::juce_opengl
+    juce::juce_product_unlocking
+    juce::juce_cryptography
     gin
     gin_gui
-    ff_meters
+    Arbor_modules
 PUBLIC
     juce::juce_recommended_config_flags
     juce::juce_recommended_lto_flags

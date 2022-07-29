@@ -59,12 +59,10 @@ MaximizerAudioProcessor::MaximizerAudioProcessor()
 
     apvts.state.addListener(this);
 
-    inputMeter.setMaxHoldMS(1000);
-    outputMeter.setMaxHoldMS(1000);
+    // inputMeter.setMaxHoldMS(1000);
+    // outputMeter.setMaxHoldMS(1000);
 
     checkActivation();
-
-    startTimer(200);
 }
 
 MaximizerAudioProcessor::~MaximizerAudioProcessor()
@@ -77,8 +75,6 @@ MaximizerAudioProcessor::~MaximizerAudioProcessor()
         apvts.removeParameterListener("crossover" + std::to_string(i), this);
 
     apvts.state.removeListener(this);
-
-    stopTimer();
 }
 
 //==============================================================================
@@ -156,8 +152,7 @@ void MaximizerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
     else
         lastSampleRate = sampleRate;
 
-    dsp::ProcessSpec spec{lastSampleRate, uint32(oversample[osIndex].getOversamplingFactor() * samplesPerBlock),
-        (uint32)getTotalNumOutputChannels()};
+    dsp::ProcessSpec spec{lastSampleRate, uint32(oversample[osIndex].getOversamplingFactor() * samplesPerBlock), (uint32)getTotalNumOutputChannels()};
                 
     bypassBuffer.setSize(getTotalNumOutputChannels(), samplesPerBlock);
     bypassDelay.prepare(spec);
@@ -173,18 +168,18 @@ void MaximizerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
     m_Proc.initCrossovers();
     m_Proc.setOversamplingFactor(oversample[osIndex].getOversamplingFactor());
 
-    for (auto& b : m_Proc.bandBuffer) {
-        b.setSize(getTotalNumOutputChannels(), samplesPerBlock * oversample[osIndex].getOversamplingFactor(), false,
-            false, true);
-    }
+    for (auto& b : m_Proc.bandBuffer)
+        b.setSize(getTotalNumOutputChannels(), samplesPerBlock * oversample[osIndex].getOversamplingFactor(), false, false, true);
     
     filterLength = m_Proc.linBand[0].size;
 
     mixer.prepare(spec);
     mixer.setMixingRule(dsp::DryWetMixingRule::linear);
 
-    inputMeter.resize(2, sampleRate * 0.1 / samplesPerBlock);
-    outputMeter.resize(2, sampleRate * 0.1 / samplesPerBlock);
+    // inputMeter.resize(2, sampleRate * 0.1 / samplesPerBlock);
+    // outputMeter.resize(2, sampleRate * 0.1 / samplesPerBlock);
+    inputMeter.prepare(spec);
+    outputMeter.prepare(spec);
 
     widener.prepare(spec);
 }
@@ -197,28 +192,20 @@ void MaximizerAudioProcessor::releaseResources()
     lastInputGain = 1.f;
     lastOutGain = 1.f;
     m_lastGain = 1.f;
-    xm1[0] = 0.0, xm1[1] = 0.0, ym1[0] = 0.0, ym1[1] = 0.0;
+    xm1[0] = xm1[1] = ym1[0] = ym1[1] = 0.0;
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
 bool MaximizerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
-  #if JucePlugin_IsMidiEffect
-    juce::ignoreUnused (layouts);
-    return true;
-  #else
-    // This is the place where you check if the layout is supported.
-    // In this template code we only support mono or stereo.
-    // Some plugin hosts, such as certain GarageBand versions, will only
-    // load plugins that support stereo bus layouts.
     if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
      && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
         return false;
 
     // This checks if the input layout matches the output layout
-   #if ! JucePlugin_IsSynth
     PluginHostType host;
 
+    // clumsily force stereo in Bitwig. CHANGE THIS!!
     if (host.isBitwigStudio())
     {
         if (layouts.getMainOutputChannelSet() == AudioChannelSet::stereo() &&
@@ -237,10 +224,6 @@ bool MaximizerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts
     }
     
     return false;
-
-   #endif
-
-  #endif
 }
 #endif
 
@@ -276,12 +259,8 @@ void MaximizerAudioProcessor::parameterChanged(const String& parameterID, float 
             lastSampleRate = lastDownSampleRate;
         }
 
-        if (parameterID != "linearPhase") {
+        if (parameterID != "linearPhase")
             needs_resize = true;
-            /*while (needs_resize) {
-                asyncCall.process();
-            }*/
-        }
 
         mPi.prepare();
     }
@@ -344,7 +323,7 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     if (totalNumInputChannels < totalNumOutputChannels)
         buffer.copyFrom(1, 0, buffer.getReadPointer(0), numSamples);
     
-    bypassBuffer.makeCopyOf(buffer);
+    bypassBuffer.makeCopyOf(buffer, true);
     bufferCopied = true;
 
     dsp::AudioBlock<float> block(buffer);
@@ -380,7 +359,7 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     if (*bandSplit)
     {
         if (needs_resize) {
-            asyncCall.callAsync([this] { updateBandSpecs(); });
+            MessageManager::callAsync([&] { updateBandSpecs(); });
             needs_resize = false;
             needs_update = true;
         }
@@ -518,7 +497,7 @@ void MaximizerAudioProcessor::processBlockBypassed(AudioBuffer<float>& buffer, M
 
     /*copy as usual if no change*/
     if (*bypass && lastBypass)
-        buffer.makeCopyOf(bypassBuffer);
+        buffer.makeCopyOf(bypassBuffer, true);
     /*fade bypass in*/
     else if (*bypass && !lastBypass) {
         for (int ch = 0; ch < buffer.getNumChannels(); ++ch) {
@@ -589,6 +568,8 @@ void MaximizerAudioProcessor::updateBandSpecs()
         (uint32)getTotalNumOutputChannels() };
     m_Proc.setOversamplingFactor(oversample[osIndex].getOversamplingFactor());
     m_Proc.updateSpecs(newSpec);
+
+    needs_update = false;
 }
 
 //==============================================================================
@@ -820,24 +801,22 @@ void MaximizerAudioProcessor::checkActivation()
                 trialRemaining_ms = trialEnd.toMilliseconds() - Time::getCurrentTime().toMilliseconds();
         }
     }
+    if (!timeFileGB.exists()) {
+        timeFileGB.create();
+        auto trialStart = Time::getCurrentTime();
+        XmlElement xml{ "TrialKey" };
+        xml.setAttribute("key", String(trialStart.toMilliseconds()));
+        xml.writeTo(timeFileGB);
+        timeFileGB.setReadOnly(true);
+    }
     else {
-        if (!timeFileGB.exists()) {
-            timeFileGB.create();
-            auto trialStart = Time::getCurrentTime();
-            XmlElement xml{ "TrialKey" };
-            xml.setAttribute("key", String(trialStart.toMilliseconds()));
-            xml.writeTo(timeFileGB);
-            timeFileGB.setReadOnly(true);
-        }
-        else {
-            auto xml = parseXML(timeFileGB);
+        auto xml = parseXML(timeFileGB);
 
-            auto trialEnd = Time(xml->getStringAttribute("key").getLargeIntValue());
-            trialEnd += RelativeTime::days(7);
-            trialEnded = (trialEnd <= Time::getCurrentTime());
-            if (!trialEnded)
-                trialRemaining_ms = trialEnd.toMilliseconds() - Time::getCurrentTime().toMilliseconds();
-        }
+        auto trialEnd = Time(xml->getStringAttribute("key").getLargeIntValue());
+        trialEnd += RelativeTime::days(7);
+        trialEnded = (trialEnd <= Time::getCurrentTime());
+        if (!trialEnded)
+            trialRemaining_ms = trialEnd.toMilliseconds() - Time::getCurrentTime().toMilliseconds();
     }
 #endif
 }
