@@ -980,8 +980,8 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(MaximizerAudioProce
 {
     tooltip.setColour(TooltipWindow::backgroundColourId, Colours::darkslategrey);
 
-    opengl.setImageCacheSize(static_cast<size_t>(64 * 1024 * 1024));
-    opengl.attachTo(*this);
+//    opengl.setImageCacheSize(static_cast<size_t>(64 * 1024 * 1024));
+//    opengl.attachTo(*this);
 
     for (auto* comp : getComps())
     {
@@ -1077,7 +1077,7 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(MaximizerAudioProce
 
 MaximizerAudioProcessorEditor::~MaximizerAudioProcessorEditor()
 {
-    opengl.detach();
+//    opengl.detach();
 }
 
 void MaximizerAudioProcessorEditor::paint (Graphics& g)
