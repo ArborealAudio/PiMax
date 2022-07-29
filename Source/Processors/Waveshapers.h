@@ -24,7 +24,7 @@ static constexpr auto halfPi = MathConstants<double>::halfPi;
 /*refactor use of param smoothing where input gain has already been smoothed.
 Perhaps include in this header file an inline-able function for param smoothing*/
 
-namespace strix
+namespace waveshapers
 {
 	/*double str_x_PreAmp(double xn, float gain)
 	{
