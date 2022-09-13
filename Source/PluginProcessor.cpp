@@ -132,7 +132,7 @@ void MaximizerAudioProcessor::setCurrentProgram (int index)
 
 const juce::String MaximizerAudioProcessor::getProgramName (int index)
 {
-    return {};
+    return "Default";
 }
 
 void MaximizerAudioProcessor::changeProgramName (int index, const juce::String& newName)
