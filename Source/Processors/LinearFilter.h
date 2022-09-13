@@ -2,6 +2,8 @@
 
 namespace strix
 {
+namespace LinearFilter
+{
     struct Buffer
     {
         Buffer() = default;
@@ -466,4 +468,5 @@ namespace strix
         int interpolationLength = 0;
     };
 
+} //namespace LinearFilter
 } //namespace strix

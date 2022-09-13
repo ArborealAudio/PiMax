@@ -85,7 +85,7 @@ struct Splash : Component
 
             g.setFont(getCustomFont(FontStyle::Regular).withHeight(16.f));
             Time time(Time::getCurrentTime());
-            g.drawFittedText(String(ProjectInfo::versionString) + 
+            g.drawFittedText("v" + String(ProjectInfo::versionString) + 
                 "\n(c) Arboreal Audio " + String(time.getYear()),
                 clipArea.withTrimmedTop(150.f).toNearestInt(),
                 Justification::centred, 3, 1.f);

@@ -221,7 +221,9 @@ public:
     }
 
 private:
+#if JUCE_WINDOWS
     OpenGLContext opengl;
+#endif
 
     ResponseCurveComponent responseCurveComponent;
     UI ui;

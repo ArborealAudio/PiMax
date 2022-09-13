@@ -935,7 +935,7 @@ void WaveshaperComponent::paint(Graphics& g)
 
             x *= gain;
 
-            mag[n] = strix::inflator_v2(x, *audioProcessor.curve, *audioProcessor.clip, *audioProcessor.distIndex);
+            mag[n] = waveshapers::inflator_v2(x, *audioProcessor.curve, *audioProcessor.clip, *audioProcessor.distIndex);
 
             mag[n] *= pow(10.f, (*audioProcessor.output_dB / 20.f));
         }
@@ -980,8 +980,10 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(MaximizerAudioProce
 {
     tooltip.setColour(TooltipWindow::backgroundColourId, Colours::darkslategrey);
 
-    opengl.setImageCacheSize(static_cast<size_t>(64 * 1024 * 1024));
-    opengl.attachTo(*this);
+#if JUCE_WINDOWS
+   opengl.setImageCacheSize(static_cast<size_t>(64 * 1024 * 1024));
+   opengl.attachTo(*this);
+#endif
 
     for (auto* comp : getComps())
     {
@@ -1077,7 +1079,9 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(MaximizerAudioProce
 
 MaximizerAudioProcessorEditor::~MaximizerAudioProcessorEditor()
 {
-    opengl.detach();
+#if JUCE_WINDOWS
+   opengl.detach();
+#endif
 }
 
 void MaximizerAudioProcessorEditor::paint (Graphics& g)

@@ -3,9 +3,6 @@
 #include "LinearFilter.h"
 #include "LRFilter.h"
 
-//using xs = xsimd::batch<float>;
-using vec = dsp::SIMDRegister<float>;
-
 struct MultibandProcessor
 {
 	MultibandProcessor(AudioProcessorValueTreeState& vts) : apvts(vts)
@@ -447,11 +444,11 @@ struct MultibandProcessor
 
     dsp::ConvolutionMessageQueue q{ 16000 };
 
-    std::array<strix::FIRThread, 3> linBand
+    std::array<strix::LinearFilter::FIRThread, 3> linBand
     { {
-        {strix::FIRThread(true,  2048, q)},
-        {strix::FIRThread(false, 2048, q)},
-        {strix::FIRThread(false, 2048, q)}
+        {strix::LinearFilter::FIRThread(true,  2048, q)},
+        {strix::LinearFilter::FIRThread(false, 2048, q)},
+        {strix::LinearFilter::FIRThread(false, 2048, q)}
     } };
 
     std::array<StereoWidener, 4> bandWidener;
