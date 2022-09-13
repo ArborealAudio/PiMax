@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(JUCE CONFIG REQUIRED)
 #TODO: add CLAP implementation
 
-juce_set_vst2_sdk_path("${VST2_SDK}")
+juce_set_vst2_sdk_path("$ENV{HOME}/vst2_sdk")
 
 juce_add_plugin(PiMax
     COMPANY_NAME "Arboreal Audio"
@@ -47,8 +47,8 @@ PUBLIC
     JUCE_USE_CURL=0
     JUCE_VST3_CAN_REPLACE_VST2=0
     JUCE_DISPLAY_SPLASH_SCREEN=0
-    JUCE_REPORT_APP_USAGE=0
-    JUCE_COREGRAPHICS_RENDER_WITH_MULTIPLE_PAINT_CALLS=1)
+    JUCE_REPORT_APP_USAGE=0)
+    # JUCE_COREGRAPHICS_RENDER_WITH_MULTIPLE_PAINT_CALLS=1)
 
 juce_add_binary_data(BinaryData SOURCES
     "Source/Resources/arboreal tree.svg"
