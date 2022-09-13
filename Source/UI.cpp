@@ -52,11 +52,13 @@ UI::UI (MaximizerAudioProcessor& p) : audioProcessor(p), gain__slider(false), ou
     // inputMeter.setLookAndFeel(&inputLNF);
     // inputMeter.setRefreshRateHz(30);
     // inputMeter.setMeterSource(&audioProcessor.getInputMeterSource());
+    inputMeter.setMeterType(strix::VolumeMeterComponent::Volume);
     inputMeter.setInterceptsMouseClicks(false, false);
 
     // outputMeter.setLookAndFeel(&outputLNF);
     // outputMeter.setRefreshRateHz(30);
     // outputMeter.setMeterSource(&audioProcessor.getOutputMeterSource());
+    outputMeter.setMeterType(strix::VolumeMeterComponent::Volume);
     outputMeter.setInterceptsMouseClicks(true, false);
 
     inputMeter.setBounds(33, 88, 40, 215);
@@ -121,8 +123,6 @@ UI::UI (MaximizerAudioProcessor& p) : audioProcessor(p), gain__slider(false), ou
         "Positive values: a more compressed and warmer saturation.");
     curve__slider.setSize(248, 25);
 
-    //curve__slider.setBounds(getLocalBounds().getCentreX(), 275, 248, 40);
-
     addAndMakeVisible(distButton);
     distButton.setClickingTogglesState(true);
     if (!distButton.getToggleState()) {
@@ -166,7 +166,6 @@ UI::UI (MaximizerAudioProcessor& p) : audioProcessor(p), gain__slider(false), ou
         "Useful for when intermodulation distortion is an issue, such as processing a full mix with heavy"
         " low-end content.");
     bandSplit__textButton.setSize(88, 32);
-    //bandSplit__textButton.setBounds(244, 328, 88, 32);
 
     addAndMakeVisible(hq);
     hq.setClickingTogglesState(true);
@@ -249,8 +248,6 @@ UI::UI (MaximizerAudioProcessor& p) : audioProcessor(p), gain__slider(false), ou
 
 UI::~UI()
 {
-    inputMeter.setLookAndFeel(nullptr);
-    outputMeter.setLookAndFeel(nullptr);
     gain__slider.setLookAndFeel(nullptr);
     outVol__slider.setLookAndFeel(nullptr);
     hq.setLookAndFeel(nullptr);
