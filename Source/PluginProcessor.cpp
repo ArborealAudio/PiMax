@@ -60,6 +60,8 @@ MaximizerAudioProcessor::MaximizerAudioProcessor()
     apvts.state.addListener(this);
 
     checkActivation();
+
+    startTimer(200);
 }
 
 MaximizerAudioProcessor::~MaximizerAudioProcessor()
@@ -72,6 +74,8 @@ MaximizerAudioProcessor::~MaximizerAudioProcessor()
         apvts.removeParameterListener("crossover" + std::to_string(i), this);
 
     apvts.state.removeListener(this);
+
+    stopTimer();
 }
 
 //==============================================================================
@@ -257,7 +261,7 @@ void MaximizerAudioProcessor::parameterChanged(const String& parameterID, float 
         }
 
         // if (parameterID != "linearPhase")
-        needs_resize = true;
+            needs_resize.store(true);
 
         mPi.prepare();
     }
@@ -356,14 +360,15 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     if (*bandSplit)
     {
         /* if oversample state has changed, update band specs on message thread */
-        if (needs_resize) {
-            MessageManager::callAsync([&] { updateBandSpecs(); });
-            needs_resize = false;
-            needs_update = true;
+        if (needs_resize.load()) {
+            if (async.callAsync([&]{updateBandSpecs();})) {
+                needs_resize.store(false);
+                needs_update.store(true);
+            }
         }
 
         /* if the band specs have been updated, copy input buffer into band buffers */
-        if (!needs_update) {
+        if (!needs_update.load()) {
             for (auto& b : m_Proc.bandBuffer) {
                 if (b.getNumSamples() == osBlock.getNumSamples()) /* make sure band buffer is the same size as the oversampled input block */
                 {
@@ -406,7 +411,7 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
             }
         }
     }
-    else if (*bandSplit && !needs_update) {
+    else if (*bandSplit && !needs_update.load()) {
         if (*linearPhase)
             m_Proc.addBandsConvolution(osContext);
         else
@@ -566,13 +571,16 @@ void MaximizerAudioProcessor::processDelta(AudioBuffer<float>& buffer, float inG
 
 void MaximizerAudioProcessor::updateBandSpecs()
 {
+    //suspendProcessing(true);
     for (auto& b : m_Proc.bandBuffer)
         b.setSize(getTotalNumOutputChannels(), numSamples * oversample[osIndex].getOversamplingFactor(), false, false, true);
 
     dsp::ProcessSpec newSpec{ lastSampleRate, uint32(numSamples * oversample[osIndex].getOversamplingFactor()),
         (uint32)getTotalNumOutputChannels() };
     m_Proc.setOversamplingFactor(oversample[osIndex].getOversamplingFactor());
+    m_Proc.reset();
     m_Proc.updateSpecs(newSpec);
+    //suspendProcessing(false); 
 
     needs_update = false;
 }

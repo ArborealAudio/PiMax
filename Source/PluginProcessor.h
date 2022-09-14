@@ -13,6 +13,8 @@
 #define USE_CONVOLUTION 1
 
 #include <JuceHeader.h>
+#include "modules/farbot/include/farbot/AsyncCaller.hpp"
+#include "modules/farbot/include/farbot/RealtimeObject.hpp"
 #include "Processors/MaximPizer.h"
 #include "Processors/Waveshapers.h"
 #include "Processors/StereoWidener.h"
@@ -41,7 +43,8 @@
 */
 class MaximizerAudioProcessor : public AudioProcessor,
                                 public AudioProcessorValueTreeState::Listener,
-                                public ValueTree::Listener
+                                public ValueTree::Listener,
+                                public Timer
 {
 public:
     //==============================================================================
@@ -147,6 +150,8 @@ private:
 
     void updateBandSpecs();
 
+    farbot::AsyncCaller<farbot::fifo_options::concurrency::single> async;
+
     AudioProcessorValueTreeState::ParameterLayout createParams();
 
     ValueTree numBandsTree
@@ -181,6 +186,12 @@ private:
     
     std::atomic<bool> needs_resize = false, crossover_changed = false, needs_update = false;
     int crossover_changedID = 0;
+
+    void timerCallback() override
+    {
+        if (needs_update.load())
+            async.process();
+    }
     
     dsp::DelayLine<float> bypassDelay {44100};
 
