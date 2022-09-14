@@ -69,15 +69,15 @@ namespace LinearFilter
             if (doubleFilter) {
                 for (auto& i : iirLow)
                     for (auto& j : i)
-                        j->prepare(monoSpec);
+                        j.prepare(monoSpec);
                 for (auto& i : iirLowPulse)
-                    i->prepare(monoSpec);
+                    i.prepare(monoSpec);
             }
             for (auto& i : iirHigh)
                 for (auto& j : i)
-                    j->prepare(monoSpec);
+                    j.prepare(monoSpec);
             for (auto& i : iirHighPulse)
-                i->prepare(monoSpec);
+                i.prepare(monoSpec);
 
         #if USE_CONVOLUTION
             if (doubleFilter)
@@ -102,15 +102,15 @@ namespace LinearFilter
             if (doubleFilter) {
                 for (auto& i : iirLow)
                     for (auto& j : i)
-                        j->reset();
+                        j.reset();
                 for (auto& i : iirLowPulse)
-                    i->reset();
+                    i.reset();
             }
             for (auto& i : iirHigh)
                 for (auto& j : i)
-                    j->reset();
+                    j.reset();
             for (auto& i : iirHighPulse)
-                i->reset();
+                i.reset();
         #if USE_CONVOLUTION
             if (doubleFilter)
                 convLow.reset();
@@ -152,56 +152,74 @@ namespace LinearFilter
                 iirLow[1].clear();
                 iirLowPulse.clear();
 
-                iirLowCoeffs = dsp::FilterDesign<float>::
-                    designIIRLowpassHighOrderButterworthMethod(freq, sampleRate, 2);
-                for (auto& c : iirLowCoeffs) {
-                    iirLow[0].add(new dsp::IIR::Filter<float>(c));
-                    iirLow[1].add(new dsp::IIR::Filter<float>(c));
-                    iirLowPulse.add(new dsp::IIR::Filter<float>(c));
-                }
+                farbot::RealtimeObject<ReferenceCountedObjectPtr<dsp::IIR::Coefficients<float>>,
+                    farbot::RealtimeObjectOptions::nonRealtimeMutatable>
+                    ::ScopedAccess<farbot::ThreadType::nonRealtime> lowCoeffs(iirLowCoeffs);
+
+                *lowCoeffs = dsp::FilterDesign<float>::
+                    designIIRLowpassHighOrderButterworthMethod(freq, sampleRate, 2).getFirst();
+                /*it'll always be one set of coeffs*/
+
+                iirLow[0].emplace_back(dsp::IIR::Filter<float>(*lowCoeffs));
+                iirLow[1].emplace_back(dsp::IIR::Filter<float>(*lowCoeffs));
+                iirLowPulse.emplace_back(dsp::IIR::Filter<float>(*lowCoeffs));
             }
 
             iirHigh[0].clear();
             iirHigh[1].clear();
             iirHighPulse.clear();
 
-            iirHighCoeffs = dsp::FilterDesign<float>::
-                designIIRHighpassHighOrderButterworthMethod(freq, sampleRate, 2);
-            for (auto& c : iirHighCoeffs) {
-                iirHigh[0].add(new dsp::IIR::Filter<float>(c));
-                iirHigh[1].add(new dsp::IIR::Filter<float>(c));
-                iirHighPulse.add(new dsp::IIR::Filter<float>(c));
-            }
+            farbot::RealtimeObject<ReferenceCountedObjectPtr<dsp::IIR::Coefficients<float>>,
+                farbot::RealtimeObjectOptions::nonRealtimeMutatable>
+                ::ScopedAccess<farbot::ThreadType::nonRealtime> hiCoeffs(iirHighCoeffs);
+
+            *hiCoeffs = dsp::FilterDesign<float>::
+                designIIRHighpassHighOrderButterworthMethod(freq, sampleRate, 2).getFirst();
+
+            iirHigh[0].emplace_back(dsp::IIR::Filter<float>(*hiCoeffs));
+            iirHigh[1].emplace_back(dsp::IIR::Filter<float>(*hiCoeffs));
+            iirHighPulse.emplace_back(dsp::IIR::Filter<float>(*hiCoeffs));
 
         }
 
         inline void changeIIRCoeffs(double freq, double sampleRate) noexcept
         {
             if (doubleFilter)
-                for (auto& iir : iirLow)
-                    iir[0]->coefficients = *dsp::FilterDesign<float>::
-                        designIIRLowpassHighOrderButterworthMethod(freq, sampleRate, 2).getFirst();
+            {
+                farbot::RealtimeObject<ReferenceCountedObjectPtr<dsp::IIR::Coefficients<float>>,
+                    farbot::RealtimeObjectOptions::nonRealtimeMutatable>
+                    ::ScopedAccess<farbot::ThreadType::nonRealtime> lowCoeffs(iirLowCoeffs);
 
-            for (auto& iir : iirHigh)
-                iir[0]->coefficients = *dsp::FilterDesign<float>::
-                designIIRHighpassHighOrderButterworthMethod(freq, sampleRate, 2).getFirst();
-
-            if (doubleFilter)
-                iirLowPulse[0]->coefficients = *dsp::FilterDesign<float>::
+                *lowCoeffs = dsp::FilterDesign<float>::
                     designIIRLowpassHighOrderButterworthMethod(freq, sampleRate, 2).getFirst();
+            }
 
-            iirHighPulse[0]->coefficients = *dsp::FilterDesign<float>::
+            farbot::RealtimeObject<ReferenceCountedObjectPtr<dsp::IIR::Coefficients<float>>,
+                farbot::RealtimeObjectOptions::nonRealtimeMutatable>
+                ::ScopedAccess<farbot::ThreadType::nonRealtime> hiCoeffs(iirHighCoeffs);
+
+            *hiCoeffs = dsp::FilterDesign<float>::
                 designIIRHighpassHighOrderButterworthMethod(freq, sampleRate, 2).getFirst();
         }
 
         inline void recordImpulseResponse() noexcept
         {
+            farbot::RealtimeObject<ReferenceCountedObjectPtr<dsp::IIR::Coefficients<float>>,
+                farbot::RealtimeObjectOptions::nonRealtimeMutatable>
+                ::ScopedAccess<farbot::ThreadType::nonRealtime> irCoeffsLow(iirLowCoeffs);
+
+            farbot::RealtimeObject<ReferenceCountedObjectPtr<dsp::IIR::Coefficients<float>>,
+                farbot::RealtimeObjectOptions::nonRealtimeMutatable>
+                ::ScopedAccess<farbot::ThreadType::nonRealtime> irCoeffsHigh(iirHighCoeffs);
+
             if (doubleFilter) {
                 for (int i = 0; i < size; i++)
                 {
                     auto input = i == 0 ? 1.0f : 0.0f;
-                    for (auto& iir : iirLowPulse)
-                        input = iir->processSample(input);
+                    for (auto& iir : iirLowPulse) {
+                        iir.coefficients = *irCoeffsLow;
+                        input = iir.processSample(input);
+                    }
 
                     firCoeffLow[i] = input;
                 }
@@ -210,8 +228,10 @@ namespace LinearFilter
             for (int i = 0; i < size; i++)
             {
                 auto input = i == 0 ? 1.0f : 0.0f;
-                for (auto& iir : iirHighPulse)
-                    input = iir->processSample(input);
+                for (auto& iir : iirHighPulse) {
+                    iir.coefficients = *irCoeffsHigh;
+                    input = iir.processSample(input);
+                }
 
                 firCoeffHigh[i] = input;
             }
@@ -234,8 +254,6 @@ namespace LinearFilter
 
             highTransfer.set(Buffer{ std::move(highImpulse) });
 
-            //lastCoeffHigh = firCoeffHigh;
-
             if (doubleFilter) {
                 AudioBuffer<float> lowImpulse{ 2, size };
                 auto lowbuf = lowImpulse.getArrayOfWritePointers();
@@ -246,7 +264,6 @@ namespace LinearFilter
                     }
                 }
                 lowTransfer.set(Buffer{ std::move(lowImpulse) });
-                //lastCoeffLow = firCoeffLow;
             }
 
         #endif
@@ -260,7 +277,7 @@ namespace LinearFilter
             {
                 auto input = i == 0 ? 1.0f : 0.0f;
                 for (auto& iir : iirLowPulse)
-                    input = iir->processSample(input);
+                    input = iir.processSample(input);
 
                 firCoeffLow[i] = input;
             }
@@ -269,7 +286,7 @@ namespace LinearFilter
             {
                 auto input = i == 0 ? 1.0f : 0.0f;
                 for (auto& iir : iirHighPulse)
-                    input = iir->processSample(input);
+                    input = iir.processSample(input);
 
                 firCoeffHigh[i] = input;
             }
@@ -282,31 +299,6 @@ namespace LinearFilter
                 lowinc[i] = (firCoeffLow[i] - lastCoeffLow[i]) / 10.0;
                 highinc[i] = (firCoeffHigh[i] - lastCoeffHigh[i]) / 10.0;
             }
-        }
-
-        void interpolateImpulseResponse() noexcept
-        {
-#if USE_CONVOLUTION
-
-            AudioBuffer<float> lowImpulse{ 2, size };
-            AudioBuffer<float> highImpulse{ 2, size };
-            auto lowbuf = lowImpulse.getArrayOfWritePointers();
-            auto highbuf = highImpulse.getArrayOfWritePointers();
-
-            for (size_t i = 0; i < size; ++i) {
-                for (int ch = 0; ch < lowImpulse.getNumChannels(); ++ch)
-                {
-                    lowbuf[ch][i] = lastCoeffLow[i];
-                    highbuf[ch][i] = lastCoeffHigh[i];
-                }
-                lastCoeffLow[i] += lowinc[i];
-                lastCoeffHigh[i] += highinc[i];
-            }
-
-            lowTransfer.set(Buffer{ std::move(lowImpulse) });
-            highTransfer.set(Buffer{ std::move(highImpulse) });
-
-#endif
         }
 
         void loadBuffers() noexcept
@@ -327,14 +319,14 @@ namespace LinearFilter
 
         }
 
-        inline void initFilter(double freq, double sampleRate) noexcept
+        void initFilter(double freq, double sampleRate)
         {
             createIIRCoeffs(freq, sampleRate);
 
             recordImpulseResponse();
         }
 
-        inline void updateFilter(double freq, double sampleRate) noexcept
+        void updateFilter(double freq, double sampleRate)
         {
             changeIIRCoeffs(freq, sampleRate);
 
@@ -347,13 +339,18 @@ namespace LinearFilter
             const auto& input = context.getInputBlock();
             auto& output = context.getOutputBlock();
 
+            farbot::RealtimeObject<ReferenceCountedObjectPtr<dsp::IIR::Coefficients<float>>, farbot::RealtimeObjectOptions::nonRealtimeMutatable>
+                ::ScopedAccess<farbot::ThreadType::realtime> rtLowCoeffs(iirLowCoeffs);
+
             for (int ch = 0; ch < input.getNumChannels(); ++ch)
             {
                 auto* in = input.getChannelPointer(ch);
                 for (int i = 0; i < input.getNumSamples(); ++i) {
                     float out = 0.0;
-                    for (auto& iir : iirLow[ch])
-                        out = iir->processSample(in[i]);
+                    for (auto& iir : iirLow[ch]) {
+                        iir.coefficients = *rtLowCoeffs;
+                        out = iir.processSample(in[i]);
+                    }
                     output.setSample(ch, i, out);
                 }
             }
@@ -367,13 +364,18 @@ namespace LinearFilter
             const auto& input = context.getInputBlock();
             auto& output = context.getOutputBlock();
 
+            farbot::RealtimeObject<ReferenceCountedObjectPtr<dsp::IIR::Coefficients<float>>, farbot::RealtimeObjectOptions::nonRealtimeMutatable>
+                ::ScopedAccess<farbot::ThreadType::realtime> rtHighCoeffs(iirHighCoeffs);
+
             for (int ch = 0; ch < input.getNumChannels(); ++ch)
             {
                 auto* in = input.getChannelPointer(ch);
                 for (int i = 0; i < input.getNumSamples(); ++i) {
                     float out = 0.0;
-                    for (auto& iir : iirHigh[ch])
-                        out = iir->processSample(in[i]);
+                    for (auto& iir : iirHigh[ch]) {
+                        iir.coefficients = *rtHighCoeffs;
+                        out = iir.processSample(in[i]);
+                    }
                     output.setSample(ch, i, out);
                 }
             }
@@ -401,20 +403,38 @@ namespace LinearFilter
         std::vector<float> lowinc;
         std::vector<float> highinc;
 
-        OwnedArray<dsp::IIR::Filter<float>> iirLow[2];
-        OwnedArray<dsp::IIR::Filter<float>> iirHigh[2];
-        OwnedArray<dsp::IIR::Filter<float>> iirLowPulse;
-        OwnedArray<dsp::IIR::Filter<float>> iirHighPulse;
+        std::vector<dsp::IIR::Filter<float>> iirLow[2];
+        std::vector<dsp::IIR::Filter<float>> iirHigh[2];
+        std::vector<dsp::IIR::Filter<float>> iirLowPulse;
+        std::vector<dsp::IIR::Filter<float>> iirHighPulse;
         
-        ReferenceCountedArray<dsp::IIR::Coefficients<float>> iirLowCoeffs;
-        ReferenceCountedArray<dsp::IIR::Coefficients<float>> iirHighCoeffs;
-
+        farbot::RealtimeObject<ReferenceCountedObjectPtr<dsp::IIR::Coefficients<float>>, farbot::RealtimeObjectOptions::nonRealtimeMutatable> iirLowCoeffs;
+        farbot::RealtimeObject<ReferenceCountedObjectPtr<dsp::IIR::Coefficients<float>>, farbot::RealtimeObjectOptions::nonRealtimeMutatable> iirHighCoeffs;
 
         dsp::Convolution convLow, convHigh;
 
         BufferTransfer lowTransfer;
         BufferTransfer highTransfer;
     };
+
+    /*example impl of RealtimeObject in farbot*/
+
+    //struct BiquadCoeffecients { float b0, b1, b2, a1, a2; };
+    //RealtimeObject<BiquadCoeffecients, RealtimeObjectOptions::nonRealtimeMutatable> biquadCoeffs;
+
+    ///* called on realtime thread */
+    //void processAudio(float* buffer)
+    //{
+    //    RealtimeObject<BiquadCoeffecients, RealtimeObjectOptions::nonRealtimeMutatable>::ScopedAccess<ThreadType::realtime> coeffs(biquadCoeffs);
+    //    processBiquad(*coeffs, buffer);
+    //}
+
+    ///* called on non-realtime thread */
+    //void changeBiquadParameters(BiquadCoeffecients newCoeffs)
+    //{
+    //    RealtimeObject<BiquadCoeffecients, RealtimeObjectOptions::nonRealtimeMutatable>::ScopedAccess<ThreadType::nonRealtime> coeffs(biquadCoeffs);
+    //    *coeffs = newCoeffs;
+    //}
 
     /*not actually a thread lmao*/
     struct FIRThread : FIR
@@ -429,7 +449,7 @@ namespace LinearFilter
             FIR::prepare(spec);
         }
 
-        /*need this to init filters on the main thread or whatever to avoid trying to access null memory spaces*/
+        /*creates new IIRs*/
         void initFilters(double newFreq, double newSampleRate, int newIIROrder) noexcept
         {
             freq = newFreq;
@@ -437,23 +457,11 @@ namespace LinearFilter
             iirOrder = newIIROrder;
 
             initFilter(freq, sampleRate);
-#if! USE_CONVOLUTION
-            setFIRCoeffs();
-#endif
         }
 
+        /*only changes coeffs of existing IIRs*/
         void setParams(double newFreq, double newSampleRate, int newIIROrder) noexcept
         {
-            /*copy coeffs to "state" filters which can be our backup if thread does not
-            finish in time...
-            but also this will copy the coeffs from the updated filters once this is called again in
-            the loop. So we actually need to make sure that we're ready to receive the new coefficients
-            in our state filter*/
-            //if (!isThreadRunning()) /*check if Background Thread is running. If not, we can perform the copy*/
-            //    copyLastCoeffs(); 
-            //else if (waitForThreadToExit(-1))
-            //    copyLastCoeffs();
-
             freq = newFreq;
             sampleRate = newSampleRate;
             iirOrder = newIIROrder;
