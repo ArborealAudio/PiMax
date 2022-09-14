@@ -30,35 +30,19 @@
 
 //==============================================================================
 UI::UI (MaximizerAudioProcessor& p) : audioProcessor(p), gain__slider(false), outVol__slider(true),
-                                      presetComp(p.apvts), inputMeter(p.getInputMeterSource()), outputMeter(p.getOutputMeterSource())
+                                      presetComp(p.apvts),
+                                      inputMeter(p.getInputMeterSource()),
+                                      outputMeter(p.getOutputMeterSource())
 {
     addAndMakeVisible(inputMeter);
     addAndMakeVisible(outputMeter);
 
-    // outputLNF.setColour(foleys::LevelMeter::lmMeterGradientLowColour, Colours::seagreen);
-    // outputLNF.setColour(foleys::LevelMeter::lmMeterGradientMidColour, Colours::lightyellow);
-    // outputLNF.setColour(foleys::LevelMeter::lmMeterGradientMaxColour, Colours::red.interpolatedWith(Colours::pink, 0.25));
-    // outputLNF.setColour(foleys::LevelMeter::lmBackgroundClipColour, Colours::red);
-    // outputLNF.setColour(foleys::LevelMeter::lmBackgroundColour, Colours::transparentWhite);
-    // outputLNF.setColour(foleys::LevelMeter::lmMeterBackgroundColour, Colours::transparentWhite);
-    // outputLNF.setColour(foleys::LevelMeter::lmTicksColour, Colours::white);
-    // inputLNF.setColour(foleys::LevelMeter::lmMeterBackgroundColour, Colours::transparentWhite);
-    // inputLNF.setColour(foleys::LevelMeter::lmMeterGradientLowColour, Colours::seagreen);
-    // inputLNF.setColour(foleys::LevelMeter::lmMeterGradientMidColour, Colours::lightyellow);
-    // inputLNF.setColour(foleys::LevelMeter::lmMeterGradientMaxColour, Colours::red.interpolatedWith(Colours::pink, 0.25));
-    // inputLNF.setColour(foleys::LevelMeter::lmBackgroundColour, Colours::transparentWhite);
-    // inputLNF.setColour(foleys::LevelMeter::lmTicksColour, Colours::white);
-
-    // inputMeter.setLookAndFeel(&inputLNF);
-    // inputMeter.setRefreshRateHz(30);
-    // inputMeter.setMeterSource(&audioProcessor.getInputMeterSource());
     inputMeter.setMeterType(strix::VolumeMeterComponent::Volume);
+    inputMeter.setMeterColor(Colours::lightgreen.withAlpha(0.5f));
     inputMeter.setInterceptsMouseClicks(false, false);
 
-    // outputMeter.setLookAndFeel(&outputLNF);
-    // outputMeter.setRefreshRateHz(30);
-    // outputMeter.setMeterSource(&audioProcessor.getOutputMeterSource());
     outputMeter.setMeterType(strix::VolumeMeterComponent::Volume);
+    outputMeter.setMeterColor(Colours::lightgreen.withAlpha(0.5f));
     outputMeter.setInterceptsMouseClicks(true, false);
 
     inputMeter.setBounds(33, 88, 40, 215);
@@ -69,8 +53,7 @@ UI::UI (MaximizerAudioProcessor& p) : audioProcessor(p), gain__slider(false), ou
     gain__slider.setLookAndFeel(&inGainLNF);
     gain__slider.setPaintingIsUnclipped(true);
     gain__slider.setSliderSnapsToMousePosition(false);
-    gain__slider.setTooltip("Sets the input gain. In band split mode, the gain is applied to the entire signal"
-        " before the multiband process.");
+    gain__slider.setTooltip("Sets the input gain. In band split mode, the gain is applied to the entire signal before the multiband process.");
     addAndMakeVisible(gain__slider);
     gain__slider.setBounds(33, 97, 100, 210);
 
@@ -118,8 +101,7 @@ UI::UI (MaximizerAudioProcessor& p) : audioProcessor(p), gain__slider(false), ou
     curve__slider.setLookAndFeel(&curveLNF);
     curve__slider.setSliderSnapsToMousePosition(false);
     curve__slider.setPopupDisplayEnabled(true, true, nullptr, 2000);
-    curve__slider.setTooltip("Negative values: saturation which features dynamic expansion and noisier harmonics when"
-        " pushed further. In Symmetric mode, this can generate dropout-like artifacts.\n\n"
+    curve__slider.setTooltip("Negative values: saturation which features dynamic expansion and noisier harmonics when pushed further. In Symmetric mode, this can generate dropout-like artifacts.\n\n"
         "Positive values: a more compressed and warmer saturation.");
     curve__slider.setSize(248, 25);
 
@@ -286,6 +268,11 @@ void UI::paint (juce::Graphics& g)
     width,
     50 };
     g.drawText("PiMax", textBounds, Justification::centred, false);
+#if DEBUG
+    g.setColour(Colours::red);
+    g.setFont(20.f);
+    g.drawText("DEBUG", textBounds.translated(0, 25), Justification::centred, false);
+#endif
 
     {
         auto menuBounds = getLocalBounds().removeFromBottom(33).toFloat().reduced(1.5f);

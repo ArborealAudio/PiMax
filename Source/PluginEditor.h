@@ -232,13 +232,10 @@ private:
     ActivationComponent activationComp;
     DownloadManager downloadManager;
 
-    std::unique_ptr<AudioProcessorValueTreeState::ButtonAttachment> renderButtonAttach, hqAttachment,
-        bandSplitAttachment, linearPhaseAttachment, distAttachment, autoGainAttach, bypassAttach, boostAttach;
+    std::unique_ptr<AudioProcessorValueTreeState::ButtonAttachment> renderButtonAttach, hqAttachment, bandSplitAttachment, linearPhaseAttachment, distAttachment, autoGainAttach, bypassAttach, boostAttach;
     std::vector<std::unique_ptr<AudioProcessorValueTreeState::ButtonAttachment>> muteBandAttach, soloBandAttach, bypassBandAttach;
-    std::unique_ptr<AudioProcessorValueTreeState::SliderAttachment> gainAttachment, outVolAttachment, curveAttachment,
-        widthAttachment, mixAttachment;
-    std::vector<std::unique_ptr<AudioProcessorValueTreeState::SliderAttachment>> sliderAttachment,
-        bandInGainAttach, bandOutGainAttach, bandWidthAttach;
+    std::unique_ptr<AudioProcessorValueTreeState::SliderAttachment> gainAttachment, outVolAttachment, curveAttachment, widthAttachment, mixAttachment;
+    std::vector<std::unique_ptr<AudioProcessorValueTreeState::SliderAttachment>> sliderAttachment, bandInGainAttach, bandOutGainAttach, bandWidthAttach;
     std::unique_ptr<AudioProcessorValueTreeState::ComboBoxAttachment> clipAttachment;
 
     std::vector<Component*> getComps();

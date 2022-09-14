@@ -27,11 +27,6 @@
 
 
 //==============================================================================
-/**
-    An auto-generated component, created by the Projucer.
-
-    Describe your class and how it works here!
-*/
 class UI  : public juce::Component
 {
 public:
@@ -91,10 +86,6 @@ public:
     void paint (juce::Graphics& g) override;
     void resized() override;
 
-    // Binary resources:
-    //static const char* g245_png;
-    //static const int g245_pngSize;
-
     GainSlider gain__slider, outVol__slider;
     Slider curve__slider;
     WidthSlider widthSlider, mixSlider;
@@ -102,8 +93,6 @@ public:
     ComboBox clipBox;
     PresetComp presetComp;
 
-    // OutputMeterLNF outputLNF;
-    // InputMeterLNF inputLNF;
     GainSliderLNF inGainLNF, outGainLNF;
     ComboBoxLNF hqBoxLNF, clipBoxLNF;
     BottomButtonLNF bottomButtonLNF;
@@ -111,8 +100,6 @@ public:
     CurveSliderLNF curveLNF;
     KnobLNF widthLNF, mixLNF;
     strix::VolumeMeterComponent inputMeter, outputMeter;
-    // foleys::LevelMeter inputMeter{ foleys::LevelMeter::Minimal }, outputMeter{ foleys::LevelMeter::Minimal };
-    
 
 private:
     MaximizerAudioProcessor& audioProcessor;

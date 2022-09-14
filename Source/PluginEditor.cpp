@@ -978,6 +978,8 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(MaximizerAudioProce
     waveshaperComponent(p), activationComp(p.isUnlocked, p.trialRemaining_ms),
     downloadManager(p.hasUpdated), tooltip(nullptr, 2000)
 {
+    getLookAndFeel().setDefaultSansSerifTypeface(getCustomFont(FontStyle::Regular).getTypeface());
+
     tooltip.setColour(TooltipWindow::backgroundColourId, Colours::darkslategrey);
 
 #if JUCE_WINDOWS
@@ -1046,13 +1048,14 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(MaximizerAudioProce
 
     p.onPresetChange = [&] { updateBandDisplay(p.numBands); };
 
-    splash.onLogoClick = [this]
+    splash.onLogoClick = [&]
     {
         splash.setImage(createComponentSnapshot(getLocalBounds()));
+        splash.setPluginWrapperType(p.wrapperType);
     };
 
     addChildComponent(activationComp);
-    activationComp.onButtonClick = [this]
+    activationComp.onButtonClick = [&]
     {
         activationComp.setImage(createComponentSnapshot(getLocalBounds()));
     };
