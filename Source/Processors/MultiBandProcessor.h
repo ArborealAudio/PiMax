@@ -125,7 +125,8 @@ struct MultibandProcessor
         linBand[crossover].setParams(*crossovers[crossover], lastSampleRate, 2);
     }
 
-    void setOversamplingFactor(int newFactor){
+    void setOversamplingFactor(int newFactor)
+    {
         oversampleFactor = newFactor;
         for (auto& b : linBand)
             b.setOversampleFactor(oversampleFactor);
@@ -309,7 +310,8 @@ struct MultibandProcessor
         auto& outputBlock = context.getOutputBlock();
 
         for (auto& b : bandBuffer)
-            b.setSize(b.getNumChannels(), numSamples, true, false, true);
+            if (b.getNumSamples() != numSamples)
+                b.setSize(b.getNumChannels(), numSamples, true, false, true);
         
         std::array<dsp::AudioBlock<T>, 4> band
         { {
