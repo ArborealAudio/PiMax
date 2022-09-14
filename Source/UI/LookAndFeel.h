@@ -30,37 +30,8 @@ static const Font getCustomFont(FontStyle style)
     
 }
 
-// class InputMeterLNF : public foleys::LevelMeterLookAndFeel
-// {
-// public:
-
-//     juce::Rectangle<float> getMeterClipIndicatorBounds(juce::Rectangle<float> bounds,
-//         foleys::LevelMeter::MeterFlags meterType) const override
-//     {
-//         Rectangle<float> rect;
-//         return rect;
-//     }
-
-// };
-
-// class OutputMeterLNF : public foleys::LevelMeterLookAndFeel
-// {
-//     juce::Rectangle<float> getMeterClipIndicatorBounds(juce::Rectangle<float> bounds,
-//         foleys::LevelMeter::MeterFlags meterType) const override
-//     {
-//         const auto margin = bounds.getWidth() * 0.05f;
-//         const auto w = bounds.getWidth() - margin * 2.0f;
-//         return juce::Rectangle<float>(bounds.getX() + margin,
-//             bounds.getY() + margin - 1, w, w * 0.55f);
-//     }
-
-// };
-
-class CrossoverSliderLNF : public LookAndFeel_V4
+struct CrossoverSliderLNF : LookAndFeel_V4
 {
-
-public:
-
     Slider::SliderLayout getSliderLayout(Slider& slider) override
     {
         Slider::SliderLayout layout;
@@ -117,9 +88,11 @@ public:
         }
     }
 
+    /* overriding this to get rid of text editor outline */
     void drawTextEditorOutline(Graphics& g, int width, int height, TextEditor& editor) override
     {
     }
+
     void fillTextEditorBackground(Graphics& g, int width, int height, TextEditor& editor) override
     {
         g.fillAll(Colours::black);
@@ -129,7 +102,6 @@ private:
     float lastSliderPos = 0.0;
     float sliderValue = 0.0;
     int labelPos = 0, sliderWidth = 0;
-
 };
 
 class GainSliderLNF : public LookAndFeel_V4
@@ -141,27 +113,21 @@ class GainSliderLNF : public LookAndFeel_V4
 public:
     bool textOnLeft;
 
-
     Slider::SliderLayout getSliderLayout(Slider& slider) override
     {
         Slider::SliderLayout layout;
 
         auto bounds = slider.getLocalBounds();
-        sliderBounds = bounds;
         auto s = bounds.removeFromTop(slider.getHeight() - 11);
-        Rectangle<int> sliderBounds, textBoxBounds;
+        Rectangle<int> textBoxBounds;
 
         if (!textOnLeft) {
             sliderBounds = s.removeFromLeft(40);
-            //s.expand(0, 10);
             textBoxBounds = { 50, (int)labelPos, 35, 15 };
-            //textBoxBounds = s;
         }
         else if (textOnLeft) {
             sliderBounds = s.removeFromRight(40);
-            //s.expand(0, 10);
             textBoxBounds = { 10, (int)labelPos, 35, 15 };
-            //textBoxBounds = s;
         }
 
         layout.sliderBounds = sliderBounds;
@@ -173,10 +139,8 @@ public:
     void drawLinearSlider(Graphics& g, int x, int y, int width, int height, float sliderPos,
         float minSliderPos, float maxSliderPos, const Slider::SliderStyle style, Slider& slider) override
     {
-        /*g.setColour(Colours::transparentWhite);
-        g.fillRect(x, y, width, height);*/
 
-        Rectangle<float> sliderThumb{ float(x) + 1.f, sliderPos, float(width) * 0.95f, 5.f };
+        Rectangle<float> sliderThumb{ float(x) + 2.f, sliderPos, float(width) - 4.f, 5.f };
         g.setColour(Colours::floralwhite);
         g.fillRoundedRectangle(sliderThumb, 3.f);
 
@@ -193,7 +157,6 @@ public:
         label.setPaintingIsUnclipped(true);
         if (!label.isBeingEdited())
         {
-            //const Font font(Font(Font::getDefaultSansSerifFontName(), 13.f, Font::plain));
             g.setColour(Colours::floralwhite);
 #if JUCE_WINDOWS
             g.setFont(getCustomFont(FontStyle::Regular).withHeight(14.f));
@@ -223,30 +186,14 @@ public:
             editor->applyFontToAllText(getCustomFont(FontStyle::Regular).withHeight(13.f));
             editor->setPaintingIsUnclipped(true);
 
-            /*const Font font(juce::Font(Font::getDefaultSansSerifFontName(), 12.f, juce::Font::plain).withTypefaceStyle("Regular"));
-
-            g.setColour(Colours::floralwhite);
-            g.setFont(font);*/
-
             auto textArea = label.getLocalBounds();
 
             auto ylimit = jmax(sliderBounds.getY(), textArea.getY());
 
-            //int labelPos = lastSliderPos + 7;
-
-            /*if (!textOnLeft)
-                editor->setBounds(0, labelPos, 50, 20);*/
-            //else
             editor->setBounds(textArea.getX(), ylimit, textArea.getWidth(), textArea.getHeight());
-
-            //auto ylimit = jlimit(textArea.getY() + 15, textArea.getBottom() - 25, editor->getY());
-            //Rectangle<int> constraints(editor->getX(), labelPos, editor->getWidth(), editor->getHeight());
-            //editor->setBounds(editor->getBounds().constrainedWithin(constraints));
 
             g.setColour(Colours::black);
             g.fillRect(editor->getBounds());
-
-
         }
 
     }
