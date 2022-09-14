@@ -1,0 +1,3 @@
+[submodule "Source/modules/farbot"]
+	path = Source/modules/farbot
+	url = https://github.com/hogliux/farbot
