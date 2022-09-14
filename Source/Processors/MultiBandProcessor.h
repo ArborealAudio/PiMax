@@ -138,22 +138,32 @@ struct MultibandProcessor
         const auto numSamples = inputBlock.getNumSamples();
         auto& outputBlock = context.getOutputBlock();
 
-#if USE_SIMD_SAT
-        T out[4];
-        T yn;
-#else
+        for (auto& b : bandBuffer)
+            b.setSize(b.getNumChannels(), numSamples, true, false, true);
+
         T yn = 0.0;
-#endif
-        float gain[4] = {};
-        float outGain[4] = {};
-        float out[4] = {0.0, 0.0, 0.0, 0.0};
-        float inc[4] = {};
-        float outinc[4] = {};
-        for (int i = 0; i <= numBands; ++i) {
-            gain[i] = pow(10.f, *bandInGain[i] / 20.f);
-            outGain[i] = pow(10.f, *bandOutGain[i] / 20.f);
+
+        float gain[4] = {0.0};
+        float outGain[4] = {0.0};
+        bool autoGain_m = *autoGain;
+        float out[4] = {0.0};
+        float inc[4] = {0.0};
+        float outinc[4] = {0.0};
+        bool solo[4] = {false}, mute[4]{false}, bypass[4]{false};
+        float width[4] = {0.0};
+        bool monoWidth_m = *monoWidth;
+
+        for (int i = 0; i <= numBands; ++i)
+        {
+            mPi[i].loadAtomics();
+            gain[i] = pow(10.f, *bandInGain[i] * 0.05f);
+            outGain[i] = pow(10.f, *bandOutGain[i] * 0.05f);
             inc[i] = (gain[i] - lastInGain[i]) / (float)numSamples;
             outinc[i] = (outGain[i] - lastOutGain[i]) / (float)numSamples;
+            solo[i] = *soloBand[i];
+            mute[i] = *muteBand[i];
+            bypass[i] = *bypassBand[i];
+            width[i] = *bandWidth[i];
         }
 
         for (int ch = 0; ch < inputBlock.getNumChannels(); ++ch)
@@ -170,11 +180,11 @@ struct MultibandProcessor
                             bands[n].processTwoSamples(ch, out[n], bandPtr[i], out[n], out[n + 1]);
                     }
 
-                    if (!*bypassBand[n]) {
+                    if (!bypass[n]) {
                         if (gain[n] != lastInGain[n]) {
                             out[n] *= lastInGain[n];
                             out[n] = mPi[n].processSample(ch, out[n]);
-                            if (*autoGain)
+                            if (autoGain_m)
                                 out[n] *= 1.0 / lastInGain[n];
                             if (ch > 0)
                                 lastInGain[n] += inc[n];
@@ -182,12 +192,12 @@ struct MultibandProcessor
                         else {
                             out[n] *= gain[n];
                             out[n] = mPi[n].processSample(ch, out[n]);
-                            if (*autoGain)
+                            if (autoGain_m)
                                 out[n] *= 1.0 / gain[n];
                         }
-                        //out[n] /= halfPi;
+                        //out[n] /= halfPi; pulled out halfPi scaledown as it was subtracting too much
                     }
-                    if (*muteBand[n])
+                    if (mute[n])
                         out[n] = 0.0;
 
                     if (outGain[n] != lastOutGain[n]) {
@@ -212,44 +222,44 @@ struct MultibandProcessor
         /*widen any bands which need to be*/
         for (int i = 0; i <= numBands ; ++i)
         {
-            if (*bandWidth[i] != 1.0) {
+            if (width[i] != 1.0) {
                 if (inputBlock.getNumChannels() > 1) {
-                    if (*bandWidth[i] != lastBandWidth[i]) {
-                        bandWidener[i].widenBufferWithRamp(bandBuffer[i], lastBandWidth[i], *bandWidth[i], *monoWidth);
-                        lastBandWidth[i] = *bandWidth[i];
+                    if (width[i] != lastBandWidth[i]) {
+                        bandWidener[i].widenBufferWithRamp(bandBuffer[i], lastBandWidth[i], width[i], monoWidth_m);
+                        lastBandWidth[i] = width[i];
                     }
                     else
-                        bandWidener[i].widenBuffer(bandBuffer[i], *bandWidth[i], *monoWidth);
+                        bandWidener[i].widenBuffer(bandBuffer[i], width[i], monoWidth_m);
                 }
                 else {
-                    if (*bandWidth[i] != lastBandWidth[i]) {
-                        bandWidener[i].widenBufferWithRamp(bandBuffer[i], lastBandWidth[i], *bandWidth[i], true);
-                        lastBandWidth[i] = *bandWidth[i];
+                    if (width[i] != lastBandWidth[i]) {
+                        bandWidener[i].widenBufferWithRamp(bandBuffer[i], lastBandWidth[i], width[i], true);
+                        lastBandWidth[i] = width[i];
                     }
                     else
-                        bandWidener[i].widenBuffer(bandBuffer[i], *bandWidth[i], true);
+                        bandWidener[i].widenBuffer(bandBuffer[i], width[i], true);
                 }
             }
         }
 
         const double r = 1.0 - (1.0 / (float)(oversampleFactor * 1000));
 
-        if (*soloBand[0] || *soloBand[1] || *soloBand[2] || *soloBand[3]) {
+        if (solo[0] || solo[1] || solo[2] || solo[3])
+        {
+            bool distIndex_m = distIndex->load();
+
             for (int channel = 0; channel < inputBlock.getNumChannels(); ++channel)
             {
                 for (int i = 0; i < numSamples; ++i)
                 {
                     yn = 0.0;
-#if USE_SIMD_SAT
-                    vec out = 0.0;
-#else
                     T out = 0.0;
-#endif
+
                     for (int b = 0; b <= numBands; ++b)
-                        if (*soloBand[b])
+                        if (solo[b])
                             out += bandBuffer[b].getSample(channel, i);
 
-                    if (*distIndex == 1) {
+                    if (distIndex_m) {
                         /*DC Blocker*/
                         yn = out;
                         out = yn - xm1[channel] + r * ym1[channel];
@@ -263,21 +273,21 @@ struct MultibandProcessor
         }
 
         /*add all relevent bands to output, make sure solo is not on for any band*/
-        if (!*soloBand[0] && !*soloBand[1] && !*soloBand[2] && !*soloBand[3]) {
+        if (!solo[0] && !solo[1] && !solo[2] && !solo[3])
+        {
+            bool distIndex_m = distIndex->load();
+
             for (int channel = 0; channel < inputBlock.getNumChannels(); ++channel)
             {
                 for (int i = 0; i < numSamples; ++i)
                 {
                     yn = 0.0;
-#if USE_SIMD_SAT
-                    vec out = 0.0;
-#else
                     T out = 0.0;
-#endif
+
                     for (int b = 0; b <= numBands; ++b)
                         out += bandBuffer[b].getSample(channel, i);
 
-                    if (*distIndex == 1) {
+                    if (distIndex_m) {
                         /*DC Blocker*/
                         yn = out;
                         out = yn - xm1[channel] + r * ym1[channel];
@@ -297,6 +307,10 @@ struct MultibandProcessor
         const auto& inputBlock = context.getInputBlock();
         int numSamples = inputBlock.getNumSamples();
         auto& outputBlock = context.getOutputBlock();
+
+        for (auto& b : bandBuffer)
+            b.setSize(b.getNumChannels(), numSamples, true, false, true);
+        
         std::array<dsp::AudioBlock<T>, 4> band
         { {
             {bandBuffer[0]},
@@ -308,10 +322,13 @@ struct MultibandProcessor
         /*convolving bands and adding them to their respective buffers, then applying gains & saturating*/
         for (size_t n = 0; n <= numBands; ++n) {
 
+            mPi[n].loadAtomics();
+
             if (n != numBands) {
                 linBand[n].loadBuffers();
 
-                if (n == 0) {
+                if (n == 0)
+                {
                     linBand[n].convolveLow(dsp::ProcessContextReplacing<T>(band[n]));
                     linBand[n].convolveHigh(dsp::ProcessContextReplacing<T>(band[n + 1]));
                 }
