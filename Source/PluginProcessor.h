@@ -17,10 +17,8 @@
 #include "Processors/Waveshapers.h"
 #include "Processors/StereoWidener.h"
 #include "Processors/MultiBandProcessor.h"
-// #include "ff_meters/ff_meters.h"
 #include "Presets/PresetManager.h"
 #include "OnlineActivation.h"
-// #include "farbot/AsyncCaller.hpp"
 
 #ifndef NDEBUG
 #define X(textToWrite)                                                         \
@@ -88,8 +86,6 @@ public:
     void valueTreeRedirected(ValueTree& treeWhichHasBeenChanged) override;
     std::function<void()> onPresetChange;
 
-    // void timerCallback() override { if (needs_update && asyncCall.process()) needs_update = false; }
-
     inline void updateOversample() noexcept;
 
     void updateNumBands(int newNumBands) noexcept;
@@ -99,8 +95,6 @@ public:
         return isUnlocked;
     }
 
-    // foleys::LevelMeterSource& getInputMeterSource() { return inputMeter; }
-    // foleys::LevelMeterSource& getOutputMeterSource() { return outputMeter; }
     strix::VolumeMeterSource &getInputMeterSource() { return inputMeter; }
     strix::VolumeMeterSource &getOutputMeterSource() { return outputMeter; }
 
@@ -111,7 +105,7 @@ public:
 
     int numBands = 2, lastNumBands = 2;
 
-    double lastDownSampleRate = 0.0;
+    double lastDownSampleRate = 44100.0;
 
     std::array<dsp::Oversampling<float>, 3> oversample
     { {
@@ -147,8 +141,6 @@ public:
 
 private:
 
-    // farbot::AsyncCaller<farbot::fifo_options::concurrency::single> asyncCall;
-
     void checkActivation();
 
     void processDelta(AudioBuffer<float>& buffer, float inGain, float outGain);
@@ -173,7 +165,7 @@ private:
     int filterLength = 0;
     dsp::DryWetMixer<float> mixer;
 
-    double lastSampleRate = 0.0, lastK = 0.0;
+    double lastSampleRate = 44100.0, lastK = 0.0;
 
     float m_lastGain = 1.0;
 
@@ -181,7 +173,6 @@ private:
     
     float lastInputGain = 1.0, lastOutGain = 1.0;
 
-    // foleys::LevelMeterSource inputMeter, outputMeter;
     strix::VolumeMeterSource inputMeter, outputMeter;
 
     AudioBuffer<float> bypassBuffer;

@@ -59,9 +59,6 @@ MaximizerAudioProcessor::MaximizerAudioProcessor()
 
     apvts.state.addListener(this);
 
-    // inputMeter.setMaxHoldMS(1000);
-    // outputMeter.setMaxHoldMS(1000);
-
     checkActivation();
 }
 
@@ -147,7 +144,7 @@ void MaximizerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
     
     updateOversample();
 
-    if (osIndex == 2 || osIndex == 1)
+    if (osIndex > 0)
         lastSampleRate = sampleRate * 4.0;
     else
         lastSampleRate = sampleRate;
@@ -169,15 +166,13 @@ void MaximizerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
     m_Proc.setOversamplingFactor(oversample[osIndex].getOversamplingFactor());
 
     for (auto& b : m_Proc.bandBuffer)
-        b.setSize(getTotalNumOutputChannels(), samplesPerBlock * oversample[osIndex].getOversamplingFactor(), false, false, true);
+        b.setSize(getTotalNumOutputChannels(), samplesPerBlock * oversample[osIndex].getOversamplingFactor());
     
     filterLength = m_Proc.linBand[0].size;
 
     mixer.prepare(spec);
     mixer.setMixingRule(dsp::DryWetMixingRule::linear);
 
-    // inputMeter.resize(2, sampleRate * 0.1 / samplesPerBlock);
-    // outputMeter.resize(2, sampleRate * 0.1 / samplesPerBlock);
     inputMeter.prepare(spec);
     outputMeter.prepare(spec);
 
@@ -198,31 +193,33 @@ void MaximizerAudioProcessor::releaseResources()
 #ifndef JucePlugin_PreferredChannelConfigurations
 bool MaximizerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
-    if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
-     && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
-        return false;
+    // if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
+    //  && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
+    //     return false;
 
-    // This checks if the input layout matches the output layout
-    PluginHostType host;
+    // PluginHostType host;
 
-    // clumsily force stereo in Bitwig. CHANGE THIS!!
-    if (host.isBitwigStudio())
-    {
-        if (layouts.getMainOutputChannelSet() == AudioChannelSet::stereo() &&
-            layouts.getMainInputChannelSet() == AudioChannelSet::stereo())
-            return true;
-    }
-    else
-    {
-        if (layouts.getMainOutputChannelSet() == layouts.getMainInputChannelSet())
-            return true;
-        else if (layouts.getMainOutputChannelSet() == AudioChannelSet::stereo()) {
-            // Mono-to-stereo
-            if (layouts.getMainInputChannelSet() == AudioChannelSet::mono())
-                return true;
-        }
-    }
+    // // clumsily force stereo in Bitwig. CHANGE THIS!!
+    // if (host.isBitwigStudio())
+    // {
+    //     if (layouts.getMainOutputChannelSet() == AudioChannelSet::stereo() &&
+    //         layouts.getMainInputChannelSet() == AudioChannelSet::stereo())
+    //         return true;
+    // }
+    // else
+    // {
+    //     if (layouts.getMainOutputChannelSet() == layouts.getMainInputChannelSet())
+    //         return true;
+    //     else if (layouts.getMainOutputChannelSet() == AudioChannelSet::stereo()) {
+    //         // Mono-to-stereo
+    //         if (layouts.getMainInputChannelSet() == AudioChannelSet::mono())
+    //             return true;
+    //     }
+    // }
     
+    if (layouts.getMainInputChannels() <= 2 && layouts.getMainOutputChannels() <= 2 && layouts.getMainInputChannels() <= layouts.getMainOutputChannels())
+        return true;
+
     return false;
 }
 #endif
@@ -259,8 +256,8 @@ void MaximizerAudioProcessor::parameterChanged(const String& parameterID, float 
             lastSampleRate = lastDownSampleRate;
         }
 
-        if (parameterID != "linearPhase")
-            needs_resize = true;
+        // if (parameterID != "linearPhase")
+        needs_resize = true;
 
         mPi.prepare();
     }
@@ -358,15 +355,18 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
 
     if (*bandSplit)
     {
+        /* if oversample state has changed, update band specs on message thread */
         if (needs_resize) {
             MessageManager::callAsync([&] { updateBandSpecs(); });
             needs_resize = false;
             needs_update = true;
         }
 
+        /* if the band specs have been updated, copy input buffer into band buffers */
         if (!needs_update) {
             for (auto& b : m_Proc.bandBuffer) {
-                if (b.getNumSamples() == osBlock.getNumSamples()) {
+                if (b.getNumSamples() == osBlock.getNumSamples()) /* make sure band buffer is the same size as the oversampled input block */
+                {
                     b.copyFrom(0, 0, const_cast<float*>(osBlock.getChannelPointer(0)), osBlock.getNumSamples());
                     if (totalNumOutputChannels > 1)
                         b.copyFrom(1, 0, const_cast<float*>(osBlock.getChannelPointer(1)), osBlock.getNumSamples());
@@ -382,22 +382,27 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     auto& output = osContext.getOutputBlock();
 
     if (!*bandSplit) {
+
+        mPi.loadAtomics();
+        bool asym = *distIndex;
+
         for (int channel = 0; channel < totalNumInputChannels; ++channel)
         {
+            auto in = output.getChannelPointer(channel);
+
             for (int i = 0; i < input.getNumSamples(); ++i)
             {
-                double yn = 0.0, out = 0.0;
-                double in = input.getSample(channel, i);
-                out = mPi.processSample(channel, in);
+                double out = mPi.processSample(channel, in[i]);
                 
-                if (*distIndex == 1) {
+                if (asym) {
                     /*DC blocker*/
-                    yn = out;
+                    double yn = out;
                     out = yn - xm1[channel] + r * ym1[channel];
                     xm1[channel] = yn;
                     ym1[channel] = out;
                 }
-                output.setSample(channel, i, out);
+                
+                in[i] = out;
             }
         }
     }
@@ -643,12 +648,9 @@ AudioProcessorValueTreeState::ParameterLayout MaximizerAudioProcessor::createPar
 
     std::vector<std::unique_ptr<RangedAudioParameter>> params;
 
-    params.emplace_back(std::make_unique<AudioParameterFloat>
-        ("gain", "Input Gain", -12.0, 12.0, 0.0));
-    params.emplace_back(std::make_unique < AudioParameterFloat>
-        ("output", "Output Gain", -12.0, 0.0, -1.0));
-    params.emplace_back(std::make_unique<AudioParameterFloat>
-        ("curve", "Curve", curveRange, 1.f, String(), AudioProcessorParameter::genericParameter,
+    params.emplace_back(std::make_unique<AudioParameterFloat>(ParameterID("gain", 1), "Input Gain", -12.0, 12.0, 0.0));
+    params.emplace_back(std::make_unique < AudioParameterFloat>(ParameterID("output", 1), "Output Gain", -12.0, 0.0, -1.0));
+    params.emplace_back(std::make_unique<AudioParameterFloat>(ParameterID("curve", 1), "Curve", curveRange, 1.f, String(), AudioProcessorParameter::genericParameter,
             [curveRange](float value, int)
             {
                 float curve = jmap(curveRange.convertTo0to1(value), -100.f, 100.f);
@@ -657,17 +659,14 @@ AudioProcessorValueTreeState::ParameterLayout MaximizerAudioProcessor::createPar
                 else
                     return String(curve, 1);
             }, nullptr));
-    params.emplace_back(std::make_unique<AudioParameterChoice>
-        ("distType", "Saturation Type", StringArray("Symmetric", "Asymmetric"), 0));
-    params.emplace_back(std::make_unique<AudioParameterChoice>
-        ("clipType", "Saturation Limit", StringArray("Finite", "Clip", "Infinite"), 0));
-    params.emplace_back(std::make_unique<AudioParameterBool>
-        ("bandSplit", "Band Split On/Off", false));
+    params.emplace_back(std::make_unique<AudioParameterChoice>(ParameterID("distType", 1), "Saturation Type", StringArray("Symmetric", "Asymmetric"), 0));
+    params.emplace_back(std::make_unique<AudioParameterChoice>(ParameterID("clipType", 1), "Saturation Limit", StringArray("Finite", "Clip", "Infinite"), 0));
+    params.emplace_back(std::make_unique<AudioParameterBool>(ParameterID("bandSplit", 1), "Band Split On/Off", false));
 
     /*create 3 crossover freq params*/
     for (int i = 0; i < 3; ++i)
     {
-        params.emplace_back(std::make_unique<AudioParameterFloat>("crossover" + std::to_string(i),
+        params.emplace_back(std::make_unique<AudioParameterFloat>(ParameterID("crossover" + std::to_string(i), 1),
             "Crossover " + std::to_string(i + 1) + " Freq", bandRange, i == 0 ? 150.0 :
             i == 1 ? 2500.0 : 40.0,
             String(), AudioProcessorParameter::genericParameter,
@@ -682,11 +681,11 @@ AudioProcessorValueTreeState::ParameterLayout MaximizerAudioProcessor::createPar
     /*create params for solo/mono/bypass for each band*/
     for (int i = 0; i < 4; ++i)
     {
-        params.emplace_back(std::make_unique<AudioParameterFloat>("bandInGain" + std::to_string(i),
+        params.emplace_back(std::make_unique<AudioParameterFloat>(ParameterID("bandInGain" + std::to_string(i), 1),
             "Band " + std::to_string(i + 1) + " Input Gain", -12.0, 12.0, 0.0));
-        params.emplace_back(std::make_unique<AudioParameterFloat>("bandOutGain" + std::to_string(i),
+        params.emplace_back(std::make_unique<AudioParameterFloat>(ParameterID("bandOutGain" + std::to_string(i), 1),
             "Band " + std::to_string(i + 1) + " Output Gain", -12.0, 12.0, 0.0));
-        params.emplace_back(std::make_unique<AudioParameterFloat>("bandWidth" + std::to_string(i),
+        params.emplace_back(std::make_unique<AudioParameterFloat>(ParameterID("bandWidth" + std::to_string(i), 1),
             "Band " + std::to_string(i + 1) + " Width", widthRange, 1.0, String(), AudioProcessorParameter::genericParameter,
             [widthRange](float value, int)
             {
@@ -695,19 +694,18 @@ AudioProcessorValueTreeState::ParameterLayout MaximizerAudioProcessor::createPar
                 return String(percentage, 0);
 
             }, [widthRange](const String& text) { return text.getFloatValue() / 100.f; }));
-        params.emplace_back(std::make_unique<AudioParameterBool>("soloBand" + std::to_string(i),
+        params.emplace_back(std::make_unique<AudioParameterBool>(ParameterID("soloBand" + std::to_string(i), 1),
             "Solo Band " + std::to_string(i + 1), false));
-        params.emplace_back(std::make_unique<AudioParameterBool>("muteBand" + std::to_string(i),
+        params.emplace_back(std::make_unique<AudioParameterBool>(ParameterID("muteBand" + std::to_string(i), 1),
             "Mute Band " + std::to_string(i + 1), false));
-        params.emplace_back(std::make_unique<AudioParameterBool>("bypassBand" + std::to_string(i),
+        params.emplace_back(std::make_unique<AudioParameterBool>(ParameterID("bypassBand" + std::to_string(i), 1),
             "Bypass Band " + std::to_string(i + 1), false));
     }
     
-    params.emplace_back(std::make_unique<AudioParameterBool>("hq", "HQ", false));
-    params.emplace_back(std::make_unique<AudioParameterBool>("renderHQ", "Render HQ", false));
-    params.emplace_back(std::make_unique<AudioParameterBool>("linearPhase", "Linear Phase", false));
-    params.emplace_back(std::make_unique<AudioParameterFloat>
-        ("width", "Width", widthRange, 1.f, String(), AudioProcessorParameter::genericParameter,
+    params.emplace_back(std::make_unique<AudioParameterBool>(ParameterID("hq", 1), "HQ", false));
+    params.emplace_back(std::make_unique<AudioParameterBool>(ParameterID("renderHQ", 1), "Render HQ", false));
+    params.emplace_back(std::make_unique<AudioParameterBool>(ParameterID("linearPhase", 1), "Linear Phase", false));
+    params.emplace_back(std::make_unique<AudioParameterFloat>(ParameterID("width", 1), "Width", widthRange, 1.f, String(), AudioProcessorParameter::genericParameter,
             [widthRange](float value, int)
             {
                 float percentage = jmap(widthRange.convertTo0to1(value), 0.f, 200.f);
@@ -715,9 +713,8 @@ AudioProcessorValueTreeState::ParameterLayout MaximizerAudioProcessor::createPar
                 return String(percentage, 0);
 
             }, [widthRange](const String& text) { return text.getFloatValue() / 100.f; }));
-    params.emplace_back(std::make_unique<AudioParameterBool>("monoWidth", "Widen Mono", false));
-    params.emplace_back(std::make_unique<AudioParameterFloat>
-        ("mix", "Dry/Wet Mix", mixRange, 1.f, String(), AudioProcessorParameter::genericParameter,
+    params.emplace_back(std::make_unique<AudioParameterBool>(ParameterID("monoWidth", 1), "Widen Mono", false));
+    params.emplace_back(std::make_unique<AudioParameterFloat>(ParameterID("mix", 1), "Dry/Wet Mix", mixRange, 1.f, String(), AudioProcessorParameter::genericParameter,
             [](float value, int)
             {
                 float percentage = jmap(value, 0.f, 100.f);
@@ -725,13 +722,10 @@ AudioProcessorValueTreeState::ParameterLayout MaximizerAudioProcessor::createPar
                 return String(percentage, 0);
 
             }, [widthRange](const String& text) { return text.getFloatValue() / 100.f; }));
-    params.emplace_back(std::make_unique<AudioParameterBool>
-        ("autoGain", "Auto Gain", false));
-    params.emplace_back(std::make_unique<AudioParameterBool>("boost", "Input Boost", false));
-    params.emplace_back(std::make_unique<AudioParameterBool>
-        ("bypass", "Bypass", false));
-    params.emplace_back(std::make_unique<AudioParameterBool>
-        ("delta", "Delta", false));
+    params.emplace_back(std::make_unique<AudioParameterBool>(ParameterID("autoGain", 1), "Auto Gain", false));
+    params.emplace_back(std::make_unique<AudioParameterBool>(ParameterID("boost", 1), "Input Boost", false));
+    params.emplace_back(std::make_unique<AudioParameterBool>(ParameterID("bypass", 1), "Bypass", false));
+    params.emplace_back(std::make_unique<AudioParameterBool>(ParameterID("delta", 1), "Delta", false));
 
     return { params.begin(), params.end() };
 }
