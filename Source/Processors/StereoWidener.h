@@ -1,6 +1,7 @@
 #pragma once
 //#include "JuceHeader.h"
 
+template <typename T>
 class StereoWidener
 {
 public:
@@ -21,7 +22,6 @@ public:
 			d.reset();
 	}
 
-	template <typename T>
 	inline void widenBlock(dsp::AudioBlock<T>& block, float width, bool isMono)
 	{
 		auto& input = block;
@@ -32,7 +32,6 @@ public:
 			input = widenStereoSourceBlock(input, width);
 	}
 
-	template <typename T>
 	inline void widenBuffer(AudioBuffer<T>& buffer, float width, bool isMono)
 	{
         if (buffer.getNumChannels() < 2)
@@ -48,7 +47,6 @@ public:
         else return;
 	}
     
-    template <typename T>
     inline void widenBufferWithRamp(AudioBuffer<T>& buffer, float beginWidth, float endWidth, bool isMono)
     {
         if (buffer.getNumChannels() < 2)
@@ -64,7 +62,6 @@ public:
         else return;
     }
 
-	template <typename T>
 	void widenStereoSource(dsp::ProcessContextReplacing<T>& context, float width)
 	{
 		const auto& input = context.getInputBlock();
@@ -94,7 +91,6 @@ public:
 
 	}
 
-	template <typename T>
 	dsp::AudioBlock<T> widenStereoSourceBlock(const dsp::AudioBlock<T>& block, float width)
 	{
 		const auto& input = block;
@@ -125,7 +121,6 @@ public:
 		return output;
 	}
     
-    template <typename T>
     dsp::AudioBlock<T> widenStereoSourceBlockWithRamp(const dsp::AudioBlock<T>& block, float beginWidth,
                                                       float endWidth)
     {
@@ -160,7 +155,6 @@ public:
         return output;
     }
 
-	template <typename T>
 	dsp::AudioBlock<T> widenMonoSource(const dsp::AudioBlock<T>& block, float width)
 	{
 		auto output = block;
@@ -188,7 +182,6 @@ public:
 		return output;
 	}
     
-    template <typename T>
     dsp::AudioBlock<T> widenMonoSourceWithRamp(const dsp::AudioBlock<T>& block, float beginWidth,
                                                float endWidth)
     {
@@ -228,10 +221,10 @@ public:
 		{dsp::DelayLine < dsp::SIMDRegister<float>, dsp::DelayLineInterpolationTypes::None>(44100.0)}
 	} };
 #else
-	std::array<dsp::DelayLine<double, dsp::DelayLineInterpolationTypes::None>, 2> delay
+	std::array<dsp::DelayLine<T, dsp::DelayLineInterpolationTypes::None>, 2> delay
 	{ {
-		{dsp::DelayLine < double, dsp::DelayLineInterpolationTypes::None>(44100.0)},
-		{dsp::DelayLine < double, dsp::DelayLineInterpolationTypes::None>(44100.0)}
+		{dsp::DelayLine <T, dsp::DelayLineInterpolationTypes::None>(44100.0)},
+		{dsp::DelayLine <T, dsp::DelayLineInterpolationTypes::None>(44100.0)}
 	} };
 #endif
 
