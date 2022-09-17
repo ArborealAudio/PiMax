@@ -115,6 +115,8 @@ ResponseCurveComponent::ResponseCurveComponent(MaximizerAudioProcessor& p) : aud
     };
 
     startTimerHz(60);
+
+    setBufferedToImage(true);
 }
 
 ResponseCurveComponent::~ResponseCurveComponent()
@@ -887,6 +889,8 @@ WaveshaperComponent::WaveshaperComponent(MaximizerAudioProcessor& p)
     p.apvts.addParameterListener("distType", this);
     p.apvts.addParameterListener("bandSplit", this);
     startTimerHz(60);
+
+    // setBufferedToImage(true);
 }
 
 WaveshaperComponent::~WaveshaperComponent()
