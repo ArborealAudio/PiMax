@@ -660,7 +660,7 @@ class CurveSliderLNF : public LookAndFeel_V4
         g.strokePath(center, PathStrokeType(1.f));
 
         if (sliderPos > centerX) {
-            ColourGradient posGradient(Colours::transparentWhite, centerX, y + height / 2,
+            ColourGradient posGradient(Colour(0x00000000), centerX, y + height / 2,
                 Colours::seagreen, width, y + height / 2, false);
             
             Rectangle<int> r(centerX, y + 1 , sliderPos - centerX, height - 2);
@@ -668,7 +668,7 @@ class CurveSliderLNF : public LookAndFeel_V4
             g.fillRect(r);
         }
         else if (sliderPos < centerX) {
-            ColourGradient negGradient(Colours::transparentWhite, centerX, y + height / 2,
+            ColourGradient negGradient(Colour(0x00000000), centerX, y + height / 2,
                 Colours::teal.withAlpha(0.7f), x, y + height / 2, false);
 
             Rectangle<int> r (sliderPos, y + 1, centerX, height - 2);
@@ -685,5 +685,15 @@ class CurveSliderLNF : public LookAndFeel_V4
             g.setColour(Colours::navajowhite);
             g.drawRoundedRectangle(sliderThumb, 2.f, 2.f);
         }
+    }
+
+    void drawBubble(Graphics& g, BubbleComponent& comp , const Point< float >& tip,
+        const Rectangle< float >& body) override
+    {
+        g.setColour(Colours::darkslategrey.withSaturation(0.35f).withAlpha(0.9f));
+        g.fillRoundedRectangle(body, 3.f);
+
+        g.setColour(comp.findColour(BubbleComponent::outlineColourId));
+        g.drawRoundedRectangle(body, 3.f, 2.f);
     }
 };
