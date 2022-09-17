@@ -115,8 +115,6 @@ ResponseCurveComponent::ResponseCurveComponent(MaximizerAudioProcessor& p) : aud
     };
 
     startTimerHz(60);
-
-    setBufferedToImage(true);
 }
 
 ResponseCurveComponent::~ResponseCurveComponent()
