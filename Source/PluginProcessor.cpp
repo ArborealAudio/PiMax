@@ -133,7 +133,7 @@ void MaximizerAudioProcessor::setCurrentProgram (int index)
 
 const juce::String MaximizerAudioProcessor::getProgramName (int index)
 {
-    return "Default";
+    return currentPreset;
 }
 
 void MaximizerAudioProcessor::changeProgramName (int index, const juce::String& newName)
@@ -143,7 +143,7 @@ void MaximizerAudioProcessor::changeProgramName (int index, const juce::String& 
 //==============================================================================
 void MaximizerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-    numSamples = samplesPerBlock;
+    maxNumSamples = samplesPerBlock;
     lastDownSampleRate = sampleRate;
     
     updateOversample();
@@ -168,9 +168,6 @@ void MaximizerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
     m_Proc.prepare(spec);
     m_Proc.initCrossovers();
     m_Proc.setOversamplingFactor(oversample[osIndex].getOversamplingFactor());
-
-    for (auto& b : m_Proc.bandBuffer)
-        b.setSize(getTotalNumOutputChannels(), samplesPerBlock * oversample[osIndex].getOversamplingFactor());
     
     filterLength = m_Proc.linBand[0].size;
 
@@ -261,7 +258,7 @@ void MaximizerAudioProcessor::parameterChanged(const String& parameterID, float 
         }
 
         // if (parameterID != "linearPhase")
-            needs_resize.store(true);
+        needs_resize.store(true);
 
         mPi.prepare();
     }
@@ -317,9 +314,10 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear(i, 0, buffer.getNumSamples());
 
+    jassert(maxNumSamples >= buffer.getNumSamples());
     if (numSamples != buffer.getNumSamples())
         numSamples = buffer.getNumSamples();
-    
+
     /*if mono->stereo, copy left channel into right*/
     if (totalNumInputChannels < totalNumOutputChannels)
         buffer.copyFrom(1, 0, buffer.getReadPointer(0), numSamples);
@@ -346,16 +344,26 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     else
         buffer.applyGain(gain_raw);
 
+    bool boostRamped = false;
     if (*boost)
-        buffer.applyGain(3.98f);
+    {
+        if (*boost != lastBoost)
+            buffer.applyGainRamp(0, numSamples, 1.f, 3.98f);
+        else
+            buffer.applyGain(3.98f);
+    }
+    else
+        if (*boost != lastBoost)
+            buffer.applyGainRamp(0, numSamples, 3.98f, 1.f);
+    lastBoost = (bool)*boost;
 
     inputMeter.measureBlock(buffer);
 
     dsp::AudioBlock<float> osBlock;
-    if (totalNumOutputChannels > 1)
-        osBlock = oversample[osIndex].processSamplesUp(dsp::AudioBlock<float>(buffer));
-    else
-        osBlock = oversampleMono[osIndex].processSamplesUp(dsp::AudioBlock<float>(buffer));
+    // if (totalNumOutputChannels > 1)
+    osBlock = oversample[osIndex].processSamplesUp(dsp::AudioBlock<float>(buffer));
+    // else
+    //     osBlock = oversampleMono[osIndex].processSamplesUp(dsp::AudioBlock<float>(buffer));
 
     if (*bandSplit)
     {
@@ -370,58 +378,44 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
         /* if the band specs have been updated, copy input buffer into band buffers */
         if (!needs_update.load()) {
             for (auto& b : m_Proc.bandBuffer) {
-                if (b.getNumSamples() == osBlock.getNumSamples()) /* make sure band buffer is the same size as the oversampled input block */
-                {
+                // if (b.getNumSamples() == osBlock.getNumSamples()) /* make sure band buffer is the same size as the oversampled input block */
+                // {
                     b.copyFrom(0, 0, const_cast<float*>(osBlock.getChannelPointer(0)), osBlock.getNumSamples());
                     if (totalNumOutputChannels > 1)
                         b.copyFrom(1, 0, const_cast<float*>(osBlock.getChannelPointer(1)), osBlock.getNumSamples());
-                }
+                // }
             }
         }
     }
 
-    const double r = 1.0 - (1.0 / (float(oversample[osIndex].getOversamplingFactor()) * 1000.0));
+    if (!*bandSplit)
+        mPi.process(osBlock);
+    else if (*bandSplit && !needs_update.load())
+        m_Proc.processBands(osBlock);
 
-    dsp::ProcessContextReplacing<float> osContext(osBlock);
-    const auto& input = osContext.getInputBlock();
-    auto& output = osContext.getOutputBlock();
-
-    if (!*bandSplit) {
-
-        mPi.loadAtomics();
-        bool asym = *distIndex;
+    if (*distIndex)
+    {
+        const double r = 1.0 - (1.0 / (float(oversample[osIndex].getOversamplingFactor()) * 1000.0));
 
         for (int channel = 0; channel < totalNumInputChannels; ++channel)
         {
-            auto in = output.getChannelPointer(channel);
+            auto in = osBlock.getChannelPointer(channel);
 
-            for (int i = 0; i < input.getNumSamples(); ++i)
+            for (int i = 0; i < osBlock.getNumSamples(); ++i)
             {
-                double out = mPi.processSample(channel, in[i]);
-                
-                if (asym) {
-                    /*DC blocker*/
-                    double yn = out;
-                    out = yn - xm1[channel] + r * ym1[channel];
-                    xm1[channel] = yn;
-                    ym1[channel] = out;
-                }
-                
-                in[i] = out;
+                /*DC blocker*/
+                double yn = in[i];
+                in[i] = yn - xm1[channel] + r * ym1[channel];
+                xm1[channel] = yn;
+                ym1[channel] = in[i];
             }
         }
     }
-    else if (*bandSplit && !needs_update.load()) {
-        if (*linearPhase)
-            m_Proc.addBandsConvolution(osContext);
-        else
-            m_Proc.addBands(osContext);
-    }
 
-    if (totalNumOutputChannels > 1)
-        oversample[osIndex].processSamplesDown(outBlock);
-    else
-        oversampleMono[osIndex].processSamplesDown(outBlock);
+    // if (totalNumOutputChannels > 1)
+    oversample[osIndex].processSamplesDown(outBlock);
+    // else
+    //     oversampleMono[osIndex].processSamplesDown(outBlock);
     
     if (*width != 1.0 && totalNumOutputChannels > 1) {
         if (*monoWidth && *bandSplit && (*m_Proc.bandWidth[0] > 1.f || *m_Proc.bandWidth[1] > 1.f || *m_Proc.bandWidth[2] > 1.f ||
@@ -441,21 +435,26 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
 
     mixer.setWetLatency(getLatencySamples());
 
-    if (*autoGain) {
-        if (*output_dB == 0.0)
-            output_raw = 0.999;
-
+    if (*autoGain)
+    {
         if (gainRamped)
-            buffer.applyGainRamp(0, buffer.getNumSamples(), 1.0 / (m_lastGain * halfPi), 1.0 / (gain_raw * halfPi));
+            buffer.applyGainRamp(0, numSamples, 1.0 / (m_lastGain * halfPi), 1.0 / (gain_raw * halfPi));
         else
             buffer.applyGain(1.0 / (gain_raw * halfPi));
 
         if (*boost)
-            buffer.applyGain(1.f / 3.98f);
+        {
+            if (boostRamped)
+                buffer.applyGainRamp(0, numSamples, 1.f, 1.f / 3.98f);
+            else
+                buffer.applyGain(1.f / 3.98f);
+        }
+        else if (!*boost && boostRamped)
+            buffer.applyGainRamp(0, numSamples, 1.f / 3.98f, 1.f);
     }
 
     if (output_raw != lastOutGain) {
-        buffer.applyGainRamp(0, buffer.getNumSamples(), lastOutGain, output_raw);
+        buffer.applyGainRamp(0, numSamples, lastOutGain, output_raw);
         lastOutGain = output_raw;
     }
     else
@@ -469,8 +468,8 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     if (totalNumInputChannels < totalNumOutputChannels) {
         if (*width <= 1.0 && (*m_Proc.bandWidth[0] <= 1.0 && *m_Proc.bandWidth[1] <= 1.0 &&
             *m_Proc.bandWidth[2] <= 1.0 && *m_Proc.bandWidth[3] <= 1.0))
-            buffer.copyFrom(1, 0, buffer.getReadPointer(0), buffer.getNumSamples());
-        //copy left->right if no wideners are active
+            buffer.copyFrom(1, 0, buffer.getReadPointer(0), numSamples);
+        //copy left->right if no wideners are active & mono->stereo
     }
 
     if (*delta)
@@ -571,16 +570,11 @@ void MaximizerAudioProcessor::processDelta(AudioBuffer<float>& buffer, float inG
 
 void MaximizerAudioProcessor::updateBandSpecs()
 {
-    //suspendProcessing(true);
-    for (auto& b : m_Proc.bandBuffer)
-        b.setSize(getTotalNumOutputChannels(), numSamples * oversample[osIndex].getOversamplingFactor(), false, false, true);
-
-    dsp::ProcessSpec newSpec{ lastSampleRate, uint32(numSamples * oversample[osIndex].getOversamplingFactor()),
+    dsp::ProcessSpec newSpec{ lastSampleRate, uint32(maxNumSamples * oversample[osIndex].getOversamplingFactor()),
         (uint32)getTotalNumOutputChannels() };
     m_Proc.setOversamplingFactor(oversample[osIndex].getOversamplingFactor());
     m_Proc.reset();
     m_Proc.updateSpecs(newSpec);
-    //suspendProcessing(false); 
 
     needs_update = false;
 }
@@ -668,7 +662,7 @@ AudioProcessorValueTreeState::ParameterLayout MaximizerAudioProcessor::createPar
                     return String(curve, 1);
             }, nullptr));
     params.emplace_back(std::make_unique<AudioParameterChoice>(ParameterID("distType", 1), "Saturation Type", StringArray("Symmetric", "Asymmetric"), 0));
-    params.emplace_back(std::make_unique<AudioParameterChoice>(ParameterID("clipType", 1), "Saturation Limit", StringArray("Finite", "Clip", "Infinite"), 0));
+    params.emplace_back(std::make_unique<AudioParameterChoice>(ParameterID("clipType", 1), "Saturation Limit", StringArray("Finite", "Clip", "Infinite", "Deep", "Warm"), 0));
     params.emplace_back(std::make_unique<AudioParameterBool>(ParameterID("bandSplit", 1), "Band Split On/Off", false));
 
     /*create 3 crossover freq params*/

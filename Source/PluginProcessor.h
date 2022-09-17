@@ -12,6 +12,15 @@
 #define USE_SIMD_FIR 0
 #define USE_CONVOLUTION 1
 
+enum class ClipType
+{
+    Finite,
+    Clip,
+    Infinite,
+    Deep,
+    Warm
+};
+
 #include <JuceHeader.h>
 #include "modules/farbot/include/farbot/AsyncCaller.hpp"
 #include "modules/farbot/include/farbot/RealtimeObject.hpp"
@@ -126,7 +135,7 @@ public:
 
     int osIndex = 0;
 
-    int numSamples = 0;
+    int numSamples = 0, maxNumSamples = 0;
 
     int lastUIWidth, lastUIHeight;
 
@@ -163,7 +172,7 @@ private:
     double xm1[2]{ 0.0, 0.0 };
     double ym1[2]{ 0.0, 0.0 };
 
-    StereoWidener widener;
+    StereoWidener<float> widener;
 
     MultibandProcessor m_Proc;
 
@@ -177,6 +186,8 @@ private:
     std::atomic<float>* hq, *renderHQ, *width, *mix, *bypass, *boost;
     
     float lastInputGain = 1.0, lastOutGain = 1.0;
+
+    bool lastBoost = false;
 
     strix::VolumeMeterSource inputMeter, outputMeter;
 

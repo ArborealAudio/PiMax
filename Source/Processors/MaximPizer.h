@@ -3,12 +3,13 @@
 class MaximPizer
 {
 	static constexpr auto halfPi = MathConstants<double>::halfPi;
+    static constexpr auto pi = MathConstants<float>::pi;
 
-	AudioProcessorValueTreeState& apvts;
+    AudioProcessorValueTreeState& apvts;
 
 	std::atomic<float>* curve, *clip, *type, *boost;
-    float curve_m = 0.f;
-    int clip_m = 0, type_m = 0;
+    float curve_m = 0, type_m = 0;
+    ClipType clip_m;
     bool boost_m = false;
 
 	double x_n1[2]{0.0}, x_n2[2]{0.0}, y_n1[2]{0.0};
@@ -31,97 +32,139 @@ public:
     void loadAtomics()
     {
         curve_m = curve->load();
-        clip_m = clip->load();
+        clip_m = (ClipType)clip->load();
         type_m = type->load();
         boost_m = boost->load();
     }
 
 	template <typename T>
-	void process(const dsp::ProcessContextReplacing<T>& context)
+	void process(dsp::AudioBlock<T>& block)
 	{
-		const auto& input = context.getInputBlock();
-		auto& output = context.getOutputBlock();
-
-		for (size_t i = 0; i < input.getNumSamples(); ++i)
-		{
-			auto x = input.getSample(0, i);
-			x = processSample(0, x);
-			output.setSample(0, i, x);
-		}
+        loadAtomics();
+        
+        for (size_t ch = 0; ch < block.getNumChannels(); ++ch)
+        {
+            auto in = block.getChannelPointer(ch);
+            if (type_m)
+                FloatVectorOperations::add(in, 0.1, block.getNumSamples());
+            
+            switch (clip_m)
+            {
+            case ClipType::Deep:
+                processDeep(ch, block.getNumSamples(), in);
+                break;
+            /* case ClipType::Warm: NOT FINISHED
+                processWarm(ch, block.getNumSamples(), in);
+                break; */
+            default:
+                processRegular(ch, block.getNumSamples(), in);
+                break;
+            };
+        }
 	}
 
 	template <typename T>
-	inline T processSample(int channel, T xn) noexcept
+	void processRegular(size_t channel, size_t numSamples, T* in) noexcept
 	{
 		T yn, x1, x2;
 		double k = curve_m;
 		if (boost_m)
 			k *= k;
 
-		/*DC offset for asym (need to ramp offset incase of switch)*/
-		xn += type_m == 1 ? 0.1 : 0.0;
+        for (int i = 0; i < numSamples; ++i)
+        {
+            /*if we're in regular bounds, apply curve algo*/
+            const auto xn = in[i];
+            auto yn = 0.0;
 
-		/*if we're in regular bounds, apply curve algo*/
+            const auto a = jlimit(0.0, 1.0, (std::abs(xn) + std::abs(x_n2[channel])) / 2.0);
 
-		const auto a = jlimit(0.0, 1.0, (std::abs(xn) + std::abs(x_n2[channel])) / 2.0);
+            if (xn > -1.0 && xn < 1.0) {
+                if (k > 1.0) {
+                    const auto j = pow(k, acos(xn * xn));
+                    x1 = dsp::FastMathApproximations::sin(halfPi * j * xn);
+                    if (xn >= 0.0)
+                        x2 = dsp::FastMathApproximations::sin(halfPi * pow(xn, k));
+                    else
+                        x2 = -dsp::FastMathApproximations::sin(halfPi * pow(-xn, k));
+                    yn = x1 * (1.0 - a) + x2 * a;
+                }
+                else if (k < 1.0) {
+                    const auto k_r = (1.0 / k);
+                    const auto j = pow(k_r, acos(xn * xn));
+                    x1 = dsp::FastMathApproximations::sin(halfPi * j * xn);
+                    if (xn >= 0.0)
+                        x2 = dsp::FastMathApproximations::sin(halfPi * pow(xn, k_r));
+                    else
+                        x2 = -dsp::FastMathApproximations::sin(halfPi * pow(-xn, k_r));
+                    yn = x1 * a + x2 * (1.0 - a);
+                }
+                else
+                    yn = sin(halfPi * xn);
 
-		if (xn > -1.0 && xn < 1.0) {
-			if (k > 1.0) {
-				const auto j = pow(k, acos(xn * xn));
-				x1 = dsp::FastMathApproximations::sin(halfPi * j * xn);
-				if (xn >= 0.0)
-					x2 = dsp::FastMathApproximations::sin(halfPi * pow(xn, k));
-				else
-					x2 = -dsp::FastMathApproximations::sin(halfPi * pow(-xn, k));
-				yn = x1 * (1.0 - a) + x2 * a;
-			}
-			else if (k < 1.0) {
-				const auto k_r = (1.0 / k);
-				const auto j = pow(k_r, acos(xn * xn));
-				x1 = dsp::FastMathApproximations::sin(halfPi * j * xn);
-				if (xn >= 0.0)
-					x2 = dsp::FastMathApproximations::sin(halfPi * pow(xn, k_r));
-				else
-					x2 = -dsp::FastMathApproximations::sin(halfPi * pow(-xn, k_r));
-				yn = x1 * a + x2 * (1.0 - a);
-			}
+            }
+            /*check for clip*/
+            else
+            {
+                switch (clip_m)
+                {
+                case ClipType::Finite:
+                    if (xn >= 0.0)
+                        //yn = pow(1.0 / cosh(xn - 1.0), pi);
+                        yn = 1.0 / (1.0 + (1.0 - xn) * (1.0 - xn) * halfPi);
+                    else
+                        //yn = -pow(1.0 / cosh(xn + 1.0), pi);
+                        yn = -1.0 / (1.0 + (1.0 + xn) * (1.0 + xn) * halfPi);
+                    break;
+                case ClipType::Clip:
+                    yn = jlimit((T) -1.0, (T) 1.0, xn);
+                    break;
+                case ClipType::Infinite:
+                    /*full sine for infinite type*/
+                    yn = sin(halfPi * xn);
+                    break;
+                }
+            }
 
-			else
-				yn = sin(halfPi * xn);
+            auto avg = yn - (yn + y_n1[channel]) / 2.0;
+            if (k > 1.0)
+                yn -= avg * (1.0 - 1.0 / k);
+            else if (k < 1.0)
+                yn += avg * (1.0 - k);
 
-		}
-
-		/*check for clip*/
-		else if (clip_m == 1) {
-			yn = jlimit((T) -1.0, (T) 1.0, xn);
-		}
-		/*single-period for finite type*/
-		else if (clip_m != 2) {
-			if (xn >= 0.0)
-				//yn = pow(1.0 / cosh(xn - 1.0), pi);
-				yn = 1.0 / (1.0 + (1.0 - xn) * (1.0 - xn) * halfPi);
-			else
-				//yn = -pow(1.0 / cosh(xn + 1.0), pi);
-				yn = -1.0 / (1.0 + (1.0 + xn) * (1.0 + xn) * halfPi);
-		}
-		/*full sine for infinite type*/
-		else {
-			yn = sin(halfPi * xn);
-		}
-
-		auto avg = yn - (yn + y_n1[channel]) / 2.0;
-		if (k > 1.0)
-			yn -= avg * (1.0 - 1.0 / k);
-		else if (k < 1.0)
-			yn += avg * (1.0 - k);
-
-		x_n2[channel] = x_n1[channel];
-		x_n1[channel] = xn;
-		y_n1[channel] = yn;
-		
-		return yn;
+            x_n2[channel] = x_n1[channel];
+            x_n1[channel] = xn;
+            y_n1[channel] = yn;
+            in[i] = yn;
+        }
 	}
 
+    template <typename T>
+    void processDeep(size_t ch, size_t numSamples, T* xn)
+    {
+        const double k = curve_m * curve_m;
+
+        FloatVectorOperations::multiply(xn, pi, numSamples);
+
+        for (int i = 0; i < numSamples; ++i)
+            xn[i] = xn[i] / std::pow((1.0 + std::pow(std::abs(xn[i]), k)), 1.0 / k);
+
+        if (k < 1.0)
+            FloatVectorOperations::multiply(xn, 1.0 / k, numSamples);
+    }
+
+    template <typename T>
+    void processWarm(size_t ch, size_t numSamples, T* xn)
+    {
+        const auto third = halfPi * curve_m * 0.1;
+        const auto fifth = halfPi * curve_m * 0.05;
+        const auto seventh = halfPi * curve_m * 0.025;
+
+        for (size_t i = 0; i < numSamples; ++i)
+            xn[i] += (xn[i] * xn[i] * xn[i] * third) + std::pow(xn[i], 5.0) * fifth + std::pow(xn[i], 7.0) * seventh;
+
+        // FloatVectorOperations::multiply(xn, 1.0 / 3.0, numSamples);
+    }
 
 	inline double acos(double x)
 	{

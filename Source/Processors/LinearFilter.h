@@ -344,14 +344,12 @@ namespace LinearFilter
 
             for (int ch = 0; ch < input.getNumChannels(); ++ch)
             {
-                auto* in = input.getChannelPointer(ch);
+                auto* in = output.getChannelPointer(ch);
                 for (int i = 0; i < input.getNumSamples(); ++i) {
-                    float out = 0.0;
                     for (auto& iir : iirLow[ch]) {
                         iir.coefficients = *rtLowCoeffs;
-                        out = iir.processSample(in[i]);
+                        in[i] = iir.processSample(in[i]);
                     }
-                    output.setSample(ch, i, out);
                 }
             }
             
@@ -369,14 +367,12 @@ namespace LinearFilter
 
             for (int ch = 0; ch < input.getNumChannels(); ++ch)
             {
-                auto* in = input.getChannelPointer(ch);
+                auto* in = output.getChannelPointer(ch);
                 for (int i = 0; i < input.getNumSamples(); ++i) {
-                    float out = 0.0;
                     for (auto& iir : iirHigh[ch]) {
                         iir.coefficients = *rtHighCoeffs;
-                        out = iir.processSample(in[i]);
+                        in[i] = iir.processSample(in[i]);
                     }
-                    output.setSample(ch, i, out);
                 }
             }
 
@@ -416,25 +412,6 @@ namespace LinearFilter
         BufferTransfer lowTransfer;
         BufferTransfer highTransfer;
     };
-
-    /*example impl of RealtimeObject in farbot*/
-
-    //struct BiquadCoeffecients { float b0, b1, b2, a1, a2; };
-    //RealtimeObject<BiquadCoeffecients, RealtimeObjectOptions::nonRealtimeMutatable> biquadCoeffs;
-
-    ///* called on realtime thread */
-    //void processAudio(float* buffer)
-    //{
-    //    RealtimeObject<BiquadCoeffecients, RealtimeObjectOptions::nonRealtimeMutatable>::ScopedAccess<ThreadType::realtime> coeffs(biquadCoeffs);
-    //    processBiquad(*coeffs, buffer);
-    //}
-
-    ///* called on non-realtime thread */
-    //void changeBiquadParameters(BiquadCoeffecients newCoeffs)
-    //{
-    //    RealtimeObject<BiquadCoeffecients, RealtimeObjectOptions::nonRealtimeMutatable>::ScopedAccess<ThreadType::nonRealtime> coeffs(biquadCoeffs);
-    //    *coeffs = newCoeffs;
-    //}
 
     /*not actually a thread lmao*/
     struct FIRThread : FIR

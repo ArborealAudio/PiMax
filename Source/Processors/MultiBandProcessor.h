@@ -9,7 +9,7 @@ struct MultibandProcessor
     {
         for (int i = 0; i < 3; ++i)
         {
-            bands[i] = (LRFilter());
+            bands[i] = (LRFilter<float>());
             crossovers[i] = apvts.getRawParameterValue("crossover" + std::to_string(i));
         }
 
@@ -34,6 +34,12 @@ struct MultibandProcessor
     void prepare(const dsp::ProcessSpec& spec)
     {
         lastSampleRate = spec.sampleRate;
+
+        for (int b = 0; b < bandBuffer.size(); ++b)
+        {
+            bandBuffer[b].setSize(spec.numChannels, spec.maximumBlockSize);
+            bandBlock[b] = dsp::AudioBlock<float>(bandBuffer[b]);
+        }
 
         for (auto& band : bands)
             band.prepare(spec);
@@ -67,6 +73,12 @@ struct MultibandProcessor
     void updateSpecs(const dsp::ProcessSpec& newSpec)
     {
         lastSampleRate = newSpec.sampleRate;
+
+        for (int b = 0; b < bandBuffer.size(); ++b)
+        {
+            bandBuffer[b].setSize(newSpec.numChannels, newSpec.maximumBlockSize);
+            bandBlock[b] = dsp::AudioBlock<float>(bandBuffer[b]);
+        }
 
         for (auto& band : bands)
             band.prepare(newSpec);
@@ -133,333 +145,143 @@ struct MultibandProcessor
     }
 
     template <typename T>
-	inline void addBands(const dsp::ProcessContextReplacing<T>& context) noexcept
-	{
-        const auto& inputBlock = context.getInputBlock();
-        const auto numSamples = inputBlock.getNumSamples();
-        auto& outputBlock = context.getOutputBlock();
-
-        for (auto& b : bandBuffer)
-            b.setSize(b.getNumChannels(), numSamples, true, false, true);
-
-        T yn = 0.0;
-
-        float gain[4] = {0.0};
-        float outGain[4] = {0.0};
-        bool autoGain_m = *autoGain;
-        float out[4] = {0.0};
-        float inc[4] = {0.0};
-        float outinc[4] = {0.0};
-        bool solo[4] = {false}, mute[4]{false}, bypass[4]{false};
-        float width[4] = {0.0};
-        bool monoWidth_m = *monoWidth;
-
-        for (int i = 0; i <= numBands; ++i)
-        {
-            mPi[i].loadAtomics();
-            gain[i] = pow(10.f, *bandInGain[i] * 0.05f);
-            outGain[i] = pow(10.f, *bandOutGain[i] * 0.05f);
-            inc[i] = (gain[i] - lastInGain[i]) / (float)numSamples;
-            outinc[i] = (outGain[i] - lastOutGain[i]) / (float)numSamples;
-            solo[i] = *soloBand[i];
-            mute[i] = *muteBand[i];
-            bypass[i] = *bypassBand[i];
-            width[i] = *bandWidth[i];
-        }
-
-        for (int ch = 0; ch < inputBlock.getNumChannels(); ++ch)
-        {
-            auto bandPtr = inputBlock.getChannelPointer(ch);
-            for (int i = 0; i < numSamples; ++i)
-            {
-                for (int n = 0; n <= numBands; ++n)
-                {
-                    if (n != numBands) {
-                        if (n == 0)
-                            bands[n].processSample(ch, bandPtr[i], out[0], out[1]);
-                        else
-                            bands[n].processTwoSamples(ch, out[n], bandPtr[i], out[n], out[n + 1]);
-                    }
-
-                    if (!bypass[n]) {
-                        if (gain[n] != lastInGain[n]) {
-                            out[n] *= lastInGain[n];
-                            out[n] = mPi[n].processSample(ch, out[n]);
-                            if (autoGain_m)
-                                out[n] *= 1.0 / lastInGain[n];
-                            if (ch > 0)
-                                lastInGain[n] += inc[n];
-                        }
-                        else {
-                            out[n] *= gain[n];
-                            out[n] = mPi[n].processSample(ch, out[n]);
-                            if (autoGain_m)
-                                out[n] *= 1.0 / gain[n];
-                        }
-                        //out[n] /= halfPi; pulled out halfPi scaledown as it was subtracting too much
-                    }
-                    if (mute[n])
-                        out[n] = 0.0;
-
-                    if (outGain[n] != lastOutGain[n]) {
-                        out[n] *= lastOutGain[n];
-                        if (ch > 0)
-                            lastOutGain[n] += outinc[n];
-                    }
-                    else out[n] *= outGain[n];
-
-                    bandBuffer[n].setSample(ch, i, out[n]);
-                }
-            }
-        }
-        
-        /*ensure last gains are set to cooked value of corresponding atomics*/
-        for (int i = 0; i <= numBands; ++i)
-        {
-            lastInGain[i] = gain[i];
-            lastOutGain[i] = outGain[i];
-        }
-
-        /*widen any bands which need to be*/
-        for (int i = 0; i <= numBands ; ++i)
-        {
-            if (width[i] != 1.0) {
-                if (inputBlock.getNumChannels() > 1) {
-                    if (width[i] != lastBandWidth[i]) {
-                        bandWidener[i].widenBufferWithRamp(bandBuffer[i], lastBandWidth[i], width[i], monoWidth_m);
-                        lastBandWidth[i] = width[i];
-                    }
-                    else
-                        bandWidener[i].widenBuffer(bandBuffer[i], width[i], monoWidth_m);
-                }
-                else {
-                    if (width[i] != lastBandWidth[i]) {
-                        bandWidener[i].widenBufferWithRamp(bandBuffer[i], lastBandWidth[i], width[i], true);
-                        lastBandWidth[i] = width[i];
-                    }
-                    else
-                        bandWidener[i].widenBuffer(bandBuffer[i], width[i], true);
-                }
-            }
-        }
-
-        const double r = 1.0 - (1.0 / (float)(oversampleFactor * 1000));
-
-        if (solo[0] || solo[1] || solo[2] || solo[3])
-        {
-            bool distIndex_m = distIndex->load();
-
-            for (int channel = 0; channel < inputBlock.getNumChannels(); ++channel)
-            {
-                for (int i = 0; i < numSamples; ++i)
-                {
-                    yn = 0.0;
-                    T out = 0.0;
-
-                    for (int b = 0; b <= numBands; ++b)
-                        if (solo[b])
-                            out += bandBuffer[b].getSample(channel, i);
-
-                    if (distIndex_m) {
-                        /*DC Blocker*/
-                        yn = out;
-                        out = yn - xm1[channel] + r * ym1[channel];
-                        xm1[channel] = yn;
-                        ym1[channel] = out;
-                    }
-
-                    outputBlock.setSample(channel, i, out);
-                }
-            }
-        }
-
-        /*add all relevent bands to output, make sure solo is not on for any band*/
-        if (!solo[0] && !solo[1] && !solo[2] && !solo[3])
-        {
-            bool distIndex_m = distIndex->load();
-
-            for (int channel = 0; channel < inputBlock.getNumChannels(); ++channel)
-            {
-                for (int i = 0; i < numSamples; ++i)
-                {
-                    yn = 0.0;
-                    T out = 0.0;
-
-                    for (int b = 0; b <= numBands; ++b)
-                        out += bandBuffer[b].getSample(channel, i);
-
-                    if (distIndex_m) {
-                        /*DC Blocker*/
-                        yn = out;
-                        out = yn - xm1[channel] + r * ym1[channel];
-                        xm1[channel] = yn;
-                        ym1[channel] = out;
-                    }
-
-                    outputBlock.setSample(channel, i, out);
-                }
-            }
-        }
-	}
-
-    template <typename T>
-    inline void addBandsConvolution(const dsp::ProcessContextReplacing<T>& context) noexcept
+    inline void processFilters(int n, size_t numSamples)
     {
-        const auto& inputBlock = context.getInputBlock();
-        int numSamples = inputBlock.getNumSamples();
-        auto& outputBlock = context.getOutputBlock();
+        dsp::AudioBlock<T> lowBand(bandBlock[n].getSubBlock(0, numSamples));
+        dsp::AudioBlock<T> highBand;
+        if (n != numBands)
+            highBand = bandBlock[n + 1].getSubBlock(0, numSamples);
 
-        for (auto& b : bandBuffer)
-            if (b.getNumSamples() != numSamples)
-                b.setSize(b.getNumChannels(), numSamples, true, false, true);
-        
-        std::array<dsp::AudioBlock<T>, 4> band
-        { {
-            {bandBuffer[0]},
-            {bandBuffer[1]},
-            {bandBuffer[2]},
-            {bandBuffer[3]},
-        } };
-
-        /*convolving bands and adding them to their respective buffers, then applying gains & saturating*/
-        for (size_t n = 0; n <= numBands; ++n) {
-
-            mPi[n].loadAtomics();
-
+        if (*linearPhase)
+        {
             if (n != numBands) {
                 linBand[n].loadBuffers();
 
                 if (n == 0)
                 {
-                    linBand[n].convolveLow(dsp::ProcessContextReplacing<T>(band[n]));
-                    linBand[n].convolveHigh(dsp::ProcessContextReplacing<T>(band[n + 1]));
+                    linBand[n].convolveLow(dsp::ProcessContextReplacing<T>(lowBand));
+                    linBand[n].convolveHigh(dsp::ProcessContextReplacing<T>(highBand));
                 }
                 else
-                    linBand[n].convolveHigh(dsp::ProcessContextReplacing<T>(band[n + 1]));
+                    linBand[n].convolveHigh(dsp::ProcessContextReplacing<T>(highBand));
             }
 
-            auto gain = pow(10.f, *bandInGain[n] / 20.f);
-            auto outGain = pow(10.f, *bandOutGain[n] / 20.f);
-            for (int ch = 0; ch < inputBlock.getNumChannels(); ++ch)
-            {
-                auto bandPtr = band[n].getChannelPointer(ch);
-                auto m_lastGain = lastInGain[n];
-                auto m_lastOut = lastOutGain[n];
-                auto inc = (gain - m_lastGain) / (float)numSamples;
-                auto outinc = (outGain - m_lastOut) / (float)numSamples;
-                for (int i = 0; i < numSamples; ++i)
-                {
-                    if (n > 0 && numBands > n)
-                        bandPtr[i] = bandPtr[i] - band[n + 1].getSample(ch, i);
-
-                    if (!*bypassBand[n]) {
-                        if (gain != m_lastGain) {
-                            bandPtr[i] *= m_lastGain;
-                            bandPtr[i] = mPi[n].processSample(ch, bandPtr[i]);
-                            if (*autoGain)
-                                bandPtr[i] *= 1.0 / m_lastGain;
-                            m_lastGain += inc;
-                        }
-                        else {
-                            bandPtr[i] *= gain;
-                            bandPtr[i] = mPi[n].processSample(ch, bandPtr[i]);
-                            if (*autoGain)
-                                bandPtr[i] *= 1.0 / gain;
-                        }
-                        //bandPtr[i] /= halfPi - (1.f / (float)(numBands + 1));
-                    }
-                    if (*muteBand[n])
-                        bandPtr[i] = 0.0;
-                        
-                    if (outGain != m_lastOut) {
-                        bandPtr[i] *= m_lastOut;
-                        m_lastOut += outinc;
-                    }
-                    else bandPtr[i] *= outGain;
-                }
-            }
-            lastInGain[n] = gain;
-            lastOutGain[n] = outGain;
+            if (n > 0 && numBands > n)
+                for (size_t ch = 0; ch < lowBand.getNumChannels(); ++ch)
+                    FloatVectorOperations::subtract(lowBand.getChannelPointer(ch), highBand.getChannelPointer(ch), numSamples);
         }
-
-        /*widen bands*/
-        for (int i = 0; i <= numBands; ++i)
+        else
         {
-            if (*bandWidth[i] != 1.0 && inputBlock.getNumChannels() > 1) {
-                if (lastBandWidth[i] != *bandWidth[i]) {
-                    bandWidener[i].widenBufferWithRamp(bandBuffer[i], lastBandWidth[i], *bandWidth[i], *monoWidth);
-                    lastBandWidth[i] = *bandWidth[i];
+            if (n != numBands)
+            {
+                for (size_t ch = 0; ch < lowBand.getNumChannels(); ++ch)
+                {
+                    auto low = lowBand.getChannelPointer(ch);
+                    auto high = highBand.getChannelPointer(ch);
+
+                    for (size_t i = 0; i < numSamples; ++i)
+                    {
+                        if (n == 0)
+                            bands[n].processSample(ch, low[i], low[i], high[i]);
+                        else
+                            bands[n].processTwoSamples(ch, low[i], high[i], low[i], high[i]);
+                    }
                 }
+            }
+        }
+    }
+
+    inline void processBandWidth(size_t n)
+    {
+        if (*bandWidth[n] != 1.0 && bandBuffer[n].getNumChannels() > 1)
+        {
+            if (lastBandWidth[n] != *bandWidth[n]) {
+                bandWidener[n].widenBufferWithRamp(bandBuffer[n], lastBandWidth[n], *bandWidth[n], *monoWidth);
+                lastBandWidth[n] = *bandWidth[n];
+            }
+            else
+                bandWidener[n].widenBuffer(bandBuffer[n], *bandWidth[n], *monoWidth);
+        }
+    }
+
+    template <typename T>
+    inline void sumBands(dsp::AudioBlock<T>& block)
+    {
+        block.fill(0.0);
+
+        if (*soloBand[0] || *soloBand[1] || *soloBand[2] || *soloBand[3])
+        {
+            for (size_t b = 0; b <= numBands; ++b)
+                if (*soloBand[b])
+                    for (size_t ch = 0; ch < block.getNumChannels(); ++ch)
+                        FloatVectorOperations::add(block.getChannelPointer(ch), bandBlock[b].getChannelPointer(ch), block.getNumSamples());
+        }
+        else
+        {
+            for (size_t b = 0; b <= numBands; ++b)
+                for (size_t ch = 0; ch < block.getNumChannels(); ++ch)
+                    FloatVectorOperations::add(block.getChannelPointer(ch), bandBlock[b].getChannelPointer(ch), block.getNumSamples());
+        }
+    }
+
+    template <typename T>
+    void processBands(dsp::AudioBlock<T>& block)
+    {
+        const auto numSamples = block.getNumSamples();
+
+        for (size_t n = 0; n <= numBands; ++n)
+        {
+            auto gain = pow(10.f, *bandInGain[n] * 0.05f);
+            auto outGain = pow(10.f, *bandOutGain[n] * 0.05f);
+
+            processFilters<T>(n, numSamples);
+
+            if (*muteBand[n]) {
+                bandBuffer[n].clear();
+                continue;
+            }
+
+            if (!*bypassBand[n])
+            {
+                if (gain != lastInGain[n])
+                    bandBuffer[n].applyGainRamp(0, numSamples, lastInGain[n], gain);
                 else
-                    bandWidener[i].widenBlock(band[i], *bandWidth[i], *monoWidth);
-            }
-        }
+                    bandBuffer[n].applyGain(gain);
 
-        const double r = 1.0 - (1.0 / (float)(oversampleFactor * 1000.0));
+                dsp::AudioBlock<T> b_block(bandBuffer[n]);
+                b_block = b_block.getSubBlock(0, numSamples);
 
-        /*if any solo conditions present, add relevant bands*/
-        if (*soloBand[0] || *soloBand[1] || *soloBand[2] || *soloBand[3]) {
-            for (int channel = 0; channel < inputBlock.getNumChannels(); ++channel)
-            {
-                for (int i = 0; i < numSamples; ++i)
+                mPi[n].process(b_block);
+
+                if (*autoGain)
                 {
-#if USE_SIMD_SAT
-                    vec out_m, out;
-#else
-                    T out_m = 0.0;
-                    T out = 0.0;
-#endif
-                    for (int b = 0; b <= numBands; ++b)
-                        if (*soloBand[b])
-                            out += band[b].getSample(channel, i);
-
-                    if (*distIndex == 1) {
-                        /*DC Blocker*/
-                        out_m = out;
-                        out = out_m - xm1[channel] + r * ym1[channel];
-                        xm1[channel] = out_m;
-                        ym1[channel] = out;
-                    }
-
-                    outputBlock.setSample(channel, i, out);
+                    if (gain != lastInGain[n])
+                        bandBuffer[n].applyGainRamp(0, numSamples, 1.0 / lastInGain[n], 1.0 / gain);
+                    else
+                        bandBuffer[n].applyGain(1.0 / gain);
                 }
             }
+
+            lastInGain[n] = gain;
+
+            if (outGain != lastOutGain[n])
+                bandBuffer[n].applyGainRamp(0, numSamples, lastOutGain[n], outGain);
+            else
+                bandBuffer[n].applyGain(0, numSamples, outGain);
+
+            lastOutGain[n] = outGain;
+
+            processBandWidth(n);
         }
 
-        /*if no solo conditions present, add all relevant bands*/
-        if (!*soloBand[0] && !*soloBand[1] && !*soloBand[2] && !*soloBand[3]) {
-            for (int channel = 0; channel < inputBlock.getNumChannels(); ++channel)
-            {
-                for (int i = 0; i < numSamples; ++i)
-                {
-#if USE_SIMD_SAT
-                    vec out_m, out;
-#else
-                    T out_m = 0.0;
-                    T out = 0.0;
-#endif
-                    for (int b = 0; b <= numBands; ++b)
-                        out += band[b].getSample(channel, i);
-
-                    if (*distIndex == 1) {
-                        /*DC Blocker*/
-                        out_m = out;
-                        out = out_m - xm1[channel] + r * ym1[channel];
-                        xm1[channel] = out_m;
-                        ym1[channel] = out;
-                    }
-
-                    outputBlock.setSample(channel, i, out);
-                }
-            }
-        }
+        sumBands(block);
     }
 
     std::array<std::atomic<float>*, 4> muteBand, soloBand, bypassBand, bandInGain, bandOutGain, bandWidth;
     std::array<float, 4> lastInGain, lastOutGain, lastBandWidth;
     std::array<std::atomic<float>*, 3> crossovers;
 
-    std::array<LRFilter, 3> bands;
+    std::array<LRFilter<float>, 3> bands;
 
     dsp::ConvolutionMessageQueue q{ 16000 };
 
@@ -470,9 +292,10 @@ struct MultibandProcessor
         {strix::LinearFilter::FIRThread(false, 2048, q)}
     } };
 
-    std::array<StereoWidener, 4> bandWidener;
+    std::array<StereoWidener<float>, 4> bandWidener;
 
     std::array<AudioBuffer<float>, 4> bandBuffer;
+    std::array<dsp::AudioBlock<float>, 4> bandBlock;
 
 private:
 
