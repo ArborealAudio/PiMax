@@ -95,7 +95,6 @@ UI::UI (MaximizerAudioProcessor& p) : audioProcessor(p), gain__slider(false), ou
     bypass.setBounds(538, 15, 40, 25);
 
     addAndMakeVisible(curve__slider);
-    curve__slider.setBufferedToImage(true);
     curve__slider.setSliderStyle(juce::Slider::LinearHorizontal);
     curve__slider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
     curve__slider.setLookAndFeel(&curveLNF);
@@ -131,7 +130,7 @@ UI::UI (MaximizerAudioProcessor& p) : audioProcessor(p), gain__slider(false), ou
     addAndMakeVisible(clipBox);
     clipBox.setLookAndFeel(&clipBoxLNF);
     clipBoxLNF.setType(ComboBoxLNF::Type::Clip);
-    StringArray clipMode{ "finite", "clip", "infinite" };
+    StringArray clipMode{ "finite", "clip", "infinite", "deep", "warm" };
     clipBox.addItemList(clipMode, 1);
     clipBox.setTooltip("Finite = saturation which folds back towards zero instead of soft clipping.\n\n"
         "Clip = clip at digital maximum, like traditional soft clipping. Good for transient-heavy material.\n\n"
