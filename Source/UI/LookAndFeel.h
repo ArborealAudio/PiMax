@@ -253,15 +253,26 @@ struct ComboBoxLNF : public LookAndFeel_V4
             p.addRoundedRectangle((float)boxBounds.getX(), (float)boxBounds.getY(),
                 (float)boxBounds.getWidth(), (float)boxBounds.getHeight(),
                 7.f, 7.f, false, true, false, true);
-            if (box.getSelectedId() == 1)
+            switch (box.getSelectedId())
+            {
+            case 1:
                 g.setColour(Colours::seagreen);
-            else if (box.getSelectedId() == 2)
+                break;
+            case 2:
                 g.setColour(Colours::seagreen.withAlpha(0.33f));
-            else
+                break;
+            case 3:
                 g.setColour(Colours::teal.withAlpha(0.5f));
+                break;
+            case 4:
+                g.setColour(Colours::midnightblue.withAlpha(0.5f));
+                break;
+            case 5:
+                g.setColour(Colours::red.withAlpha(0.33f));
+                break;
+            };
 
             g.fillPath(p);
-
         }
     }
 
