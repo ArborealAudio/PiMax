@@ -1,3 +1,6 @@
 [submodule "Source/modules/farbot"]
 	path = Source/modules/farbot
 	url = https://github.com/hogliux/farbot
+[submodule "Source/modules/clap-juce-extensions"]
+	path = Source/modules/clap-juce-extensions
+	url = https://github.com/free-audio/clap-juce-extensions

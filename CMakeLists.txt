@@ -6,7 +6,8 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(JUCE CONFIG REQUIRED)
-#TODO: add CLAP implementation
+
+add_subdirectory(Source/modules/clap-juce-extensions)
 
 juce_set_vst2_sdk_path("$ENV{HOME}/vst2_sdk")
 
@@ -21,6 +22,10 @@ juce_add_plugin(PiMax
     AU_MAIN_TYPE kAudioUnitType_Effect
     PRODUCT_NAME "PiMax"
     HARDENED_RUNTIME_ENABLED TRUE)
+
+clap_juce_extensions_plugin(TARGET PiMax
+    CLAP_ID "com.ArborealAudio.PiMax"
+    CLAP_FEATURES fx saturation loudness multiband)
 
 juce_generate_juce_header(PiMax)
 
