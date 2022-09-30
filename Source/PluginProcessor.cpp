@@ -188,7 +188,6 @@ void MaximizerAudioProcessor::releaseResources()
     lastInputGain = 1.f;
     lastOutGain = 1.f;
     m_lastGain = 1.f;
-    xm1[0] = xm1[1] = ym1[0] = ym1[1] = 0.0;
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
@@ -401,6 +400,17 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
         {
             auto in = osBlock.getChannelPointer(channel);
 
+            // if (lastAsym != *distIndex) /* fade in if we just turned on Asym */
+            // {
+            //     auto inc = 1.0 / osBlock.getNumSamples();
+            //     auto gain = 0.0;
+            //     for (int i = 0; i < osBlock.getNumSamples(); ++i)
+            //     {
+            //         in[i] *= gain;
+            //         gain += inc;
+            //     }
+            // }
+
             for (int i = 0; i < osBlock.getNumSamples(); ++i)
             {
                 /*DC blocker*/
@@ -411,6 +421,8 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
             }
         }
     }
+
+    lastAsym = (bool)*distIndex;
 
     // if (totalNumOutputChannels > 1)
     oversample[osIndex].processSamplesDown(outBlock);

@@ -169,8 +169,8 @@ private:
     std::unique_ptr<PresetManager> manager = std::make_unique<PresetManager>(apvts);
 
     MaximPizer mPi;
-    double xm1[2]{ 0.0, 0.0 };
-    double ym1[2]{ 0.0, 0.0 };
+    double xm1[2]{ 0.1, 0.1 };
+    double ym1[2]{ 0.0999, 0.0999 };
 
     StereoWidener<float> widener;
 
@@ -187,7 +187,7 @@ private:
     
     float lastInputGain = 1.0, lastOutGain = 1.0;
 
-    bool lastBoost = false;
+    bool lastBoost = false, lastAsym = false;
 
     strix::VolumeMeterSource inputMeter, outputMeter;
 
