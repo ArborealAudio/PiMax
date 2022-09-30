@@ -45,9 +45,18 @@ public:
         for (size_t ch = 0; ch < block.getNumChannels(); ++ch)
         {
             auto in = block.getChannelPointer(ch);
+
             if (type_m)
                 FloatVectorOperations::add(in, 0.1, block.getNumSamples());
-            
+            // if (type_m)
+            // {
+            //     for (size_t i = 0; i < block.getNumSamples(); ++i)
+            //     {
+            //         if (in[i] > 0.0)
+            //             in[i] *= 1.05f;
+            //     }
+            // }
+                        
             switch (clip_m)
             {
             case ClipType::Deep:
@@ -60,6 +69,15 @@ public:
                 processRegular(ch, block.getNumSamples(), in);
                 break;
             };
+
+            // if (type_m)
+            // {
+            //     for (size_t i = 0; i < block.getNumSamples(); ++i)
+            //     {
+            //         if (in[i] > 0.0)
+            //             in[i] /= 1.05f;
+            //     }
+            // }
         }
 	}
 
@@ -75,7 +93,6 @@ public:
         {
             /*if we're in regular bounds, apply curve algo*/
             const auto xn = in[i];
-            auto yn = 0.0;
 
             const auto a = jlimit(0.0, 1.0, (std::abs(xn) + std::abs(x_n2[channel])) / 2.0);
 
