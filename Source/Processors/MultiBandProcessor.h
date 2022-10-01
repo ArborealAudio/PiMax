@@ -57,7 +57,7 @@ struct MultibandProcessor
         }
 
         for (auto& m : mPi)
-            m.prepare();
+            m.prepare(spec);
     }
 
     void reset()
@@ -92,7 +92,7 @@ struct MultibandProcessor
             w.prepare(newSpec);
 
         for (auto& m : mPi)
-            m.prepare();
+            m.prepare(newSpec);
     }
 
     /*passes crossover points to filter objects*/

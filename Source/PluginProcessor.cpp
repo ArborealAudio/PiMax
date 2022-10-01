@@ -163,7 +163,9 @@ void MaximizerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
     for (auto& ovs : oversampleMono)
         ovs.initProcessing(size_t(samplesPerBlock));
 
-    mPi.prepare();
+    mPi.prepare(spec);
+
+    smooth.reset(lastSampleRate, 0.1);
 
     m_Proc.prepare(spec);
     m_Proc.initCrossovers();
@@ -182,7 +184,7 @@ void MaximizerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
 
 void MaximizerAudioProcessor::releaseResources()
 {
-    mPi.prepare();
+    mPi.reset();
     mixer.reset();
     m_Proc.reset();
     lastInputGain = 1.f;
@@ -259,7 +261,9 @@ void MaximizerAudioProcessor::parameterChanged(const String& parameterID, float 
         // if (parameterID != "linearPhase")
         needs_resize.store(true);
 
-        mPi.prepare();
+        dsp::ProcessSpec newSpec{ lastSampleRate, uint32(maxNumSamples * oversample[osIndex].getOversamplingFactor()), uint32(getTotalNumInputChannels()) };
+
+        mPi.prepare(newSpec);
     }
 
     if (parameterID.contains("crossover")) {
@@ -303,9 +307,6 @@ void MaximizerAudioProcessor::updateNumBands(int newNumBands) noexcept
 
 void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
-    if (trialEnded && !checkUnlock())
-        return;
-
     juce::ScopedNoDenormals noDenormals;
     auto totalNumInputChannels = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
@@ -400,17 +401,6 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
         {
             auto in = osBlock.getChannelPointer(channel);
 
-            // if (lastAsym != *distIndex) /* fade in if we just turned on Asym */
-            // {
-            //     auto inc = 1.0 / osBlock.getNumSamples();
-            //     auto gain = 0.0;
-            //     for (int i = 0; i < osBlock.getNumSamples(); ++i)
-            //     {
-            //         in[i] *= gain;
-            //         gain += inc;
-            //     }
-            // }
-
             for (int i = 0; i < osBlock.getNumSamples(); ++i)
             {
                 /*DC blocker*/
@@ -419,10 +409,20 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
                 xm1[channel] = yn;
                 ym1[channel] = in[i];
             }
+
+            if (lastAsym != *distIndex) /* fade in if we just turned on Asym */
+            {
+                smooth.reset(lastSampleRate, 0.1);
+                smooth.setTargetValue(1.0);
+                smooth.applyGain(in, osBlock.getNumSamples());
+
+                if (!smooth.isSmoothing())
+                    lastAsym = (bool)*distIndex;
+            }
         }
     }
-
-    lastAsym = (bool)*distIndex;
+    else
+        lastAsym = false;
 
     // if (totalNumOutputChannels > 1)
     oversample[osIndex].processSamplesDown(outBlock);
@@ -453,6 +453,9 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
             buffer.applyGainRamp(0, numSamples, 1.0 / (m_lastGain * halfPi), 1.0 / (gain_raw * halfPi));
         else
             buffer.applyGain(1.0 / (gain_raw * halfPi));
+
+        if ((ClipType)clip->load() == ClipType::Warm)
+            buffer.applyGain(halfPi);
 
         if (*boost)
         {

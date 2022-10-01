@@ -170,7 +170,8 @@ private:
 
     MaximPizer mPi;
     double xm1[2]{ 0.1, 0.1 };
-    double ym1[2]{ 0.0999, 0.0999 };
+    double ym1[2]{ 0.0, 0.0 };
+    SmoothedValue<float> smooth { 0.0 };
 
     StereoWidener<float> widener;
 

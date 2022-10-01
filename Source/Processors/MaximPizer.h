@@ -7,7 +7,9 @@ class MaximPizer
 
     AudioProcessorValueTreeState& apvts;
 
-	std::atomic<float>* curve, *clip, *type, *boost;
+    strix::SVTFilter<float> hiShelf;
+
+	std::atomic<float>* curve, *clip, *type, *boost, *gain;
     float curve_m = 0, type_m = 0;
     ClipType clip_m;
     bool boost_m = false;
@@ -18,16 +20,27 @@ public:
 
 	MaximPizer(AudioProcessorValueTreeState& a) : apvts(a)
 	{
+        gain = apvts.getRawParameterValue("gain");
 		curve = apvts.getRawParameterValue("curve");
 		clip = apvts.getRawParameterValue("clipType");
 		type = apvts.getRawParameterValue("distType");
 		boost = apvts.getRawParameterValue("boost");
 	}
 
-	void prepare()
+	void prepare(const dsp::ProcessSpec& spec)
 	{
 		x_n1[0] = x_n1[1] = x_n2[0] = x_n2[1] = y_n1[0] = y_n1[1] = 0.0;
+
+        hiShelf.prepare(spec);
+        hiShelf.setType(strix::FilterType::firstOrderHighpass);
+        hiShelf.setCutoffFreq(3500.0 * (2.0 * *curve));
 	}
+
+    void reset()
+    {
+        hiShelf.reset();
+        x_n1[0] = x_n1[1] = x_n2[0] = x_n2[1] = y_n1[0] = y_n1[1] = 0.0;
+    }
 
     void loadAtomics()
     {
@@ -35,6 +48,8 @@ public:
         clip_m = (ClipType)clip->load();
         type_m = type->load();
         boost_m = boost->load();
+
+        hiShelf.setCutoffFreq(3500.0 * (2.0 * curve_m));
     }
 
 	template <typename T>
@@ -48,36 +63,19 @@ public:
 
             if (type_m)
                 FloatVectorOperations::add(in, 0.1, block.getNumSamples());
-            // if (type_m)
-            // {
-            //     for (size_t i = 0; i < block.getNumSamples(); ++i)
-            //     {
-            //         if (in[i] > 0.0)
-            //             in[i] *= 1.05f;
-            //     }
-            // }
                         
             switch (clip_m)
             {
             case ClipType::Deep:
                 processDeep(ch, block.getNumSamples(), in);
                 break;
-            /* case ClipType::Warm: NOT FINISHED
-                processWarm(ch, block.getNumSamples(), in);
-                break; */
+             case ClipType::Warm:
+                processWarm(ch, block.getNumSamples(), in, *gain);
+                break; 
             default:
                 processRegular(ch, block.getNumSamples(), in);
                 break;
             };
-
-            // if (type_m)
-            // {
-            //     for (size_t i = 0; i < block.getNumSamples(); ++i)
-            //     {
-            //         if (in[i] > 0.0)
-            //             in[i] /= 1.05f;
-            //     }
-            // }
         }
 	}
 
@@ -118,7 +116,6 @@ public:
                 }
                 else
                     yn = sin(halfPi * xn);
-
             }
             /*check for clip*/
             else
@@ -171,16 +168,18 @@ public:
     }
 
     template <typename T>
-    void processWarm(size_t ch, size_t numSamples, T* xn)
+    void processWarm(size_t ch, size_t numSamples, T* xn, float gain)
     {
-        const auto third = halfPi * curve_m * 0.1;
-        const auto fifth = halfPi * curve_m * 0.05;
-        const auto seventh = halfPi * curve_m * 0.025;
+        FloatVectorOperations::multiply(xn, halfPi, numSamples);
 
-        for (size_t i = 0; i < numSamples; ++i)
-            xn[i] += (xn[i] * xn[i] * xn[i] * third) + std::pow(xn[i], 5.0) * fifth + std::pow(xn[i], 7.0) * seventh;
+        for (int i = 0; i < numSamples; ++i)
+        {
+            auto xf = 0.25f * hiShelf.processSample(ch, xn[i]);
+            xn[i] -= xf;
+            xn[i] = (-1.0 / (1.0 + std::exp(xn[i])) + 0.5);
+        }
 
-        // FloatVectorOperations::multiply(xn, 1.0 / 3.0, numSamples);
+        FloatVectorOperations::multiply(xn, e, numSamples);
     }
 
 	inline double acos(double x)
