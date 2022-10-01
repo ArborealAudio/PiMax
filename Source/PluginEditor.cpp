@@ -917,12 +917,12 @@ void WaveshaperComponent::paint(Graphics& g)
             Colours::transparentWhite, getLocalBounds().getX(), getLocalBounds().getY(), true);
 
         if (curve > 1.0) {
-            curve = jmap(curve, 1.f, 1.2f, 0.f, 1.f);
-            gradient.setColour(1, Colours::transparentWhite.interpolatedWith(Colours::seagreen, curve / 3.f));
+            auto fac = jmap(curve, 1.f, 1.2f, 0.f, 1.f);
+            gradient.setColour(1, Colours::transparentWhite.interpolatedWith(Colours::seagreen, fac / 3.f));
         }
         else if (curve < 1.0) {
-            curve = jmap(curve, 0.83f, 1.f, 0.f, 1.f);
-            gradient.setColour(1, Colours::transparentWhite.interpolatedWith(Colours::teal, (1.f - curve) / 3.f));
+            auto fac = jmap(curve, 0.83f, 1.f, 0.f, 1.f);
+            gradient.setColour(1, Colours::transparentWhite.interpolatedWith(Colours::teal, (1.f - fac) / 3.f));
         }
 
         g.setGradientFill(gradient);
@@ -931,16 +931,16 @@ void WaveshaperComponent::paint(Graphics& g)
         std::vector<float> mag;
         mag.resize(w);
 
+        ClipType clip = (ClipType)audioProcessor.clip->load();
+        auto distIndex = audioProcessor.distIndex->load();
+        auto outGain = pow(10.f, audioProcessor.output_dB->load() / 20.f);
+
         for (int n = 0; n < w; ++n)
-        {
-            auto x = jmap(float(n) / float(w), -1.f, 1.f);
+            mag[n] = jmap(float(n) / float(w), -1.f, 1.f);
 
-            x *= gain;
-
-            mag[n] = waveshapers::inflator_v2(x, *audioProcessor.curve, *audioProcessor.clip, *audioProcessor.distIndex);
-
-            mag[n] *= pow(10.f, (*audioProcessor.output_dB / 20.f));
-        }
+        FloatVectorOperations::multiply(mag.data(), gain, mag.size());
+        waveshapers::inflator_v2(mag.data(), mag.size(), curve, clip, distIndex);
+        FloatVectorOperations::multiply(mag.data(), outGain, mag.size());
 
         const float outputMin = getLocalBounds().getBottom();
         const float outputMax = getLocalBounds().getY();
