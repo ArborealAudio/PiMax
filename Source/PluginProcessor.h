@@ -8,9 +8,8 @@
 
 #pragma once
 
-#define USE_SIMD_SAT 0
-#define USE_SIMD_FIR 0
 #define USE_CONVOLUTION 1
+#define PRODUCTION_BUILD 0
 
 enum class ClipType
 {

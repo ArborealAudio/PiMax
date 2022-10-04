@@ -11,7 +11,11 @@
 #pragma once
 
 const String versionURL
+#if PRODUCTION_BUILD
 { "https://arborealaudio.com/wp-content/versions/PiMax-latest.json" };
+#else
+{ "http://arborealaudio.com/versions/test/PiMax-latest.json" };
+#endif
 
 const String downloadURLWin
 { "https://arborealaudio.com/wp-content/downloads/PiMax-windows.exe" };
@@ -64,7 +68,11 @@ struct DownloadManager : Component
             DBG("Current: " << String(ProjectInfo::versionString).removeCharacters("."));
             DBG("Latest: " << latestVersion.toString());
             
+#if PRODUCTION_BUILD
             return String(ProjectInfo::versionString).removeCharacters(".") < latestVersion.toString().removeCharacters(".");
+#else
+            return true;
+#endif
         }
         else
             return false;
