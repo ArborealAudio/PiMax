@@ -40,13 +40,15 @@ UI::UI (MaximizerAudioProcessor& p) : audioProcessor(p), gain__slider(false), ou
     inputMeter.setMeterType(strix::VolumeMeterComponent::Volume);
     inputMeter.setMeterColor(Colours::lightgreen.withAlpha(0.5f));
     inputMeter.setInterceptsMouseClicks(false, false);
+    inputMeter.clipIndicator = false;
 
     outputMeter.setMeterType(strix::VolumeMeterComponent::Volume);
     outputMeter.setMeterColor(Colours::lightgreen.withAlpha(0.5f));
     outputMeter.setInterceptsMouseClicks(true, false);
+    outputMeter.clipIndicator = true;
 
-    inputMeter.setBounds(33, 88, 40, 215);
-    outputMeter.setBounds(538, 88, 40, 213);
+    inputMeter.setBounds(33, 91, 40, 218);
+    outputMeter.setBounds(538, 91, 40, 216);
 
     gain__slider.setSliderStyle(juce::Slider::LinearVertical);
     inGainLNF.textOnLeft = false;
@@ -55,7 +57,7 @@ UI::UI (MaximizerAudioProcessor& p) : audioProcessor(p), gain__slider(false), ou
     gain__slider.setSliderSnapsToMousePosition(false);
     gain__slider.setTooltip("Sets the input gain. In band split mode, the gain is applied to the entire signal before the multiband process.");
     addAndMakeVisible(gain__slider);
-    gain__slider.setBounds(33, 97, 100, 210);
+    gain__slider.setBounds(33, 112, 100, 200);
 
     outVol__slider.setSliderStyle(juce::Slider::LinearVertical);
     outGainLNF.textOnLeft = true;
@@ -64,7 +66,7 @@ UI::UI (MaximizerAudioProcessor& p) : audioProcessor(p), gain__slider(false), ou
     outVol__slider.setSliderSnapsToMousePosition(false);
     outVol__slider.setTooltip("Output gain after all other processing, before the Mix blend.");
     addAndMakeVisible(outVol__slider);
-    outVol__slider.setBounds(478, 95, 100, 210);
+    outVol__slider.setBounds(478, 110, 100, 200);
 
     addAndMakeVisible(autoGain);
     autoGain.setClickingTogglesState(true);
@@ -80,7 +82,7 @@ UI::UI (MaximizerAudioProcessor& p) : audioProcessor(p), gain__slider(false), ou
     boostLNF.setType(TopButtonLNF::Type::Boost);
     boost.setButtonText("Input Boost");
     boost.setTooltip("12dB input boost, and increases Curve value exponentially.");
-#if !JUCE_MAC
+#if JUCE_WINDOWS
     boost.setSize(55, 23);
 #else
     boost.setSize(60, 23);
@@ -100,8 +102,11 @@ UI::UI (MaximizerAudioProcessor& p) : audioProcessor(p), gain__slider(false), ou
     curve__slider.setLookAndFeel(&curveLNF);
     curve__slider.setSliderSnapsToMousePosition(false);
     curve__slider.setPopupDisplayEnabled(true, true, nullptr, 2000);
-    curve__slider.setTooltip("Negative values: saturation which features dynamic expansion and noisier harmonics when pushed further. In Symmetric mode, this can generate dropout-like artifacts.\n\n"
-        "Positive values: a more compressed and warmer saturation.");
+    curve__slider.setTooltip("In Finite, Clip, and Infinite mode, negative values give you saturation which features dynamic expansion and noisier harmonics when pushed further. In Symmetric mode, this can generate dropout-like artifacts.\n"
+        "In Deep mode, negative curve values create a lower knee for the saturation curve.\n\n"
+        "Positive values, in Finite, Clip, and Infinite mode, will give you a more compressed and warmer saturation.\n"
+        "In Deep mode, positive values will raise the clipping threshold and create a sharper knee.\n"
+        "And in Warm mode, the curve slider controls the degree of warmth in the coloration.");
     curve__slider.setSize(248, 25);
 
     addAndMakeVisible(distButton);
@@ -132,10 +137,12 @@ UI::UI (MaximizerAudioProcessor& p) : audioProcessor(p), gain__slider(false), ou
     clipBoxLNF.setType(ComboBoxLNF::Type::Clip);
     StringArray clipMode{ "finite", "clip", "infinite", "deep", "warm" };
     clipBox.addItemList(clipMode, 1);
-    clipBox.setTooltip("Finite = saturation which folds back towards zero instead of soft clipping.\n\n"
-        "Clip = clip at digital maximum, like traditional soft clipping. Good for transient-heavy material.\n\n"
-        "Infinite = foldback saturation which folds through zero and towards the opposite pole, resulting in"
-        " distortion which can affect the pitch of the sound.");
+    clipBox.setTooltip("Finite: saturation which folds back towards zero instead of soft clipping.\n\n"
+        "Clip: clip at digital maximum, like traditional soft clipping. Good for transient-heavy material.\n\n"
+        "Infinite: foldback saturation which folds through zero and towards the opposite pole, resulting in"
+        " distortion which can affect the pitch of the sound.\n\n"
+        "Deep: Highly colorful distortion that digs deep into the signal, with a gentle boost to the low-end and top-end.\n\n"
+        "Warm: The subtlest saturation, with adjustable high-frequency absorption and low-end boosting.");
     clipBox.setBounds(122, 328, 60, 32);
 
     addAndMakeVisible(bandSplit__textButton);
@@ -271,6 +278,10 @@ void UI::paint (juce::Graphics& g)
     g.setColour(Colours::red);
     g.setFont(20.f);
     g.drawText("DEBUG", textBounds.translated(0, 25), Justification::centred, false);
+#elif !PRODUCTION_BUILD
+    g.setColour(Colours::lime);
+    g.setFont(20.f);
+    g.drawText("DEV", textBounds.translated(0, 25), Justification::centred, false);
 #endif
 
     {
