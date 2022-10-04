@@ -167,7 +167,7 @@ namespace waveshapers
 		case ClipType::Deep: {
 			const auto curve = k * k;
 
-			FloatVectorOperations::multiply(xn, pi, numSamples);
+			FloatVectorOperations::multiply(xn, halfPi, numSamples);
 
 			for (int i = 0; i < numSamples; ++i)
 				xn[i] = xn[i] / std::pow((1.0 + std::pow(std::abs(xn[i]), curve)), 1.0 / curve);

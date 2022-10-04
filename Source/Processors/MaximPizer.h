@@ -7,7 +7,7 @@ class MaximPizer
 
     AudioProcessorValueTreeState& apvts;
 
-    strix::SVTFilter<float> hiShelf;
+    strix::SVTFilter<float> hiShelf, lowShelf;
 
 	std::atomic<float>* curve, *clip, *type, *boost, *gain;
     float curve_m = 0, type_m = 0;
@@ -33,7 +33,13 @@ public:
 
         hiShelf.prepare(spec);
         hiShelf.setType(strix::FilterType::firstOrderHighpass);
-        hiShelf.setCutoffFreq(3500.0 * (2.0 * *curve));
+        hiShelf.setCutoffFreq(5000.0 * (1.f / (*curve * *curve * *curve)));
+        hiShelf.setResonance(0.5f);
+
+        lowShelf.prepare(spec);
+        lowShelf.setType(strix::FilterType::firstOrderLowpass);
+        lowShelf.setCutoffFreq(150.f * (*curve * *curve));
+        lowShelf.setResonance(0.5f);
 	}
 
     void reset()
@@ -49,7 +55,8 @@ public:
         type_m = type->load();
         boost_m = boost->load();
 
-        hiShelf.setCutoffFreq(3500.0 * (2.0 * curve_m));
+        hiShelf.setCutoffFreq(5000.0 * (1.f / (curve_m * curve_m * curve_m)));
+        lowShelf.setCutoffFreq(150.f * (curve_m * curve_m));
     }
 
 	template <typename T>
@@ -70,7 +77,7 @@ public:
                 processDeep(ch, block.getNumSamples(), in);
                 break;
              case ClipType::Warm:
-                processWarm(ch, block.getNumSamples(), in, *gain);
+                processWarm(ch, block.getNumSamples(), in);
                 break; 
             default:
                 processRegular(ch, block.getNumSamples(), in);
@@ -158,24 +165,32 @@ public:
     {
         const double k = curve_m * curve_m;
 
-        FloatVectorOperations::multiply(xn, pi, numSamples);
+        FloatVectorOperations::multiply(xn, halfPi, numSamples);
 
         for (int i = 0; i < numSamples; ++i)
+        {
             xn[i] = xn[i] / std::pow((1.0 + std::pow(std::abs(xn[i]), k)), 1.0 / k);
+            xn[i] += 0.2f * lowShelf.processSample(ch, xn[i]);
+            xn[i] += 0.2f * hiShelf.processSample(ch, xn[i]);
+        }
 
         if (k < 1.0)
             FloatVectorOperations::multiply(xn, 1.0 / k, numSamples);
     }
 
     template <typename T>
-    void processWarm(size_t ch, size_t numSamples, T* xn, float gain)
+    void processWarm(size_t ch, size_t numSamples, T* xn)
     {
         FloatVectorOperations::multiply(xn, halfPi, numSamples);
 
+        auto lfGain = curve_m >= 1.f ? curve_m * curve_m - 1.f : 0.f;
+
         for (int i = 0; i < numSamples; ++i)
         {
-            auto xf = 0.25f * hiShelf.processSample(ch, xn[i]);
-            xn[i] -= xf;
+            auto hf = 0.3f * hiShelf.processSample(ch, xn[i]);
+            auto lf = lfGain * lowShelf.processSample(ch, xn[i]);
+            xn[i] -= hf;
+            xn[i] += lf;
             xn[i] = (-1.0 / (1.0 + std::exp(xn[i])) + 0.5);
         }
 

@@ -454,8 +454,11 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
         else
             buffer.applyGain(1.0 / (gain_raw * halfPi));
 
-        if ((ClipType)clip->load() == ClipType::Warm)
-            buffer.applyGain(halfPi);
+        if ((ClipType)clip->load() == ClipType::Warm || (ClipType)clip->load() == ClipType::Deep)
+            buffer.applyGain(std::sqrt(halfPi));
+
+        /*if ((ClipType)clip->load() == ClipType::Deep)
+            buffer.applyGain(1.0 / halfPi);*/
 
         if (*boost)
         {
