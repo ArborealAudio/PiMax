@@ -78,22 +78,21 @@ struct UnlockStatus
 
     juce::URL getURL()
     {
-        return URL("https://arborealaudio.com/");
+        return URL("https://3pvj52nx17.execute-api.us-east-1.amazonaws.com");
     }
 
     String readReplyForKey(const juce::String& key, bool activate)
     {
         URL url(getURL()
-            .withNewSubPath("wp-json/lmfwc/v2/licenses/" + key)
-            .withParameter("consumer_key", "ck_2ce7d78fab4ee7db66e6b5ee17f045111bdc3d00")
-            .withParameter("consumer_secret", "cs_b8548efc0a05b35817bce7f994e20008cbafb751"));
+            .withNewSubPath("/default/licenses/" + key));
 
         if (activate)
-            url = url.withNewSubPath("wp-json/lmfwc/v2/licenses/activate/" + key);
+            url = url.withNewSubPath("/default/licenses/activate/" + key);
 
         DBG("Trying to unlock via URL: " << url.toString(true));
 
-        if (auto stream = URL(url).createInputStream(URL::InputStreamOptions(URL::ParameterHandling::inAddress)))
+        if (auto stream = URL(url).createInputStream(URL::InputStreamOptions(URL::ParameterHandling::inAddress)
+        .withExtraHeaders("x-api-key: Fb5mXNfHiNaSKABQEl0PiFmYBthvv457bOCA1ou2")))
         {
             return stream->readEntireStreamAsString();
         }
@@ -131,7 +130,7 @@ struct UnlockStatus
             return 0;
 
         auto keyResponse = readReplyForKey(key, false);
-        DBG(keyResponse);
+        DBG("keyResponse: " << keyResponse);
 
         auto keyTree = strix::createValueTreeFromJSON(keyResponse);
 
@@ -201,6 +200,7 @@ struct UnlockStatus
             xmlGB.setAttribute("GBuuid", String(gbuuid));
 
             xmlGB.writeTo(dirGB);
+            dirGB.setReadOnly(true);
         #endif
         }
     }
