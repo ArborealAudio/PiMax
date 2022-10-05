@@ -241,6 +241,43 @@ private:
     std::vector<Component*> getComps();
 
     TooltipWindow tooltip;
+
+    void writeUISize(int width, int height)
+    {
+        auto uiSizeFile = File(File::getSpecialLocation(File::userApplicationDataDirectory).getFullPathName() + "/Arboreal Audio/PiMax/config.xml");
+        if(!uiSizeFile.existsAsFile())
+            uiSizeFile.create();
+    
+        XmlElement uiXml{"UISize"};
+        uiXml.setAttribute("uiWidth", width);
+        uiXml.setAttribute("uiHeight", height);
+        uiXml.writeTo(uiSizeFile);
+
+#if JUCE_MAC
+        auto gbFile = File("~/Music/Audio Music Apps/Arboreal Audio/PiMax/config.xml");
+        if (!gbFile.existsAsFile())
+            gbFile.create();
+        uiXml.writeTo(gbFile);
+#endif
+    }
+
+    void readUISize(int& width, int& height)
+    {
+        File uiSizeFile;
+        PluginHostType host;
+        if (!host.isGarageBand())
+            uiSizeFile = File(File::getSpecialLocation(File::userApplicationDataDirectory).getFullPathName() + "/Arboreal Audio/PiMax/config.xml");
+        else
+            uiSizeFile = File("~/Music/Audio Music Apps/Arboreal Audio/PiMax/config.xml");
+
+        if (uiSizeFile.existsAsFile()) {
+            auto xml = parseXML(uiSizeFile);
+            if (xml->hasTagName("UISize")) {
+                width = xml->getIntAttribute("uiWidth", width);
+                height = xml->getIntAttribute("uiHeight", height);
+            }
+        }
+    }
     
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.

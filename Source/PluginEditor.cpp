@@ -1046,7 +1046,11 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(MaximizerAudioProce
     getConstrainer()->setMinimumSize(450, 300);
     getConstrainer()->setFixedAspectRatio(1.5);
 
-    setSize (p.lastUIWidth, p.lastUIHeight);
+    int width = 720, height = 480;
+
+    readUISize(width, height);
+
+    setSize (width, height);
 
     p.onPresetChange = [&] { updateBandDisplay(p.numBands); };
 
@@ -1108,8 +1112,8 @@ void MaximizerAudioProcessorEditor::resized()
         child->setTransform(AffineTransform::scale(scale));
     }
 
-    audioProcessor.lastUIWidth = getWidth();
-    audioProcessor.lastUIHeight = getHeight();
+    MessageManager::callAsync([&]
+                              { writeUISize(getWidth(), getHeight()); });
 }
 
 std::vector<Component*> MaximizerAudioProcessorEditor::getComps()
