@@ -11,12 +11,22 @@ add_subdirectory(Source/modules/clap-juce-extensions)
 
 juce_set_vst2_sdk_path("$ENV{HOME}/vst2_sdk")
 
+set(JUCE_FORMATS VST3 AU)
+
+if(UNIX AND NOT APPLE)
+    list(APPEND JUCE_FORMATS LV2)
+endif()
+
+if(TARGET juce_vst2_sdk)
+    list(APPEND JUCE_FORMATS VST)
+endif()
+
 juce_add_plugin(PiMax
     COMPANY_NAME "Arboreal Audio"
     COPY_PLUGIN_AFTER_BUILD TRUE
     PLUGIN_MANUFACTURER_CODE Arau
     PLUGIN_CODE Hmsj
-    FORMATS AU VST3 VST
+    FORMATS ${JUCE_FORMATS}
     VST2_CATEGORY kPlugCategEffect
     VST3_CATEGORY Fx
     AU_MAIN_TYPE kAudioUnitType_Effect
