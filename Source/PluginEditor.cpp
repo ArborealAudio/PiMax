@@ -909,7 +909,7 @@ void WaveshaperComponent::paint(Graphics& g)
 
         auto w = getWidth();
 
-        auto gain = pow(10.f, (*audioProcessor.gain_dB / 20.f));
+        float gain = pow(10.f, (*audioProcessor.gain_dB / 20.f));
         float curve = *audioProcessor.curve;
 
         ColourGradient gradient(Colour(0xa7a7a7a7).withAlpha(gain / 8.f),
@@ -984,7 +984,7 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(MaximizerAudioProce
 
     tooltip.setColour(TooltipWindow::backgroundColourId, Colours::darkslategrey);
 
-#if JUCE_WINDOWS
+#if JUCE_WINDOWS || JUCE_LINUX
    opengl.setImageCacheSize(static_cast<size_t>(64 * 1024 * 1024));
    opengl.attachTo(*this);
 #endif
@@ -1071,7 +1071,7 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(MaximizerAudioProce
     };
 
     if (!p.checkUnlock()) {
-        downloadManager.setVisible(false);
+        // downloadManager.setVisible(false);
         activationComp.setImage(createComponentSnapshot(getLocalBounds()));
         activationComp.setVisible(true);
     }
@@ -1088,7 +1088,7 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(MaximizerAudioProce
 
 MaximizerAudioProcessorEditor::~MaximizerAudioProcessorEditor()
 {
-#if JUCE_WINDOWS
+#if JUCE_WINDOWS || JUCE_LINUX
    opengl.detach();
 #endif
 }

@@ -221,9 +221,9 @@ public:
     }
 
 private:
-// #if JUCE_WINDOWS
+#if JUCE_WINDOWS || JUCE_LINUX
     OpenGLContext opengl;
-// #endif
+#endif
 
     ResponseCurveComponent responseCurveComponent;
     UI ui;
