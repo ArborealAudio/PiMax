@@ -4,6 +4,7 @@ class MaximPizer
 {
 	static constexpr auto halfPi = MathConstants<double>::halfPi;
     static constexpr auto pi = MathConstants<float>::pi;
+    static constexpr auto e = MathConstants<float>::euler;
 
     AudioProcessorValueTreeState& apvts;
 
