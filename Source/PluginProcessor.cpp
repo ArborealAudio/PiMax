@@ -618,12 +618,10 @@ void MaximizerAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     auto state = apvts.copyState();
     auto xml = state.createXml();
-    xml->setAttribute("uiWidth", lastUIWidth);
-    xml->setAttribute("uiHeight", lastUIHeight);
+    // xml->setAttribute("uiWidth", lastUIWidth);
+    // xml->setAttribute("uiHeight", lastUIHeight);
     xml->setAttribute("numBands", numBands);
     xml->setAttribute("preset", currentPreset);
-    //presetModified = manager->compareStates(currentPreset);
-    //xml->setAttribute("presetModified", presetModified);
     copyXmlToBinary(*xml, destData);
 }
 
@@ -634,14 +632,12 @@ void MaximizerAudioProcessor::setStateInformation (const void* data, int sizeInB
 
     auto xmlState = getXmlFromBinary(data, sizeInBytes);
     if (xmlState.get() != nullptr) {
-        lastUIWidth = xmlState->getIntAttribute("uiWidth", lastUIWidth);
-        lastUIHeight = xmlState->getIntAttribute("uiHeight", lastUIHeight);
+        // lastUIWidth = xmlState->getIntAttribute("uiWidth", lastUIWidth);
+        // lastUIHeight = xmlState->getIntAttribute("uiHeight", lastUIHeight);
         numBands = xmlState->getIntAttribute("numBands", numBands);
         if (numBands < 1)
             numBands == 1;
         currentPreset = xmlState->getStringAttribute("preset");
-        //presetModified = xmlState->getBoolAttribute("presetModified");
-        //if (xmlState->hasTagName(apvts.state.getType()))
         apvts.replaceState(ValueTree::fromXml(*xmlState));
         auto numBandsTree = apvts.state.getChildWithProperty("id", "numBands");
         if (numBandsTree.isValid())
@@ -753,21 +749,19 @@ AudioProcessorValueTreeState::ParameterLayout MaximizerAudioProcessor::createPar
 void MaximizerAudioProcessor::checkActivation()
 {
     PluginHostType host;
-    File dir = File(File::getSpecialLocation(File::SpecialLocationType::userApplicationDataDirectory)
-        .getFullPathName() + "/Arboreal Audio/PiMax/License/license.aal");
-    File dirGB;
-    uint64 gbuuid;
+    File dir = File(File::getSpecialLocation(File::userApplicationDataDirectory)
+                    .getFullPathName() + "/Arboreal Audio/PiMax/License/license.aal");
     
     auto uuid = String(OnlineUnlockStatus::MachineIDUtilities::getLocalMachineIDs().strings[0].hashCode64());
 
 #if JUCE_WINDOWS
     String timeFile = "HKEY_CURRENT_USER\\SOFTWARE\\Arboreal Audio\\PiMax\\TrialKey";
 #elif JUCE_MAC
-    dirGB = File("~/Music/Audio Music Apps/Arboreal Audio/PiMax/License/license.aal");
-    File timeFile = File(File::getSpecialLocation(File::SpecialLocationType::userApplicationDataDirectory)
-                             .getFullPathName() + "/Arboreal Audio/PiMax/License/trialkey.aal");
+    auto dirGB = File("~/Music/Audio Music Apps/Arboreal Audio/PiMax/License/license.aal");
+    File timeFile = File(File::getSpecialLocation(File::userApplicationDataDirectory)
+                        .getFullPathName() + "/Arboreal Audio/PiMax/License/trialkey.aal");
     File timeFileGB = File("~/Music/Audio Music Apps/Arboreal Audio/PiMax/License/trialkey.aal");
-    gbuuid = File("~/Music/Audio Music Apps").getFileIdentifier();
+    auto gbuuid = File("~/Music/Audio Music Apps").getFileIdentifier();
 #endif
     if (!host.isGarageBand()) {
         if (dir.exists() && !checkUnlock()) {
@@ -814,6 +808,7 @@ void MaximizerAudioProcessor::checkActivation()
             if (!trialEnded)
                 trialRemaining_ms = trialEnd.toMilliseconds() - Time::getCurrentTime().toMilliseconds();
         }
+        return;
     }
     if (!timeFileGB.exists()) {
         timeFileGB.create();

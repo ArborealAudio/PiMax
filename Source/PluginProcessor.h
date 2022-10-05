@@ -136,8 +136,6 @@ public:
 
     int numSamples = 0, maxNumSamples = 0;
 
-    int lastUIWidth, lastUIHeight;
-
     String currentPreset = "Default";
 
     var isUnlocked = false;
