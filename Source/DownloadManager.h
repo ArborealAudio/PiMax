@@ -14,7 +14,7 @@ const String versionURL
 #if PRODUCTION_BUILD
 { "https://arborealaudio.com/wp-content/versions/PiMax-latest.json" };
 #else
-{ "http://arborealaudio.com/versions/test/PiMax-latest.json" };
+{ "https://arborealaudio.com/versions/test/PiMax-latest.json" };
 #endif
 
 const String downloadURLWin
