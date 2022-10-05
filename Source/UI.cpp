@@ -266,7 +266,7 @@ void UI::paint (juce::Graphics& g)
     g.setFont(getCustomFont(FontStyle::Bold).withHeight(60.f));
 #if JUCE_WINDOWS
     int width = 122;
-#elif JUCE_MAC
+#else
     int width = 150;
 #endif
     Rectangle<int> textBounds{ getLocalBounds().getCentreX() - (width / 2),
