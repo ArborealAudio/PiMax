@@ -249,7 +249,7 @@ struct UnlockForm : Component
             if (key.isTextInputActive())
                 key.applyColourToAllText(Colours::white);
 
-            if (trialRemaining_ms > 0) {
+            if ((int)trialRemaining_ms > 0) {
                 auto timeRemaining = (Time::getCurrentTime() + RelativeTime::milliseconds(trialRemaining_ms)
                     - Time::getCurrentTime());
                 auto daysRemaining = timeRemaining.getDescription();
@@ -269,10 +269,12 @@ struct UnlockForm : Component
                 close.setEnabled(false);
                 if (textBounds.contains(getMouseXYRelative())) {
                     setMouseCursor(MouseCursor::PointingHandCursor);
-                    if (isMouseButtonDown()) {
-                        URL("https://arborealaudio.com/product/pimax").launchInDefaultBrowser();
+                    if (isMouseButtonDown() && !clickedLink) {
+                        URL("https://arborealaudio.com/plugins/pimax").launchInDefaultBrowser();
+                        clickedLink = true;
                         return;
                     }
+                    else clickedLink = false;
                 }
                 else
                     setMouseCursor(MouseCursor::NormalCursor);
@@ -334,7 +336,7 @@ private:
     TextButton reg{ "Register" },
         close{"Close"};
 
-    bool successRepaint = false;
+    bool successRepaint = false, clickedLink = false;
 
     UnlockStatus& status;
 };
