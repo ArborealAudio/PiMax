@@ -24,8 +24,6 @@ MaximizerAudioProcessor::MaximizerAudioProcessor()
 #endif
 
 {
-    lastUIWidth = 720;
-    lastUIHeight = 480;
     hq = apvts.getRawParameterValue("hq");
     apvts.addParameterListener("hq", this);
     renderHQ = apvts.getRawParameterValue("renderHQ");
@@ -751,17 +749,21 @@ void MaximizerAudioProcessor::checkActivation()
     PluginHostType host;
     File dir = File(File::getSpecialLocation(File::userApplicationDataDirectory)
                     .getFullPathName() + "/Arboreal Audio/PiMax/License/license.aal");
+    File dirGB;
+    uint64 gbuuid;
     
     auto uuid = String(OnlineUnlockStatus::MachineIDUtilities::getLocalMachineIDs().strings[0].hashCode64());
 
 #if JUCE_WINDOWS
     String timeFile = "HKEY_CURRENT_USER\\SOFTWARE\\Arboreal Audio\\PiMax\\TrialKey";
 #elif JUCE_MAC
-    auto dirGB = File("~/Music/Audio Music Apps/Arboreal Audio/PiMax/License/license.aal");
+    dirGB = File("~/Music/Audio Music Apps/Arboreal Audio/PiMax/License/license.aal");
     File timeFile = File(File::getSpecialLocation(File::userApplicationDataDirectory)
                         .getFullPathName() + "/Arboreal Audio/PiMax/License/trialkey.aal");
     File timeFileGB = File("~/Music/Audio Music Apps/Arboreal Audio/PiMax/License/trialkey.aal");
-    auto gbuuid = File("~/Music/Audio Music Apps").getFileIdentifier();
+    gbuuid = File("~/Music/Audio Music Apps").getFileIdentifier();
+#elif JUCE_LINUX
+    File timeFile = File(File::getSpecialLocation(File::userApplicationDataDirectory).getFullPathName() + "/Arboreal Audio/PiMax/License/trialkey.aal");
 #endif
     if (!host.isGarageBand()) {
         if (dir.exists() && !checkUnlock()) {
@@ -789,7 +791,7 @@ void MaximizerAudioProcessor::checkActivation()
         if (!trialEnded)
             trialRemaining_ms = trialEnd.toMilliseconds() - Time::getCurrentTime().toMilliseconds();
     }
-#elif JUCE_MAC
+#endif
     if (!host.isGarageBand()) {
         if (!timeFile.exists()) {
             timeFile.create();
@@ -810,6 +812,7 @@ void MaximizerAudioProcessor::checkActivation()
         }
         return;
     }
+#if JUCE_MAC
     if (!timeFileGB.exists()) {
         timeFileGB.create();
         auto trialStart = Time::getCurrentTime();
