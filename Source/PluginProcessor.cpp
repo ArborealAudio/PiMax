@@ -163,8 +163,6 @@ void MaximizerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
 
     mPi.prepare(spec);
 
-    smooth.reset(lastSampleRate, 0.1);
-
     m_Proc.prepare(spec);
     m_Proc.initCrossovers();
     m_Proc.setOversamplingFactor(oversample[osIndex].getOversamplingFactor());
@@ -256,7 +254,6 @@ void MaximizerAudioProcessor::parameterChanged(const String& parameterID, float 
             lastSampleRate = lastDownSampleRate;
         }
 
-        // if (parameterID != "linearPhase")
         needs_resize.store(true);
 
         dsp::ProcessSpec newSpec{ lastSampleRate, uint32(maxNumSamples * oversample[osIndex].getOversamplingFactor()), uint32(getTotalNumInputChannels()) };
@@ -358,10 +355,7 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     inputMeter.measureBlock(buffer);
 
     dsp::AudioBlock<float> osBlock;
-    // if (totalNumOutputChannels > 1)
     osBlock = oversample[osIndex].processSamplesUp(dsp::AudioBlock<float>(buffer));
-    // else
-    //     osBlock = oversampleMono[osIndex].processSamplesUp(dsp::AudioBlock<float>(buffer));
 
     if (*bandSplit)
     {
@@ -391,13 +385,20 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     else if (*bandSplit && !needs_update.load())
         m_Proc.processBands(osBlock);
 
+    oversample[osIndex].processSamplesDown(outBlock);
+
     if (*distIndex)
     {
-        const double r = 1.0 - (1.0 / (float(oversample[osIndex].getOversamplingFactor()) * 1000.0));
+        if (lastAsym != *distIndex) { /*fade in on initial buffer*/
+            buffer.applyGainRamp(0, numSamples, 0.f, 1.f);
+            lastAsym = *distIndex;
+        }
+
+        const double r = 1.0 - (1.0 / 1000.0);
 
         for (int channel = 0; channel < totalNumInputChannels; ++channel)
         {
-            auto in = osBlock.getChannelPointer(channel);
+            auto in = buffer.getWritePointer(channel);
 
             for (int i = 0; i < osBlock.getNumSamples(); ++i)
             {
@@ -407,25 +408,10 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
                 xm1[channel] = yn;
                 ym1[channel] = in[i];
             }
-
-            if (lastAsym != *distIndex) /* fade in if we just turned on Asym */
-            {
-                smooth.reset(lastSampleRate, 0.1);
-                smooth.setTargetValue(1.0);
-                smooth.applyGain(in, osBlock.getNumSamples());
-
-                if (!smooth.isSmoothing())
-                    lastAsym = (bool)*distIndex;
-            }
         }
     }
-    else
-        lastAsym = false;
-
-    // if (totalNumOutputChannels > 1)
-    oversample[osIndex].processSamplesDown(outBlock);
-    // else
-    //     oversampleMono[osIndex].processSamplesDown(outBlock);
+    /*else
+        lastAsym = false;*/
     
     if (*width != 1.0 && totalNumOutputChannels > 1) {
         if (*monoWidth && *bandSplit && (*m_Proc.bandWidth[0] > 1.f || *m_Proc.bandWidth[1] > 1.f || *m_Proc.bandWidth[2] > 1.f ||
@@ -773,6 +759,7 @@ void MaximizerAudioProcessor::checkActivation()
                 isUnlocked = xml->getStringAttribute("key") != " ";
         }
     }
+    /*Garageband requires a special directory*/
     else {
         if (dirGB.exists() && !checkUnlock()) {
             auto xml = parseXML(dirGB);
