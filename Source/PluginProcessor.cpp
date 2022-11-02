@@ -143,6 +143,8 @@ void MaximizerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
 {
     maxNumSamples = samplesPerBlock;
     lastDownSampleRate = sampleRate;
+
+    lastAsym = false;
     
     updateOversample();
 
@@ -186,6 +188,7 @@ void MaximizerAudioProcessor::releaseResources()
     lastInputGain = 1.f;
     lastOutGain = 1.f;
     m_lastGain = 1.f;
+    lastAsym = false;
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
@@ -400,7 +403,7 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
         {
             auto in = buffer.getWritePointer(channel);
 
-            for (int i = 0; i < osBlock.getNumSamples(); ++i)
+            for (int i = 0; i < numSamples; ++i)
             {
                 /*DC blocker*/
                 double yn = in[i];
@@ -410,8 +413,6 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
             }
         }
     }
-    /*else
-        lastAsym = false;*/
     
     if (*width != 1.0 && totalNumOutputChannels > 1) {
         if (*monoWidth && *bandSplit && (*m_Proc.bandWidth[0] > 1.f || *m_Proc.bandWidth[1] > 1.f || *m_Proc.bandWidth[2] > 1.f ||
@@ -778,7 +779,7 @@ void MaximizerAudioProcessor::checkActivation()
         if (!trialEnded)
             trialRemaining_ms = trialEnd.toMilliseconds() - Time::getCurrentTime().toMilliseconds();
     }
-#endif
+#elif JUCE_MAC || JUCE_LINUX
     if (!host.isGarageBand()) {
         if (!timeFile.exists()) {
             timeFile.create();
@@ -799,7 +800,6 @@ void MaximizerAudioProcessor::checkActivation()
         }
         return;
     }
-#if JUCE_MAC
     if (!timeFileGB.exists()) {
         timeFileGB.create();
         auto trialStart = Time::getCurrentTime();
