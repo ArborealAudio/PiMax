@@ -191,16 +191,18 @@ struct MultibandProcessor
         }
     }
 
-    inline void processBandWidth(size_t n)
+    inline void processBandWidth(size_t n, size_t numSamples)
     {
+        auto block = bandBlock[n].getSubBlock(0, numSamples);
+
         if (*bandWidth[n] != 1.0 && bandBuffer[n].getNumChannels() > 1)
         {
             if (lastBandWidth[n] != *bandWidth[n]) {
-                bandWidener[n].widenBufferWithRamp(bandBuffer[n], lastBandWidth[n], *bandWidth[n], *monoWidth);
+                bandWidener[n].widenBlockWithRamp(block, lastBandWidth[n], *bandWidth[n], *monoWidth);
                 lastBandWidth[n] = *bandWidth[n];
             }
             else
-                bandWidener[n].widenBuffer(bandBuffer[n], *bandWidth[n], *monoWidth);
+                bandWidener[n].widenBlock(block, *bandWidth[n], *monoWidth);
         }
     }
 
@@ -271,7 +273,7 @@ struct MultibandProcessor
 
             lastOutGain[n] = outGain;
 
-            processBandWidth(n);
+            processBandWidth(n, numSamples);
         }
 
         sumBands(block);

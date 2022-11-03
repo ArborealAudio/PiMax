@@ -23,21 +23,36 @@ public:
 
 	inline void widenBlock(dsp::AudioBlock<T>& block, float width, bool isMono)
 	{
-		auto& input = block;
+        if (block.getNumChannels() < 2)
+            return;
+        
+        auto& input = block;
 
-		if ((isMono && width > 1.0) || block.getNumChannels() < 2)
+		if ((isMono && width > 1.0))
 			input = widenMonoSource(input, width);
-		else
+		else if (!isMono)
 			input = widenStereoSourceBlock(input, width);
-	}
+        else return;
+    }
+
+    inline void widenBlockWithRamp(dsp::AudioBlock<T>& block, float beginWidth, float endWidth, bool isMono)
+    {
+        if (block.getNumChannels() < 2)
+            return;
+        
+        if (isMono && beginWidth > 1.0 && endWidth > 1.0)
+            block = widenMonoSourceWithRamp(block, beginWidth, endWidth);
+        else if (!isMono)
+            block = widenStereoSourceBlockWithRamp(block, beginWidth, endWidth);
+        else return;
+    }
 
 	inline void widenBuffer(AudioBuffer<T>& buffer, float width, bool isMono)
 	{
         if (buffer.getNumChannels() < 2)
             return;
         
-		auto channelData = buffer.getArrayOfWritePointers();
-		dsp::AudioBlock<T> block(channelData, buffer.getNumChannels(), buffer.getNumSamples());
+		dsp::AudioBlock<T> block(buffer);
 
 		if (isMono && width > 1.0)
 			block = widenMonoSource(block, width);
@@ -51,8 +66,7 @@ public:
         if (buffer.getNumChannels() < 2)
             return;
         
-        auto channelData = buffer.getArrayOfWritePointers();
-        dsp::AudioBlock<T> block(channelData, buffer.getNumChannels(), buffer.getNumSamples());
+        dsp::AudioBlock<T> block(buffer);
 
         if (isMono && beginWidth > 1.0 && endWidth > 1.0)
             block = widenMonoSourceWithRamp(block, beginWidth, endWidth);
@@ -60,35 +74,6 @@ public:
             block = widenStereoSourceBlockWithRamp(block, beginWidth, endWidth);
         else return;
     }
-
-	void widenStereoSource(dsp::ProcessContextReplacing<T>& context, float width)
-	{
-		const auto& input = context.getInputBlock();
-		auto& output = context.getOutputBlock();
-
-		auto xnL = input.getChannelPointer(0);
-		auto xnR = input.getChannelPointer(1);
-
-		T side = 0.0;
-		T mid = 0.0;
-		T yn_L = 0.0;
-		T yn_R = 0.0;
-
-		for (int i = 0; i < input.getNumSamples(); ++i)
-		{
-			side = xnL[i] - xnR[i];
-			mid = (xnL[i] + xnR[i]) / 2;
-
-			side *= (width / 2);
-
-			yn_L = mid + side;
-			yn_R = mid - side;
-
-			output.setSample(0, i, yn_L);
-			output.setSample(1, i, yn_R);
-		}
-
-	}
 
 	dsp::AudioBlock<T> widenStereoSourceBlock(const dsp::AudioBlock<T>& block, float width)
 	{
