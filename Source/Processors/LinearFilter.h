@@ -46,23 +46,18 @@ namespace LinearFilter
     public:
         FIR(bool twoFilters, size_t firOrder, dsp::ConvolutionMessageQueue& queue) : doubleFilter(twoFilters),
             size(firOrder),
-            convLow(dsp::Convolution::Latency{2 * size - 1}, queue),
-            convHigh(dsp::Convolution::Latency{2 * size - 1}, queue)
+            convLow(dsp::Convolution::Latency{size - 1}, queue),
+            convHigh(dsp::Convolution::Latency{size - 1}, queue)
         {
             if (doubleFilter)
                 firCoeffLow.resize(firOrder, 0.0f);
-            //lastCoeffLow.resize(firOrder, 0.f);
             firCoeffHigh.resize(firOrder, 0.0f);
-            //lastCoeffHigh.resize(firOrder, 0.f);
-            //lowinc.resize(firOrder);
-            //highinc.resize(firOrder);
         }
 
         void prepare(const dsp::ProcessSpec& spec) noexcept
         {
             sampleRate = spec.sampleRate;
             numSamples = spec.maximumBlockSize;
-            //bps = sampleRate / numSamples;
             auto monoSpec = spec;
             monoSpec.numChannels = 1;
 
@@ -448,9 +443,8 @@ namespace LinearFilter
 
     private:
 
-        double freq = 0.0, sampleRate = 0.0;
+        double freq = 0.0, sampleRate = 44100.0;
         int iirOrder = 0;
-        int interpolationLength = 0;
     };
 
 } //namespace LinearFilter
