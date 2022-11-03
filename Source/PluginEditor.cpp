@@ -1001,7 +1001,7 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(MaximizerAudioProce
     outVolAttachment = std::make_unique<AudioProcessorValueTreeState::SliderAttachment>(p.apvts, "output",
         ui.outVol__slider);
     curveAttachment = std::make_unique<AudioProcessorValueTreeState::SliderAttachment>(p.apvts, "curve",
-        ui.curve__slider);
+        curve__slider);
     widthAttachment = std::make_unique<AudioProcessorValueTreeState::SliderAttachment>(p.apvts, "width",
         ui.widthSlider);
     clipAttachment = std::make_unique<AudioProcessorValueTreeState::ComboBoxAttachment>(p.apvts,
@@ -1052,6 +1052,19 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(MaximizerAudioProce
 
     setSize (width, height);
 
+    curve__slider.setSliderStyle(juce::Slider::LinearHorizontal);
+    curve__slider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
+    curve__slider.setLookAndFeel(&curveLNF);
+    curve__slider.setSliderSnapsToMousePosition(false);
+    curve__slider.setPopupDisplayEnabled(true, true, this, 2000);
+    curve__slider.setTooltip("In Finite, Clip, and Infinite mode, negative values give you saturation which features dynamic expansion and noisier harmonics when pushed further. In Symmetric mode, this can generate dropout-like artifacts.\n"
+        "In Deep mode, negative curve values create a lower knee for the saturation curve.\n\n"
+        "Positive values, in Finite, Clip, and Infinite mode, will give you a more compressed and warmer saturation.\n"
+        "In Deep mode, positive values will raise the clipping threshold and create a sharper knee.\n"
+        "And in Warm mode, the curve slider controls the degree of warmth in the coloration.");
+    curve__slider.setSize(297, 30);
+    curve__slider.setCentrePosition(getLocalBounds().getCentreX(), getHeight() * 0.75f);
+
     p.onPresetChange = [&] { updateBandDisplay(p.numBands); };
 
     splash.onLogoClick = [&]
@@ -1091,6 +1104,7 @@ MaximizerAudioProcessorEditor::~MaximizerAudioProcessorEditor()
 #if JUCE_WINDOWS || JUCE_LINUX
    opengl.detach();
 #endif
+    curve__slider.setLookAndFeel(nullptr);
 }
 
 void MaximizerAudioProcessorEditor::paint (Graphics& g)
@@ -1123,6 +1137,7 @@ std::vector<Component*> MaximizerAudioProcessorEditor::getComps()
         &ui,
         &responseCurveComponent,
         &waveshaperComponent,
+        &curve__slider,
         &splash
     };
 }

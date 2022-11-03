@@ -96,19 +96,6 @@ UI::UI (MaximizerAudioProcessor& p) : audioProcessor(p), gain__slider(false), ou
     bypass.setTooltip("Bypasses the processing.");
     bypass.setBounds(538, 15, 40, 25);
 
-    addAndMakeVisible(curve__slider);
-    curve__slider.setSliderStyle(juce::Slider::LinearHorizontal);
-    curve__slider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
-    curve__slider.setLookAndFeel(&curveLNF);
-    curve__slider.setSliderSnapsToMousePosition(false);
-    curve__slider.setPopupDisplayEnabled(true, true, nullptr, 2000);
-    curve__slider.setTooltip("In Finite, Clip, and Infinite mode, negative values give you saturation which features dynamic expansion and noisier harmonics when pushed further. In Symmetric mode, this can generate dropout-like artifacts.\n"
-        "In Deep mode, negative curve values create a lower knee for the saturation curve.\n\n"
-        "Positive values, in Finite, Clip, and Infinite mode, will give you a more compressed and warmer saturation.\n"
-        "In Deep mode, positive values will raise the clipping threshold and create a sharper knee.\n"
-        "And in Warm mode, the curve slider controls the degree of warmth in the coloration.");
-    curve__slider.setSize(248, 25);
-
     addAndMakeVisible(distButton);
     distButton.setClickingTogglesState(true);
     if (!distButton.getToggleState()) {
@@ -229,7 +216,6 @@ UI::UI (MaximizerAudioProcessor& p) : audioProcessor(p), gain__slider(false), ou
     }
     setSize(720, 480);
 
-    curve__slider.setCentrePosition(getLocalBounds().getCentreX(), 1.2 * 295.f);
     bandSplit__textButton.setCentrePosition(getLocalBounds().getCentreX(), 1.2 * 344.f);
     boost.setCentrePosition(getLocalBounds().getCentreX(), 1.2 * 80.f);
 }
@@ -249,7 +235,6 @@ UI::~UI()
     linearPhaseButton.setLookAndFeel(nullptr);
     widthSlider.setLookAndFeel(nullptr);
     mixSlider.setLookAndFeel(nullptr);
-    curve__slider.setLookAndFeel(nullptr);
 }
 
 //==============================================================================

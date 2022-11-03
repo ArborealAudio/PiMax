@@ -87,7 +87,7 @@ public:
     void resized() override;
 
     GainSlider gain__slider, outVol__slider;
-    Slider curve__slider;
+    
     WidthSlider widthSlider, mixSlider;
     TextButton distButton, bandSplit__textButton, linearPhaseButton, hq, renderHQ, autoGain, bypass, boost;
     ComboBox clipBox;
@@ -97,7 +97,7 @@ public:
     ComboBoxLNF hqBoxLNF, clipBoxLNF;
     BottomButtonLNF bottomButtonLNF;
     TopButtonLNF distLNF, bandSplitLNF, autoGainLNF, bypassLNF, boostLNF;
-    CurveSliderLNF curveLNF;
+    
     KnobLNF widthLNF, mixLNF;
     strix::VolumeMeterComponent inputMeter, outputMeter;
 
