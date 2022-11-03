@@ -46,8 +46,8 @@ namespace LinearFilter
     public:
         FIR(bool twoFilters, size_t firOrder, dsp::ConvolutionMessageQueue& queue) : doubleFilter(twoFilters),
             size(firOrder),
-            convLow(dsp::Convolution::Latency{size - 1}, queue),
-            convHigh(dsp::Convolution::Latency{size - 1}, queue)
+            convLow(dsp::Convolution::Latency{2 * size - 1}, queue),
+            convHigh(dsp::Convolution::Latency{2 * size - 1}, queue)
         {
             if (doubleFilter)
                 firCoeffLow.resize(firOrder, 0.0f);
