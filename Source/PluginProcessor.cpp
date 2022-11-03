@@ -148,11 +148,6 @@ void MaximizerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
     
     updateOversample();
 
-    if (osIndex > 0)
-        lastSampleRate = sampleRate * 4.0;
-    else
-        lastSampleRate = sampleRate;
-
     dsp::ProcessSpec spec{lastSampleRate, uint32(oversample[osIndex].getOversamplingFactor() * samplesPerBlock), (uint32)getTotalNumOutputChannels()};
                 
     bypassBuffer.setSize(getTotalNumOutputChannels(), samplesPerBlock);
@@ -227,35 +222,28 @@ bool MaximizerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts
 
 inline void MaximizerAudioProcessor::updateOversample() noexcept
 {
-    if (*renderHQ && isNonRealtime())
+    if (*renderHQ && isNonRealtime()) {
         osIndex = 2;
-    else if (*hq && *linearPhase)
+        lastSampleRate = lastDownSampleRate * 4.0;
+    }
+    else if (*hq && *linearPhase) {
         osIndex = 2;
-    else if (*hq && !*linearPhase)
+        lastSampleRate = lastDownSampleRate * 4.0;
+    }
+    else if (*hq) {
         osIndex = 1;
-    else 
+        lastSampleRate = lastDownSampleRate * 4.0;
+    }
+    else {
         osIndex = 0;
+        lastSampleRate = lastDownSampleRate;
+    }
 }
 
 void MaximizerAudioProcessor::parameterChanged(const String& parameterID, float newValue)
 {
     if (parameterID == "hq" || parameterID == "renderHQ" || parameterID == "linearPhase") {
-        if (*renderHQ && isNonRealtime()) {
-            osIndex = 2;
-            lastSampleRate = lastDownSampleRate * 4.0;
-        }
-        else if (*hq && *linearPhase) {
-            osIndex = 2;
-            lastSampleRate = lastDownSampleRate * 4.0;
-        }
-        else if (*hq) {
-            osIndex = 1;
-            lastSampleRate = lastDownSampleRate * 4.0;
-        }
-        else {
-            osIndex = 0;
-            lastSampleRate = lastDownSampleRate;
-        }
+        updateOversample();
 
         needs_resize.store(true);
 
@@ -358,7 +346,10 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     inputMeter.measureBlock(buffer);
 
     dsp::AudioBlock<float> osBlock;
-    osBlock = oversample[osIndex].processSamplesUp(dsp::AudioBlock<float>(buffer));
+    if (totalNumOutputChannels > 1)
+        osBlock = oversample[osIndex].processSamplesUp(dsp::AudioBlock<float>(buffer));
+    else
+        osBlock = oversampleMono[osIndex].processSamplesUp(dsp::AudioBlock<float>(buffer));
 
     if (*bandSplit)
     {
@@ -388,7 +379,10 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     else if (*bandSplit && !needs_update.load())
         m_Proc.processBands(osBlock);
 
-    oversample[osIndex].processSamplesDown(outBlock);
+    if (totalNumOutputChannels > 1)
+        oversample[osIndex].processSamplesDown(outBlock);
+    else
+        oversampleMono[osIndex].processSamplesDown(outBlock);
 
     if (*distIndex)
     {
@@ -486,6 +480,9 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
         processDelta(buffer, gain_raw * halfPi, output_raw);
     if (*bypass || lastBypass)
         processBlockBypassed(buffer, midiMessages);
+
+    if (buffer.getMagnitude(0, numSamples) >= 8.f)
+        buffer.clear();
 }
 
 void MaximizerAudioProcessor::processBlockBypassed(AudioBuffer<float>& buffer, MidiBuffer&)
