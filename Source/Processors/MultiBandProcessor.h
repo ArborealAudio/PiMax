@@ -302,7 +302,7 @@ private:
     int numBands = 2;
     int oversampleFactor = 0;
 
-    double lastSampleRate = 0.0;
+    double lastSampleRate = 44100.0;
 
     double xm1[2]{ 0.0, 0.0 };
     double ym1[2]{ 0.0, 0.0 };
