@@ -176,7 +176,7 @@ private:
     int filterLength = 0;
     dsp::DryWetMixer<float> mixer;
 
-    double lastSampleRate = 44100.0, lastK = 0.0;
+    double lastSampleRate = 44100.0;
 
     float m_lastGain = 1.0;
 
