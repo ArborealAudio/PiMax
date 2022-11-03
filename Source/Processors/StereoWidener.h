@@ -1,5 +1,4 @@
 #pragma once
-//#include "JuceHeader.h"
 
 template <typename T>
 class StereoWidener
@@ -214,18 +213,10 @@ public:
         return output;
     }
 
-#if USE_SIMD_SAT
-	std::array<dsp::DelayLine<dsp::SIMDRegister<float>, dsp::DelayLineInterpolationTypes::None>, 2> delay
-	{ {
-		{dsp::DelayLine < dsp::SIMDRegister<float>, dsp::DelayLineInterpolationTypes::None>(44100.0)},
-		{dsp::DelayLine < dsp::SIMDRegister<float>, dsp::DelayLineInterpolationTypes::None>(44100.0)}
-	} };
-#else
 	std::array<dsp::DelayLine<T, dsp::DelayLineInterpolationTypes::None>, 2> delay
 	{ {
 		{dsp::DelayLine <T, dsp::DelayLineInterpolationTypes::None>(44100.0)},
 		{dsp::DelayLine <T, dsp::DelayLineInterpolationTypes::None>(44100.0)}
 	} };
-#endif
 
 };
