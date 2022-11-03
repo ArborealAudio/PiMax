@@ -406,7 +406,7 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
             for (int i = 0; i < numSamples; ++i)
             {
                 /*DC blocker*/
-                double yn = in[i];
+                const auto yn = in[i];
                 in[i] = yn - xm1[channel] + r * ym1[channel];
                 xm1[channel] = yn;
                 ym1[channel] = in[i];
@@ -425,7 +425,8 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     }
 
     (*linearPhase && *bandSplit) ?
-        setLatencySamples(osIndex > 1 ? 1596 : 6143) :
+        setLatencySamples(osIndex > 1 ? 1597 : 6143) :
+        //setLatencySamples(JUCE_LIVE_CONSTANT(2047)) :
         setLatencySamples(oversample[osIndex].getLatencyInSamples());
     
     bypassDelay.setDelay(getLatencySamples());
@@ -486,9 +487,12 @@ void MaximizerAudioProcessor::processBlockBypassed(AudioBuffer<float>& buffer, M
     /*return if not bypass & unchanged or switched on mid-buffer*/
     if (!bufferCopied)
         return;
+
+    bool byp = (bool)*bypass;
     
     /*push to our delay buffer & pop delayed sample*/
-    if (getTotalNumInputChannels() < getTotalNumOutputChannels()) {
+    if (getTotalNumInputChannels() < getTotalNumOutputChannels()) /*mono->stereo*/
+    {
         auto in = bypassBuffer.getWritePointer(0);
         auto in_1 = bypassBuffer.getWritePointer(1);
         for (int i = 0; i < bypassBuffer.getNumSamples(); ++i) {
@@ -497,7 +501,7 @@ void MaximizerAudioProcessor::processBlockBypassed(AudioBuffer<float>& buffer, M
             in_1[i] = in[i];
         }
     }
-    else {
+    else { /*everything else*/
         for (int ch = 0; ch < bypassBuffer.getNumChannels(); ++ch) {
             auto in = bypassBuffer.getWritePointer(ch);
             for (int i = 0; i < bypassBuffer.getNumSamples(); ++i) {
@@ -508,26 +512,24 @@ void MaximizerAudioProcessor::processBlockBypassed(AudioBuffer<float>& buffer, M
     }
 
     /*copy as usual if no change*/
-    if (*bypass && lastBypass)
+    if (byp && lastBypass)
         buffer.makeCopyOf(bypassBuffer, true);
     /*fade bypass in*/
-    else if (*bypass && !lastBypass) {
+    else if (byp && !lastBypass) {
         for (int ch = 0; ch < buffer.getNumChannels(); ++ch) {
             buffer.applyGainRamp(ch, 0, buffer.getNumSamples(), 1.0, 0.0);
-            buffer.addFromWithRamp(ch, 0, bypassBuffer.getReadPointer(ch),
-                buffer.getNumSamples(), 0.0, 1.0);
+            buffer.addFromWithRamp(ch, 0, bypassBuffer.getReadPointer(ch), buffer.getNumSamples(), 0.0, 1.0);
         }
     }
     /*fade bypass out*/
-    else if (!*bypass && lastBypass) {
+    else if (!byp && lastBypass) {
         for (int ch = 0; ch < buffer.getNumChannels(); ++ch) {
             buffer.applyGainRamp(ch, 0, buffer.getNumSamples(), 0.0, 1.0);
-            buffer.addFromWithRamp(ch, 0, bypassBuffer.getReadPointer(ch),
-                buffer.getNumSamples(), 1.0, 0.0);
+            buffer.addFromWithRamp(ch, 0, bypassBuffer.getReadPointer(ch), buffer.getNumSamples(), 1.0, 0.0);
         }
     }
     
-    lastBypass = *bypass;
+    lastBypass = byp;
     bufferCopied = false;
 }
 
