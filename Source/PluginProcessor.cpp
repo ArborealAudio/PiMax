@@ -428,7 +428,7 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     {
         PluginHostType host;
         if (!host.isWavelab()) /* F this */
-            setLatencySamples(osIndex > 1 ? 1085 : 4095);
+            setLatencySamples(osIndex > 1 ? 1597 : 6143);
         else
             setLatencySamples(osIndex > 1 ? 4669 : 6143);
     }
