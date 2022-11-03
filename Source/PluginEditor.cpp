@@ -25,7 +25,7 @@ ResponseCurveComponent::ResponseCurveComponent(MaximizerAudioProcessor& p) : aud
     else
         sampleRate = 2.0 * p.lastDownSampleRate;
 
-    for (int i = 0; i < 3; ++i)
+    for (size_t i = 0; i < 3; ++i)
     {
         sliders.emplace_back(std::make_unique<CrossoverSlider>());
         addChildComponent(*sliders[i]);
@@ -41,7 +41,7 @@ ResponseCurveComponent::ResponseCurveComponent(MaximizerAudioProcessor& p) : aud
         p.apvts.addParameterListener("crossover" + String(i), this);
     }
 
-    for (int i = 0; i < 4; ++i)
+    for (size_t i = 0; i < 4; ++i)
     {
         solo.emplace_back(std::make_unique<TextButton>());
         solo[i]->setClickingTogglesState(true);
