@@ -22,7 +22,7 @@ struct PresetManager
     {
         StringArray names;
 
-        for (int i = 0; i < 12; ++i)
+        for (int i = 0; i < BinaryData::namedResourceListSize; ++i)
         {
             if (String(BinaryData::originalFilenames[i]).endsWith(".aap"))
                 names.set(i, String(BinaryData::originalFilenames[i]).upToFirstOccurrenceOf(".", false, false));
