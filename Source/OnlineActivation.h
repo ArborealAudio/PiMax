@@ -347,18 +347,6 @@ struct ActivationComponent : Component, Timer
         addChildComponent(unlockForm);
         if (!isUnlocked)
             unlockForm.setVisible(true);
-        else
-        {
-            File dir;
-            PluginHostType host;
-            if (!host.isGarageBand())
-                dir = File(File::getSpecialLocation(File::SpecialLocationType::userApplicationDataDirectory)
-                    .getFullPathName() + "/Arboreal Audio/PiMax/License/license.aal");
-            else
-                dir = File("~/Music/Audio Music Apps/Arboreal Audio/PiMax/License/license.aal");
-
-            auto xml = parseXML(dir); /*what is this doing...?*/
-        }
 
         startTimer(100);
     }
@@ -391,8 +379,6 @@ struct ActivationComponent : Component, Timer
 
     void resized() override
     {
-        //unlockForm.setBounds(240, 50, 240, 360);
-        //unlockForm.centreWithSize(240, 360);
         unlockForm.setBounds(getLocalBounds());
     }
 
