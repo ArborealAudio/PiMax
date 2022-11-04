@@ -333,8 +333,7 @@ private:
     TextEditor key;
 
     TopButtonLNF lnf;
-    TextButton reg{ "Register" },
-        close{"Close"};
+    TextButton reg{ "Register" }, close{"Close"};
 
     bool successRepaint = false, clickedLink = false;
 
@@ -345,14 +344,9 @@ struct ActivationComponent : Component, Timer
 {
     ActivationComponent(var unlocked, int64 trialTime) : unlockForm(status, trialTime), isUnlocked(unlocked)
     {
-        addChildComponent(unlockButton);
-        lnf.setType(TopButtonLNF::Type::Regular);
-        unlockButton.setLookAndFeel(&lnf);
         addChildComponent(unlockForm);
-        if (!isUnlocked) {
-            unlockButton.setVisible(true);
+        if (!isUnlocked)
             unlockForm.setVisible(true);
-        }
         else
         {
             File dir;
@@ -363,15 +357,13 @@ struct ActivationComponent : Component, Timer
             else
                 dir = File("~/Music/Audio Music Apps/Arboreal Audio/PiMax/License/license.aal");
 
-            auto xml = parseXML(dir);
+            auto xml = parseXML(dir); /*what is this doing...?*/
         }
-        unlockButton.onClick = [this] { if (onButtonClick != nullptr) onButtonClick(); };
-        unlockButton.setBounds(90, 30, 62, 28);
 
         startTimer(100);
     }
 
-    ~ActivationComponent() { unlockButton.setLookAndFeel(nullptr); stopTimer(); }
+    ~ActivationComponent() { stopTimer(); }
 
     void setImage(const Image& newImage)
     {
@@ -399,7 +391,9 @@ struct ActivationComponent : Component, Timer
 
     void resized() override
     {
-        unlockForm.setBounds(240, 50, 240, 360);
+        //unlockForm.setBounds(240, 50, 240, 360);
+        //unlockForm.centreWithSize(240, 360);
+        unlockForm.setBounds(getLocalBounds());
     }
 
     void timerCallback() override
@@ -415,16 +409,12 @@ struct ActivationComponent : Component, Timer
     
     bool hitTest(int x, int y) override
     {
-        if (unlockButton.isVisible() && !unlockForm.isVisible() &&
-            unlockButton.getBounds().contains((float)x, (float)y))
-            return true;
-        else if (unlockForm.isVisible())
+        if (unlockForm.isVisible())
             return true;
         else
             return false;
     }
 
-    std::function<void()> onButtonClick;
     std::function<void(var)> onUnlock;
 
 private:
@@ -438,16 +428,12 @@ private:
 
     inline void unlockApp()
     {
-        unlockButton.setEnabled(false);
-        unlockButton.setVisible(false);
         status.writeHashKey();
         repaint();
     }
 
     Image img;
     
-    TopButtonLNF lnf;
-    TextButton unlockButton{ "Unlock" };
     UnlockStatus status;
     UnlockForm unlockForm;
 

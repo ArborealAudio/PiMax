@@ -976,8 +976,12 @@ void WaveshaperComponent::timerCallback()
 
 //==============================================================================
 MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(MaximizerAudioProcessor& p)
-    : AudioProcessorEditor(&p), audioProcessor(p), responseCurveComponent(p), ui(p),
-    waveshaperComponent(p), activationComp(p.isUnlocked, p.trialRemaining_ms),
+    : AudioProcessorEditor(&p),
+    audioProcessor(p),
+    responseCurveComponent(p),
+    ui(p),
+    waveshaperComponent(p),
+    activationComp(p.isUnlocked, p.trialRemaining_ms),
     downloadManager(p.hasUpdated), tooltip(nullptr, 2000)
 {
     getLookAndFeel().setDefaultSansSerifTypeface(getCustomFont(FontStyle::Regular).getTypeface());
@@ -1073,18 +1077,29 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(MaximizerAudioProce
         splash.setPluginWrapperType(p.wrapperType);
     };
 
-    addChildComponent(activationComp);
-    activationComp.onButtonClick = [&]
+    addChildComponent(unlockButton);
+    unlockLNF.setType(TopButtonLNF::Type::Regular);
+    unlockButton.setLookAndFeel(&unlockLNF);
+    if (!p.isUnlocked)
+        unlockButton.setVisible(true);
+    unlockButton.onClick = [&]
     {
         activationComp.setImage(createComponentSnapshot(getLocalBounds()));
+        activationComp.setVisible(true);
     };
+    unlockButton.setBounds(width * 0.12f, height * 0.05f, width * 0.08f, height * 0.05f);
+
+    addChildComponent(activationComp);
     activationComp.onUnlock = [&](var unlocked)
     {
         p.isUnlocked = unlocked;
+        unlockButton.setEnabled(false);
+        unlockButton.setVisible(false);
     };
+    activationComp.centreWithSize(240, 360);
 
     if (!p.checkUnlock()) {
-        // downloadManager.setVisible(false);
+        downloadManager.setVisible(false);
         activationComp.setImage(createComponentSnapshot(getLocalBounds()));
         activationComp.setVisible(true);
     }
@@ -1105,6 +1120,7 @@ MaximizerAudioProcessorEditor::~MaximizerAudioProcessorEditor()
    opengl.detach();
 #endif
     curve__slider.setLookAndFeel(nullptr);
+    unlockButton.setLookAndFeel(nullptr);
 }
 
 void MaximizerAudioProcessorEditor::paint (Graphics& g)
@@ -1113,11 +1129,14 @@ void MaximizerAudioProcessorEditor::paint (Graphics& g)
 
 void MaximizerAudioProcessorEditor::resized()
 {
-    auto scale = (float)getWidth() / 720.f;
+    auto w = getWidth();
+    auto h = getHeight();
+    auto scale = (float)w / 720.f;
+    
+    activationComp.centreWithSize(240, 360);
     responseCurveComponent.setBounds(162, 114, 402, 210);
     waveshaperComponent.setBounds(162, 114, 402, 210);
     splash.setBounds(0, 0, 720, 480);
-    activationComp.setBounds(0, 0, 720, 480);
 
     auto children = getChildren();
     children.removeLast(1);

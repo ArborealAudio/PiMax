@@ -484,7 +484,7 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     if (*bypass || lastBypass)
         processBlockBypassed(buffer, midiMessages);
 
-    if (buffer.getMagnitude(0, numSamples) >= 8.f)
+    if (buffer.getMagnitude(0, numSamples) >= 8.f) /*mute buffer if it's over 18dB*/
         buffer.clear();
 }
 
@@ -776,11 +776,15 @@ void MaximizerAudioProcessor::checkActivation()
         }
     }
 #if JUCE_WINDOWS
-    if (!WindowsRegistry::valueExists(timeFile)) {
+    /*set trial key if non-existant*/
+    if (!WindowsRegistry::valueExists(timeFile))
+    {
         auto trialStart = Time::getCurrentTime();
         WindowsRegistry::setValue(timeFile, String(trialStart.toMilliseconds()));
+        trialRemaining_ms = RelativeTime::days(7).inMilliseconds();
     }
-    else {
+    else
+    {
         auto trialEnd = Time(WindowsRegistry::getValue(timeFile).getLargeIntValue());
         trialEnd += RelativeTime::days(7);
         trialEnded = (trialEnd <= Time::getCurrentTime());

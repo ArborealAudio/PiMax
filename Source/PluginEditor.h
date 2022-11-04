@@ -243,6 +243,9 @@ private:
 
     std::vector<Component*> getComps();
 
+    TopButtonLNF unlockLNF;
+    TextButton unlockButton{ "Unlock" };
+
     TooltipWindow tooltip;
 
     void writeUISize(int width, int height)
