@@ -56,12 +56,8 @@ struct PresetManager
 
         if (xml->isValidXmlName(filename))
             xml->setTagName(filename);
-        else {
-            if (filename.contains(" "))
-                xml->setTagName(filename.removeCharacters(" "));
-            else
-                return false;
-        }
+        else
+            xml->setTagName(filename.removeCharacters("\"#@,;:<>*^|?\\/ "));
 
         return xml->writeTo(file);
     }
@@ -83,7 +79,7 @@ struct PresetManager
                 return false;
 
             auto xml = parseXML(file);
-            if (!xml->hasTagName(filename.removeCharacters(" ")))
+            if (!xml->hasTagName(filename.removeCharacters("\"#@,;:<>*^|?\\/ ")))
                 return false;
 
             newstate = ValueTree::fromXml(*xml);
