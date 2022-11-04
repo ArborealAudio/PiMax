@@ -191,7 +191,8 @@ UI::UI (MaximizerAudioProcessor& p) : audioProcessor(p), gain__slider(false), ou
     mixSlider.setSliderSnapsToMousePosition(false);
     mixSlider.setTooltip("Blends processed output with the dry input signal. Alt / Option-click to enable Delta mode,"
         " which subtracts the dry signal from the processed signal, allowing you to hear what PiMax is adding to the input signal.");
-    mixSlider.altDown = *p.delta; mixLNF.altDown = *p.delta;
+    mixSlider.altDown = *p.delta;
+    mixLNF.altDown = *p.delta;
     mixSlider.onAltClick = [&]
     {
         mixLNF.altDown = mixSlider.altDown;
@@ -204,7 +205,7 @@ UI::UI (MaximizerAudioProcessor& p) : audioProcessor(p), gain__slider(false), ou
     presetComp.setCurrentPreset(p.currentPreset);
     presetComp.box.onChange = [&]
     {
-        presetComp.valueChanged(false);
+        presetComp.valueChanged();
         p.currentPreset = getCurrentPreset();
     };
     presetComp.setBounds(30, 374, 185, 24);
@@ -212,7 +213,7 @@ UI::UI (MaximizerAudioProcessor& p) : audioProcessor(p), gain__slider(false), ou
     auto children = getChildren();
     for (auto child : children)
     {
-        child->setTransform(AffineTransform::scale(1.2));
+        child->setTransform(AffineTransform::scale(1.2f));
     }
     setSize(720, 480);
 
@@ -240,42 +241,6 @@ UI::~UI()
 //==============================================================================
 void UI::paint (juce::Graphics& g)
 {
-    g.fillAll(juce::Colour(0xff30414d));
-
-    ColourGradient gradient(Colour(0xa7a7a7a7).withAlpha(0.25f), getLocalBounds().getCentreX(),
-        getLocalBounds().getCentreY(), Colours::transparentWhite, getX(), getY(), true);
-    g.setGradientFill(gradient);
-    g.fillAll();
-
-    g.setColour(Colour(0xa7a7a7a7));
-    g.setFont(getCustomFont(FontStyle::Bold).withHeight(60.f));
-#if JUCE_WINDOWS
-    int width = 122;
-#else
-    int width = 150;
-#endif
-    Rectangle<int> textBounds{ getLocalBounds().getCentreX() - (width / 2),
-    10,
-    width,
-    50 };
-    g.drawText("PiMax", textBounds, Justification::centred, false);
-#if DEBUG
-    g.setColour(Colours::red);
-    g.setFont(20.f);
-    g.drawText("DEBUG", textBounds.translated(0, 25), Justification::centred, false);
-#elif !PRODUCTION_BUILD
-    g.setColour(Colours::lime);
-    g.setFont(20.f);
-    g.drawText("DEV", textBounds.translated(0, 25), Justification::centred, false);
-#endif
-
-    {
-        auto menuBounds = getLocalBounds().removeFromBottom(33).toFloat().reduced(1.5f);
-        g.setColour(Colours::black);
-        g.fillRoundedRectangle(menuBounds, 3.f);
-        g.setColour(Colour(0xa7a7a7a7));
-        g.drawRoundedRectangle(getLocalBounds().toFloat().reduced(1.5f), 7.f, 1.5f);
-    }
 }
 
 void UI::resized()

@@ -1125,6 +1125,40 @@ MaximizerAudioProcessorEditor::~MaximizerAudioProcessorEditor()
 
 void MaximizerAudioProcessorEditor::paint (Graphics& g)
 {
+    g.fillAll(juce::Colour(0xff30414d));
+
+    ColourGradient gradient(Colour(0xa7a7a7a7).withAlpha(0.25f), getLocalBounds().getCentreX(),
+        getLocalBounds().getCentreY(), Colours::transparentWhite, getX(), getY(), true);
+    g.setGradientFill(gradient);
+    g.fillAll();
+
+    auto w = getWidth();
+    auto h = getHeight();
+
+    g.setColour(Colour(0xa7a7a7a7));
+    g.setFont(getCustomFont(FontStyle::Bold).withHeight(h * 0.125f));
+
+    int titleWidth = getWidth() * 0.208f;
+
+    Rectangle<int> textBounds{ getLocalBounds().getCentreX() - (titleWidth / 2), (int)(h * 0.0201f), titleWidth, (int)(h * 0.1042f) };
+    g.drawText("PiMax", textBounds, Justification::centred, false);
+#if DEBUG
+    g.setColour(Colours::red);
+    g.setFont(h * 0.042f);
+    g.drawText("DEBUG", textBounds.translated(0, h * 0.052f), Justification::centred, false);
+#elif !PRODUCTION_BUILD
+    g.setColour(Colours::lime);
+    g.setFont(h * 0.042f);
+    g.drawText("DEV", textBounds.translated(0, h * 0.052f), Justification::centred, false);
+#endif
+
+    {
+        auto menuBounds = getLocalBounds().removeFromBottom(getHeight() * 0.069).toFloat().reduced(1.5f);
+        g.setColour(Colours::black);
+        g.fillRoundedRectangle(menuBounds, 3.f);
+        g.setColour(Colour(0xa7a7a7a7));
+        g.drawRoundedRectangle(getLocalBounds().toFloat().reduced(1.5f), 7.f, 1.5f);
+    }
 }
 
 void MaximizerAudioProcessorEditor::resized()
