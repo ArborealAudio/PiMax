@@ -57,10 +57,14 @@ struct Splash : Component
 
             logo->drawWithin(g, clipArea.reduced(50.f), RectanglePlacement::yTop, 1.f);
 
+            auto wrapperStr = AudioProcessor::getWrapperTypeDescription(currentWrapper);
+            if (currentWrapper == AudioProcessor::wrapperType_Undefined)
+                wrapperStr = "CLAP";
+
             g.setFont(getCustomFont(FontStyle::Regular).withHeight(16.f));
             Time time(Time::getCurrentTime());
             g.drawFittedText("v" + String(ProjectInfo::versionString) + 
-                "\n" + AudioProcessor::getWrapperTypeDescription(currentWrapper) +
+                "\n" + wrapperStr +
                 "\n(c) Arboreal Audio " + String(time.getYear()),
                 clipArea.withTrimmedTop(150.f).toNearestInt(),
                 Justification::centred, 3, 1.f);
