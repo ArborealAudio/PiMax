@@ -145,6 +145,7 @@ void MaximizerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
     lastDownSampleRate = sampleRate;
 
     lastAsym = false;
+    muteRemaining = 0;
     
     updateOversample();
 
@@ -386,11 +387,6 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
 
     if (*distIndex)
     {
-        if (lastAsym != *distIndex) { /*fade in on initial buffer*/
-            buffer.applyGainRamp(0, numSamples, 0.f, 1.f);
-            lastAsym = *distIndex;
-        }
-
         const double r = 1.0 - (1.0 / 1000.0);
 
         for (int channel = 0; channel < totalNumInputChannels; ++channel)
@@ -405,6 +401,13 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
                 xm1[channel] = yn;
                 ym1[channel] = in[i];
             }
+        }
+
+        if (lastAsym != *distIndex) { /*mute initial half sec until DC offset has elapsed*/
+            buffer.applyGain(0, numSamples, 0.f);
+            muteRemaining += numSamples;
+            if (muteRemaining >= (int)lastDownSampleRate / 2)
+                lastAsym = *distIndex;
         }
     }
     

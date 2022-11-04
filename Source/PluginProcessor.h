@@ -185,6 +185,7 @@ private:
     float lastInputGain = 1.0, lastOutGain = 1.0;
 
     bool lastBoost = false, lastAsym = false;
+    int muteRemaining = 0;
 
     strix::VolumeMeterSource inputMeter, outputMeter;
 
