@@ -403,10 +403,10 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
             }
         }
 
-        if (lastAsym != *distIndex) { /*mute initial half sec until DC offset has elapsed*/
+        if (lastAsym != *distIndex) { /*mute initial 1/8 sec until DC offset has elapsed*/
             buffer.applyGain(0, numSamples, 0.f);
             muteRemaining += numSamples;
-            if (muteRemaining >= (int)lastDownSampleRate / 2)
+            if (muteRemaining >= (int)lastDownSampleRate / 8)
                 lastAsym = *distIndex;
         }
     }
