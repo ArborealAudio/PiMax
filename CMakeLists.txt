@@ -44,8 +44,7 @@ PRIVATE
     Source/PluginProcessor.cpp
     Source/PluginEditor.cpp
     Source/DownloadManager.h
-    Source/OnlineActivation.h
-    Source/UI.cpp)
+    Source/OnlineActivation.h)
 
 add_subdirectory(Source/UI)
 add_subdirectory(Source/Processors)
