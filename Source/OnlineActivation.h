@@ -370,7 +370,8 @@ struct ActivationComponent : Component, Timer
         if (unlockForm.isVisible())
         {
             if (needBlur) {
-                gin::applyStackBlur(img, 35);
+                //gin::applyStackBlur(img, 35);
+                Blur::blurImage<4, true>(img);
                 needBlur = false;
             }
             g.drawImage(img, unlockForm.getBounds().toFloat(), RectanglePlacement::centred);

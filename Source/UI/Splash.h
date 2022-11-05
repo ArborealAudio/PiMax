@@ -25,7 +25,8 @@ struct Splash : Component
         logo->drawWithin(g, bounds, RectanglePlacement::centred, 1.f);
 
         if (needBlur) {
-            gin::applyStackBlur(img, 35);
+            //gin::applyStackBlur(img, 35);
+            Blur::blurImage<4, true>(img);
             needBlur = false;
         }
 
