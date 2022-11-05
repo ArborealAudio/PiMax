@@ -609,8 +609,6 @@ void MaximizerAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     auto state = apvts.copyState();
     auto xml = state.createXml();
-    // xml->setAttribute("uiWidth", lastUIWidth);
-    // xml->setAttribute("uiHeight", lastUIHeight);
     xml->setAttribute("numBands", numBands);
     xml->setAttribute("preset", currentPreset);
     copyXmlToBinary(*xml, destData);
@@ -623,8 +621,6 @@ void MaximizerAudioProcessor::setStateInformation (const void* data, int sizeInB
 
     auto xmlState = getXmlFromBinary(data, sizeInBytes);
     if (xmlState.get() != nullptr) {
-        // lastUIWidth = xmlState->getIntAttribute("uiWidth", lastUIWidth);
-        // lastUIHeight = xmlState->getIntAttribute("uiHeight", lastUIHeight);
         numBands = xmlState->getIntAttribute("numBands", numBands);
         if (numBands < 1)
             numBands == 1;
