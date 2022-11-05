@@ -812,6 +812,8 @@ void MaximizerAudioProcessor::checkActivation()
         }
         return;
     }
+#endif
+#if JUCE_MAC
     if (!timeFileGB.exists()) {
         timeFileGB.create();
         auto trialStart = Time::getCurrentTime();
