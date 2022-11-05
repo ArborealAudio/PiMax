@@ -421,20 +421,18 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
             widener.widenBuffer(buffer, *width, *monoWidth);
     }
 
-    if (*linearPhase && *bandSplit)
-    {
-        PluginHostType host;
-        if (!host.isWavelab()) /* F this */
-            setLatencySamples(osIndex > 1 ? 1597 : 6143);
-        else
-            setLatencySamples(osIndex > 1 ? 4669 : 6143);
-    }
-    else
-        setLatencySamples(oversample[osIndex].getLatencyInSamples());
-    
-    bypassDelay.setDelay(getLatencySamples());
+    int totalLatency = 0;
 
-    mixer.setWetLatency(getLatencySamples());
+    if (*linearPhase && *bandSplit)
+        totalLatency = osIndex > 1 ? 573 : 2047;
+    else
+        totalLatency = oversample[osIndex].getLatencyInSamples();
+
+    setLatencySamples(totalLatency);
+    
+    bypassDelay.setDelay(totalLatency);
+
+    mixer.setWetLatency(totalLatency);
 
     if (*autoGain)
     {

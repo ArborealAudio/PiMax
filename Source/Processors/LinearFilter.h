@@ -46,8 +46,8 @@ namespace LinearFilter
     public:
         FIR(bool twoFilters, size_t firOrder, dsp::ConvolutionMessageQueue& queue) : doubleFilter(twoFilters),
             size(firOrder),
-            convLow(dsp::Convolution::Latency{2 * size - 1}, queue),
-            convHigh(dsp::Convolution::Latency{2 * size - 1}, queue)
+            convLow(queue),
+            convHigh(queue)
         {
             if (doubleFilter)
                 firCoeffLow.resize(firOrder, 0.0f);
@@ -122,7 +122,8 @@ namespace LinearFilter
         #endif
         }
 
-        int getLatency() { return convHigh.getLatency(); }
+        int getLatency()
+        { return 2 * convHigh.getCurrentIRSize(); }
 
         void setOversampleFactor(int newOSFactor)
         {
@@ -408,7 +409,7 @@ namespace LinearFilter
         BufferTransfer highTransfer;
     };
 
-    /*not actually a thread lmao*/
+    /*not actually a thread (or FIR) lmao*/
     struct FIRThread : FIR
     {
         FIRThread(bool twoFilters, size_t order, dsp::ConvolutionMessageQueue& q) : FIR(twoFilters, order, q)

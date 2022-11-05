@@ -285,11 +285,11 @@ struct MultibandProcessor
 
     std::array<LRFilter<float>, 3> bands;
 
-    dsp::ConvolutionMessageQueue q{ 16000 };
+    dsp::ConvolutionMessageQueue q{ 4000 };
 
     std::array<strix::LinearFilter::FIRThread, 3> linBand
     { {
-        {strix::LinearFilter::FIRThread(true,  2048, q)},
+        {strix::LinearFilter::FIRThread(true, 2048, q)},
         {strix::LinearFilter::FIRThread(false, 2048, q)},
         {strix::LinearFilter::FIRThread(false, 2048, q)}
     } };
