@@ -353,6 +353,8 @@ struct ActivationComponent : Component, Timer
 
     ~ActivationComponent() { stopTimer(); }
 
+    bool isFormVisible() { return unlockForm.isVisible(); }
+
     void setImage(const Image& newImage)
     {
         img = newImage;

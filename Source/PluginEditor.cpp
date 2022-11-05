@@ -118,8 +118,11 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(MaximizerAudioProce
         unlockButton.setVisible(true);
     unlockButton.onClick = [&]
     {
-        activationComp.setImage(createComponentSnapshot(getLocalBounds()));
-        activationComp.setVisible(true);
+        if (!activationComp.isFormVisible())
+        {
+            activationComp.setImage(createComponentSnapshot(getLocalBounds()));
+            activationComp.setVisible(true);
+        }
     };
     unlockButton.setBounds(width * 0.12f, height * 0.05f, width * 0.08f, height * 0.05f);
 
@@ -186,13 +189,11 @@ void MaximizerAudioProcessorEditor::paint (Graphics& g)
     g.drawText("DEV", textBounds.translated(0, h * 0.052f), Justification::centred, false);
 #endif
 
-    {
-        auto menuBounds = getLocalBounds().removeFromBottom(getHeight() * 0.069).toFloat().reduced(1.5f);
-        g.setColour(Colours::black);
-        g.fillRoundedRectangle(menuBounds, 3.f);
-        g.setColour(Colour(0xa7a7a7a7));
-        g.drawRoundedRectangle(getLocalBounds().toFloat().reduced(1.5f), 7.f, 1.5f);
-    }
+    auto menuBounds = getLocalBounds().removeFromBottom(getHeight() * 0.069).toFloat().reduced(1.5f);
+    g.setColour(Colours::black);
+    g.fillRoundedRectangle(menuBounds, 3.f);
+    g.setColour(Colour(0xa7a7a7a7));
+    g.drawRoundedRectangle(getLocalBounds().toFloat().reduced(1.5f), 7.f, 1.5f);
 }
 
 void MaximizerAudioProcessorEditor::resized()

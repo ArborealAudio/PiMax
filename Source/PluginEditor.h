@@ -27,6 +27,18 @@ public:
     //==============================================================================
     void paint (juce::Graphics&) override;
     void resized() override;
+    bool hitTest(int x, int y) override
+    {
+        if (activationComp.isFormVisible())
+        {
+            if (activationComp.getBounds().contains(x, y))
+                return true;
+            else
+                return false;
+        }
+        else
+            AudioProcessorEditor::hitTest(x, y);
+    }
 
     inline void updateBandDisplay(int newNumBands) noexcept
     {
