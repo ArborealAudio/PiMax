@@ -562,7 +562,7 @@ public:
     }
 
     bool painted = false;
-    std::atomic<float>* altDown;
+    std::atomic<float>* altDown = nullptr;
 
 private:
 
@@ -623,10 +623,14 @@ private:
         Rectangle<int> textBounds{ x, (int)centerY - 4, width, 10 };
         g.setFont(getCustomFont(FontStyle::Regular).withHeight(12.f));
         g.setColour(Colours::floralwhite);
+
+        bool s_Alt = false;
+        if (altDown != nullptr)
+            s_Alt = (bool)altDown->load();
         
         switch (type) {
             case LabelType::Width:
-                if (altDown && *altDown) {
+                if (s_Alt) {
                     g.setColour(Colours::burlywood);
                     g.drawFittedText("M Width", textBounds, Justification::centred, 1, 1.f);
                 }
@@ -636,7 +640,7 @@ private:
                 break;
                 
             case LabelType::Mix:
-                if (altDown && *altDown) {
+                if (s_Alt) {
                     g.setColour(Colours::burlywood);
                     g.drawFittedText("Delta", textBounds, Justification::centred, 1, 1.f);
                 }
