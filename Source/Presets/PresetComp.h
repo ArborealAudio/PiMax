@@ -90,7 +90,7 @@ struct PresetComp : Component
     void setCurrentPreset(String newPreset) noexcept
     {
         currentPreset = newPreset;
-        box.setText(currentPreset);
+        box.setText(currentPreset, NotificationType::dontSendNotification);
     }
 
     void savePreset() noexcept
