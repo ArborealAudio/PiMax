@@ -85,6 +85,21 @@ struct PresetManager
             newstate = ValueTree::fromXml(*xml);
         }
 
+        /*if a preset doesn't have the new params, assume to be zero*/
+        if (!apvts.state.getChildWithProperty("id", "delta").isValid())
+        {
+            ValueTree delta{ "PARAM", {{"id", "delta"}, {"value", 0.0}} };
+            newstate.addChild(delta, -1, nullptr);
+        }
+
+        if (!apvts.state.getChildWithProperty("id", "boost").isValid())
+        {
+            ValueTree boost{ "PARAM", {{"id", "boost"}, {"value", 0.0}} };
+            newstate.addChild(boost, -1, nullptr);
+        }
+
+        /*preset-agnostic params*/
+
         auto hq = apvts.state.getChildWithProperty("id", "hq");
         auto renderHQ = apvts.state.getChildWithProperty("id", "renderHQ");
         auto newHQ = newstate.getChildWithProperty("id", "hq");
