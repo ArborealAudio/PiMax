@@ -599,15 +599,8 @@ void ResponseCurveComponent::parameterChanged(const String& parameterID, float n
 void ResponseCurveComponent::timerCallback()
 {
     auto w = getWidth();
-    if (magLVec.size() != w)
-        magLVec.resize(w);
-    if (magM1Vec.size() != w)
-        magM1Vec.resize(w);
-    if (magM2Vec.size() != w)
-        magM2Vec.resize(w);
-    if (magHVec.size() != w)
-        magHVec.resize(w);
-
+    magLVec.resize(w); magM1Vec.resize(w); magM2Vec.resize(w); magHVec.resize(w);
+    
     if (paramChanged) {
         paramChanged = false;
 
@@ -870,7 +863,9 @@ inline void ResponseCurveComponent::removeBand(int index) noexcept
 
 void ResponseCurveComponent::resized()
 {
-    for (int i = 0; i < 3; ++i) {
+    auto w = getWidth();
+    magLVec.resize(w); magM1Vec.resize(w); magM2Vec.resize(w); magHVec.resize(w);
+
+    for (int i = 0; i < 3; ++i)
         sliders[i]->setBounds(getLocalBounds());
-    }
 }
