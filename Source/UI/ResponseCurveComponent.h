@@ -137,13 +137,10 @@ struct ResponseCurveComponent : Component,
     void parameterChanged(const String& parameterID, float newValue) override;
     void timerCallback() override;
     void paint(Graphics& g) override;
-    inline void setSliderLimits(float slider0Pos, float slider1Pos,
-        float slider2Pos) noexcept;
-    inline void drawResponseCurve(Graphics& g, const Rectangle<float>& responseArea, float w) noexcept;
-    inline void drawBandArea(Graphics& g, float slider0Pos, float slider1Pos, float slider2Pos,
-        const Rectangle<float>& responseArea) noexcept;
-    inline void drawBandParams(Graphics& g, float slider0Pos, float slider1Pos, float slider2Pos,
-        float width) noexcept;
+    inline void setSliderLimits(float slider0Pos, float slider1Pos, float slider2Pos);
+    inline void drawResponseCurve(Graphics& g, const Rectangle<float>& responseArea, float w);
+    inline void drawBandArea(Graphics& g, float slider0Pos, float slider1Pos, float slider2Pos, const Rectangle<float>& responseArea);
+    inline void drawBandParams(Graphics& g, float slider0Pos, float slider1Pos, float slider2Pos, float width);
     inline void drawAddButton(Graphics& g, const Rectangle<float>& responseArea) noexcept;
     inline void setBand() noexcept;
     inline void removeBand(int index) noexcept;
@@ -166,6 +163,7 @@ private:
 
     std::vector<dsp::IIR::Filter<float>> lowPass, highPass;
     std::vector<dsp::IIR::Coefficients<float>> lowPassCoeffs, highPassCoeffs;
+    std::vector<double> magLVec, magM1Vec, magM2Vec, magHVec;
     std::atomic<bool> paramChanged = false;
     int numBands = 2;
     double sampleRate = 0.0;

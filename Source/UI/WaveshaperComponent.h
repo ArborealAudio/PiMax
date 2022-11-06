@@ -14,11 +14,14 @@ struct WaveshaperComponent : Component,
     void timerCallback() override;
     void parameterChanged(const String& parameterID, float newValue) override;
     void paint(Graphics& g) override;
+    void resized() override;
 
 private:
     MaximizerAudioProcessor& audioProcessor;
 
     std::atomic<bool> paramChanged = false;
+
+    std::vector<float> mag;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(WaveshaperComponent)
 };

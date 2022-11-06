@@ -178,8 +178,7 @@ void ResponseCurveComponent::paint(Graphics& g)
     }
 }
 
-inline void ResponseCurveComponent::setSliderLimits(float slider0Pos, float slider1Pos,
-    float slider2Pos) noexcept
+inline void ResponseCurveComponent::setSliderLimits(const float slider0Pos, const float slider1Pos, const float slider2Pos)
 {
     sliderValueChanged = false;
 
@@ -203,13 +202,8 @@ inline void ResponseCurveComponent::setSliderLimits(float slider0Pos, float slid
     }
 }
 
-inline void ResponseCurveComponent::drawResponseCurve(Graphics& g, const Rectangle<float>& responseArea,
-    float w) noexcept
+inline void ResponseCurveComponent::drawResponseCurve(Graphics& g, const Rectangle<float>& responseArea, const float w)
 {
-    std::vector<double> magLVec, magM1Vec, magM2Vec, magHVec;
-
-    magLVec.resize(w); magM1Vec.resize(w); magM2Vec.resize(w); magHVec.resize(w);
-
     const auto& lp = lowPass;
     const auto& hp = highPass;
 
@@ -294,14 +288,14 @@ inline void ResponseCurveComponent::drawResponseCurve(Graphics& g, const Rectang
     }
 }
 
-inline void ResponseCurveComponent::drawBandArea(Graphics& g, float slider0Pos, float slider1Pos,
-    float slider2Pos, const Rectangle<float>& responseArea) noexcept
+inline void ResponseCurveComponent::drawBandArea(Graphics& g, const float slider0Pos, const float slider1Pos,
+    const float slider2Pos, const Rectangle<float>& responseArea)
 {
     auto w = responseArea.getWidth();
     auto h = responseArea.getHeight();
 
     {
-        Rectangle<float> area{ 0, 0, slider0Pos, h };
+        const Rectangle<float> area{ 0, 0, slider0Pos, h };
 
         if (solo[0]->getToggleState()) {
             g.setColour(Colours::lightgreen.withAlpha(0.1f));
@@ -358,7 +352,7 @@ inline void ResponseCurveComponent::drawBandArea(Graphics& g, float slider0Pos, 
 
     if (numBands > 2)
     {
-        Rectangle<float> area{ slider2Pos, 0, w - slider2Pos, h };
+        const Rectangle<float> area{ slider2Pos, 0, w - slider2Pos, h };
 
         if (solo[3]->getToggleState()) {
             g.setColour(Colours::lightgreen.withAlpha(0.1f));
@@ -375,8 +369,8 @@ inline void ResponseCurveComponent::drawBandArea(Graphics& g, float slider0Pos, 
     }
 }
 
-inline void ResponseCurveComponent::drawBandParams(Graphics& g, float slider0Pos, float slider1Pos,
-    float slider2Pos, float width) noexcept
+inline void ResponseCurveComponent::drawBandParams(Graphics& g, const float slider0Pos, const float slider1Pos,
+    const float slider2Pos, const float width)
 {
     if (isMouseOverOrDragging(true) && !sliders[0]->isMouseOverOrDragging() && !sliders[1]->isMouseOverOrDragging()
         && !sliders[2]->isMouseOverOrDragging()) {
@@ -604,6 +598,16 @@ void ResponseCurveComponent::parameterChanged(const String& parameterID, float n
 
 void ResponseCurveComponent::timerCallback()
 {
+    auto w = getWidth();
+    if (magLVec.size() != w)
+        magLVec.resize(w);
+    if (magM1Vec.size() != w)
+        magM1Vec.resize(w);
+    if (magM2Vec.size() != w)
+        magM2Vec.resize(w);
+    if (magHVec.size() != w)
+        magHVec.resize(w);
+
     if (paramChanged) {
         paramChanged = false;
 
