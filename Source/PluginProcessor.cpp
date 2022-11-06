@@ -794,6 +794,7 @@ void MaximizerAudioProcessor::checkActivation()
             xml.setAttribute("key", String(trialStart.toMilliseconds()));
             xml.writeTo(timeFile);
             timeFile.setReadOnly(true);
+            trialRemaining_ms = RelativeTime::days(7).inMilliseconds();
         }
         else {
             auto xml = parseXML(timeFile);
@@ -804,7 +805,6 @@ void MaximizerAudioProcessor::checkActivation()
             if (!trialEnded)
                 trialRemaining_ms = trialEnd.toMilliseconds() - Time::getCurrentTime().toMilliseconds();
         }
-        return;
     }
 #endif
 #if JUCE_MAC
@@ -815,6 +815,7 @@ void MaximizerAudioProcessor::checkActivation()
         xml.setAttribute("key", String(trialStart.toMilliseconds()));
         xml.writeTo(timeFileGB);
         timeFileGB.setReadOnly(true);
+        trialRemaining_ms = RelativeTime::days(7).inMilliseconds();
     }
     else {
         auto xml = parseXML(timeFileGB);
