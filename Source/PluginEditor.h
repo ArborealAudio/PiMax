@@ -36,7 +36,7 @@ public:
                 return false;
         }
         else
-            AudioProcessorEditor::hitTest(x, y);
+            return AudioProcessorEditor::hitTest(x, y);
     }
 
     inline void updateBandDisplay(int newNumBands) noexcept
