@@ -146,6 +146,7 @@ void MaximizerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
 
     lastAsym = false;
     muteRemaining = 0;
+    lastFadeGain = 0.f;
     
     updateOversample();
 
@@ -185,6 +186,7 @@ void MaximizerAudioProcessor::releaseResources()
     lastOutGain = 1.f;
     m_lastGain = 1.f;
     lastAsym = false;
+    lastFadeGain = 0.f;
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
@@ -408,8 +410,10 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
             }
         }
 
-        if (lastAsym != *distIndex) { /*mute initial 1/8 sec until DC offset has elapsed*/
-            buffer.applyGain(0, numSamples, 0.f);
+        if (lastAsym != *distIndex) { /*fade in initial 1/8 sec until DC offset has elapsed*/
+            float fadeEnd = (float)muteRemaining / lastDownSampleRate;
+            buffer.applyGainRamp(0, numSamples, lastFadeGain, fadeEnd);
+            lastFadeGain = fadeEnd;
             muteRemaining += numSamples;
             if (muteRemaining >= (int)lastDownSampleRate / 8)
                 lastAsym = *distIndex;
