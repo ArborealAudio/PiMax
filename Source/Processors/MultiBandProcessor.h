@@ -285,7 +285,7 @@ struct MultibandProcessor
 
     std::array<LRFilter<float>, 3> bands;
 
-    dsp::ConvolutionMessageQueue q{ 4000 };
+    dsp::ConvolutionMessageQueue q{ 16000 };
 
     std::array<strix::LinearFilter::FIRThread, 3> linBand
     { {
