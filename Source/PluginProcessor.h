@@ -156,6 +156,8 @@ private:
 
     void updateBandSpecs();
 
+    void updateBandCrossovers();
+
     farbot::AsyncCaller<farbot::fifo_options::concurrency::single> async;
 
     AudioProcessorValueTreeState::ParameterLayout createParams();
@@ -199,7 +201,7 @@ private:
 
     void timerCallback() override
     {
-        if (needs_update.load() && !isProcMB.load())
+        if (needs_update && !isProcMB)
             async.process();
     }
     

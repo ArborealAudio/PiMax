@@ -152,7 +152,7 @@ void MaximizerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
 
     dsp::ProcessSpec spec{lastSampleRate, uint32(oversample[osIndex].getOversamplingFactor() * samplesPerBlock), (uint32)getTotalNumOutputChannels()};
                 
-    bypassBuffer.setSize(getTotalNumOutputChannels(), samplesPerBlock);
+    bypassBuffer.setSize(getTotalNumOutputChannels(), samplesPerBlock, false, true, true);
     bypassDelay.prepare(spec);
 
     for (auto& ovs : oversample)
@@ -249,7 +249,7 @@ void MaximizerAudioProcessor::parameterChanged(const String& parameterID, float 
     {
         updateOversample();
 
-        needs_resize.store(true);
+        needs_resize = true;
 
         dsp::ProcessSpec newSpec{ lastSampleRate, uint32(maxNumSamples * oversample[osIndex].getOversamplingFactor()), uint32(getTotalNumInputChannels()) };
 
@@ -261,11 +261,10 @@ void MaximizerAudioProcessor::parameterChanged(const String& parameterID, float 
         if (!*linearPhase) {
             m_Proc.updateCrossoverNonLin(crossover_changedID);
             m_Proc.updateCrossoverLin(crossover_changedID);
+            crossover_changed = false;
         }
-        else {
-            m_Proc.updateCrossoverLin(crossover_changedID);
-            m_Proc.updateCrossoverNonLin(crossover_changedID);
-        }
+        else
+            crossover_changed = true;
     }
 }
 
@@ -358,33 +357,37 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     if (*bandSplit)
     {
         /* if oversample state has changed, update band specs on message thread */
-        if (needs_resize.load()) {
+        if (needs_resize) {
             if (async.callAsync([&]{updateBandSpecs();})) {
-                needs_resize.store(false);
-                needs_update.store(true);
+                needs_resize = false;
+                needs_update = true;
             }
         }
 
-        /* if the band specs have been updated, copy input buffer into band buffers */
-        if (!needs_update.load()) {
+        if (crossover_changed) {
+            if (async.callAsync([&] {updateBandCrossovers(); })) {
+                crossover_changed = false;
+                needs_update = true;
+            }
+        }
+
+        /* if the band specs have been updated, (shouldn't have to care about crossovers) copy input buffer into band buffers */
+        if (!needs_resize && !needs_update) {
             for (auto& b : m_Proc.bandBuffer) {
-                // if (b.getNumSamples() == osBlock.getNumSamples()) /* make sure band buffer is the same size as the oversampled input block */
-                // {
-                    b.copyFrom(0, 0, const_cast<float*>(osBlock.getChannelPointer(0)), osBlock.getNumSamples());
-                    if (totalNumOutputChannels > 1)
-                        b.copyFrom(1, 0, const_cast<float*>(osBlock.getChannelPointer(1)), osBlock.getNumSamples());
-                // }
+                b.copyFrom(0, 0, const_cast<float*>(osBlock.getChannelPointer(0)), osBlock.getNumSamples());
+                if (totalNumOutputChannels > 1)
+                    b.copyFrom(1, 0, const_cast<float*>(osBlock.getChannelPointer(1)), osBlock.getNumSamples());
             }
         }
     }
 
     if (!*bandSplit)
         mPi.process(osBlock);
-    else if (*bandSplit && !needs_update.load())
+    else if (*bandSplit && !needs_update)
     {
-        isProcMB.store(true);
+        isProcMB = true;
         m_Proc.processBands(osBlock);
-        isProcMB.store(false);
+        isProcMB = false;
     }
 
     if (totalNumOutputChannels > 1)
@@ -593,6 +596,15 @@ void MaximizerAudioProcessor::updateBandSpecs()
     m_Proc.setOversamplingFactor(oversample[osIndex].getOversamplingFactor());
     m_Proc.reset();
     m_Proc.updateSpecs(newSpec);
+
+    needs_update = false;
+}
+
+/*only needed for when linear-phase crossovers are the priority*/
+void MaximizerAudioProcessor::updateBandCrossovers()
+{
+    m_Proc.updateCrossoverLin(crossover_changedID);
+    m_Proc.updateCrossoverNonLin(crossover_changedID);
 
     needs_update = false;
 }

@@ -37,7 +37,7 @@ struct MultibandProcessor
 
         for (int b = 0; b < bandBuffer.size(); ++b)
         {
-            bandBuffer[b].setSize(spec.numChannels, spec.maximumBlockSize);
+            bandBuffer[b].setSize(spec.numChannels, spec.maximumBlockSize, false, true, true);
             bandBlock[b] = dsp::AudioBlock<float>(bandBuffer[b]);
         }
 
