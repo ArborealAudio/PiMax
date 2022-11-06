@@ -243,7 +243,8 @@ inline void MaximizerAudioProcessor::updateOversample() noexcept
 
 void MaximizerAudioProcessor::parameterChanged(const String& parameterID, float newValue)
 {
-    if (parameterID == "hq" || parameterID == "renderHQ" || parameterID == "linearPhase") {
+    if (parameterID == "hq" || parameterID == "renderHQ" || parameterID == "linearPhase")
+    {
         updateOversample();
 
         needs_resize.store(true);
@@ -378,7 +379,11 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     if (!*bandSplit)
         mPi.process(osBlock);
     else if (*bandSplit && !needs_update.load())
+    {
+        isProcMB.store(true);
         m_Proc.processBands(osBlock);
+        isProcMB.store(false);
+    }
 
     if (totalNumOutputChannels > 1)
         oversample[osIndex].processSamplesDown(outBlock);

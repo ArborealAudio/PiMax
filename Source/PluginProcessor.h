@@ -193,12 +193,12 @@ private:
     bool lastBypass = false;
     bool bufferCopied = false;
     
-    std::atomic<bool> needs_resize = false, crossover_changed = false, needs_update = false;
+    std::atomic<bool> needs_resize = false, crossover_changed = false, needs_update = false, isProcMB = false;
     int crossover_changedID = 0;
 
     void timerCallback() override
     {
-        if (needs_update.load())
+        if (needs_update.load() && !isProcMB.load())
             async.process();
     }
     
