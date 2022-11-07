@@ -77,6 +77,9 @@ private:
         auto uiSizeFile = File(File::getSpecialLocation(File::userApplicationDataDirectory).getFullPathName() + "/Arboreal Audio/PiMax/config.xml");
         if(!uiSizeFile.existsAsFile())
             uiSizeFile.create();
+
+        width = jmin(width, 1440);
+        height = jmin(height, 960);
     
         XmlElement uiXml{"UISize"};
         uiXml.setAttribute("uiWidth", width);
