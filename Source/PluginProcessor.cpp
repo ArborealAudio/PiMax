@@ -499,13 +499,12 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
 
 void MaximizerAudioProcessor::processBlockBypassed(AudioBuffer<float>& buffer, MidiBuffer&)
 {
-    /*return if not bypass & unchanged or switched on mid-buffer*/
     if (!bufferCopied)
         return;
 
     bool byp = (bool)*bypass;
     
-    /*push to our delay buffer & pop delayed sample*/
+    /*push to our delay buffer & read delayed samples*/
     if (getTotalNumInputChannels() < getTotalNumOutputChannels()) /*mono->stereo*/
     {
         auto in = bypassBuffer.getWritePointer(0);
@@ -513,8 +512,8 @@ void MaximizerAudioProcessor::processBlockBypassed(AudioBuffer<float>& buffer, M
         for (int i = 0; i < bypassBuffer.getNumSamples(); ++i) {
             bypassDelay.pushSample(0, in[i]);
             in[i] = bypassDelay.popSample(0);
-            in_1[i] = in[i];
         }
+        FloatVectorOperations::copy(in_1, in, bypassBuffer.getNumSamples());
     }
     else { /*everything else*/
         for (int ch = 0; ch < bypassBuffer.getNumChannels(); ++ch) {
@@ -561,13 +560,15 @@ void MaximizerAudioProcessor::processDelta(AudioBuffer<float>& buffer, float inG
             dryData[i] = bypassDelay.popSample(0);
             if (!*autoGain) {
                 data[i] = ((data[i] / inGain) / outGain) - dryData[i];
-                buffer.setSample(1, i, data[i]);
+                // buffer.setSample(1, i, data[i]);
             }
             else {
                 data[i] = (data[i] / outGain) - dryData[i];
-                buffer.setSample(1, i, data[i]);
+                // buffer.setSample(1, i, data[i]);
             }
         }
+
+        buffer.copyFrom(1, 0, data, buffer.getNumSamples());
     }
     else {
         for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
