@@ -258,10 +258,11 @@ void MaximizerAudioProcessor::parameterChanged(const String& parameterID, float 
 
     if (parameterID.contains("crossover")) {
         crossover_changedID = parameterID.getTrailingIntValue();
+
+        /*only update non-lin filters on this thread if we're using them for processing*/
         if (!*linearPhase) {
             m_Proc.updateCrossoverNonLin(crossover_changedID);
-            m_Proc.updateCrossoverLin(crossover_changedID);
-            crossover_changed = false;
+            crossover_changed = true;
         }
         else
             crossover_changed = true;
