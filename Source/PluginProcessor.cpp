@@ -191,31 +191,7 @@ void MaximizerAudioProcessor::releaseResources()
 
 #ifndef JucePlugin_PreferredChannelConfigurations
 bool MaximizerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
-{
-    // if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
-    //  && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
-    //     return false;
-
-    // PluginHostType host;
-
-    // // clumsily force stereo in Bitwig. CHANGE THIS!!
-    // if (host.isBitwigStudio())
-    // {
-    //     if (layouts.getMainOutputChannelSet() == AudioChannelSet::stereo() &&
-    //         layouts.getMainInputChannelSet() == AudioChannelSet::stereo())
-    //         return true;
-    // }
-    // else
-    // {
-    //     if (layouts.getMainOutputChannelSet() == layouts.getMainInputChannelSet())
-    //         return true;
-    //     else if (layouts.getMainOutputChannelSet() == AudioChannelSet::stereo()) {
-    //         // Mono-to-stereo
-    //         if (layouts.getMainInputChannelSet() == AudioChannelSet::mono())
-    //             return true;
-    //     }
-    // }
-    
+{    
     if (layouts.getMainInputChannels() <= 2 && layouts.getMainOutputChannels() <= 2 && layouts.getMainInputChannels() <= layouts.getMainOutputChannels())
         return true;
 
@@ -249,7 +225,8 @@ void MaximizerAudioProcessor::parameterChanged(const String& parameterID, float 
     {
         updateOversample();
 
-        needs_resize = true;
+        if (parameterID != "renderHQ") /*if renderHQ is turned on in realtime processing, don't resize*/
+            needs_resize = true;
 
         dsp::ProcessSpec newSpec{ lastSampleRate, uint32(maxNumSamples * oversample[osIndex].getOversamplingFactor()), uint32(getTotalNumInputChannels()) };
 
