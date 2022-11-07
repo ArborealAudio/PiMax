@@ -260,10 +260,8 @@ void MaximizerAudioProcessor::parameterChanged(const String& parameterID, float 
         crossover_changedID = parameterID.getTrailingIntValue();
 
         /*only update non-lin filters on this thread if we're using them for processing*/
-        if (!*linearPhase) {
+        if (!*linearPhase)
             m_Proc.updateCrossoverNonLin(crossover_changedID);
-            crossover_changed = true;
-        }
         else
             crossover_changed = true;
     }
@@ -359,14 +357,14 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     {
         /* if oversample state has changed, update band specs on message thread */
         if (needs_resize) {
-            if (async.callAsync([&]{updateBandSpecs();})) {
+            if (async.callAsync([&]{ updateBandSpecs(); })) {
                 needs_resize = false;
                 needs_update = true;
             }
         }
 
         if (crossover_changed) {
-            if (async.callAsync([&] {updateBandCrossovers(); })) {
+            if (async.callAsync([&] { updateBandCrossovers(); })) {
                 crossover_changed = false;
                 needs_update = true;
             }
@@ -427,11 +425,11 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     if (*width != 1.0 && totalNumOutputChannels > 1) {
         if (*monoWidth && *bandSplit && (*m_Proc.bandWidth[0] > 1.f || *m_Proc.bandWidth[1] > 1.f || *m_Proc.bandWidth[2] > 1.f ||
             *m_Proc.bandWidth[3] > 1.f))
-            widener.widenBuffer(buffer, *width, false);
+            widener.widenBuffer(buffer, *width, false); /*regular stereo widen if using mono band wideners*/
         else if (totalNumInputChannels < 2)
-            widener.widenBuffer(buffer, *width, true);
+            widener.widenBuffer(buffer, *width, true); /*if mono->stereo channel config, mono widener*/
         else
-            widener.widenBuffer(buffer, *width, *monoWidth);
+            widener.widenBuffer(buffer, *width, *monoWidth); /*regular*/
     }
 
     int totalLatency = 0;
@@ -495,7 +493,7 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     if (*bypass || lastBypass)
         processBlockBypassed(buffer, midiMessages);
 
-    if (buffer.getMagnitude(0, numSamples) >= 8.f) /*mute buffer if it's over 18dB*/
+    if (buffer.getMagnitude(0, numSamples) >= 6.f) /*mute buffer if it's over ~15dB*/
         buffer.clear();
 }
 
@@ -638,9 +636,6 @@ void MaximizerAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 
 void MaximizerAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
-    if (trialEnded && !checkUnlock())
-        return;
-
     auto xmlState = getXmlFromBinary(data, sizeInBytes);
     if (xmlState.get() != nullptr) {
         numBands = xmlState->getIntAttribute("numBands", numBands);
