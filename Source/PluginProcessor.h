@@ -101,7 +101,7 @@ public:
 
     void updateNumBands(int newNumBands) noexcept;
 
-    inline var checkUnlock()
+    var checkUnlock()
     {
         return isUnlocked;
     }
