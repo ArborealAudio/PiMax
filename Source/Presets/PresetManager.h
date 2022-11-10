@@ -127,34 +127,6 @@ struct PresetManager
         return true;
     }
 
-    /*bool compareStates(const String& presetName)
-    {
-        auto file = presetDir.getChildFile(presetName).withFileExtension("aap");
-        if (!file.existsAsFile()) {
-            file = userDir.getChildFile(presetName).withFileExtension("aap");
-        }
-
-        auto xml = parseXML(file);
-
-        auto presetState = ValueTree::fromXml(*xml);
-        auto hq = apvts.state.getChildWithProperty("id", "hq");
-        auto renderHQ = apvts.state.getChildWithProperty("id", "renderHQ");
-        auto newHQ = presetState.getChildWithProperty("id", "hq");
-        auto newRenderHQ = presetState.getChildWithProperty("id", "renderHQ");
-
-        if (newHQ.isValid())
-            newHQ.copyPropertiesFrom(hq, nullptr);
-        else
-            jassertfalse;
-
-        if (newRenderHQ.isValid())
-            newRenderHQ.copyPropertiesFrom(renderHQ, nullptr);
-        else
-            jassertfalse;
-
-        return apvts.state.isEquivalentTo(presetState);
-    }*/
-
     String getStateAsString()
     {
         auto xml = apvts.state.createXml();
