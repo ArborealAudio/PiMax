@@ -1,10 +1,12 @@
 #pragma once
 
+static constexpr auto halfPi = MathConstants<double>::halfPi;
+static constexpr double sqrtHalfPi = 1.25331413731550025;
+static constexpr auto pi = MathConstants<float>::pi;
+static constexpr auto e = MathConstants<float>::euler;
+
 class MaximPizer
 {
-	static constexpr auto halfPi = MathConstants<double>::halfPi;
-    static constexpr auto pi = MathConstants<float>::pi;
-    static constexpr auto e = MathConstants<float>::euler;
 
     AudioProcessorValueTreeState& apvts;
 
