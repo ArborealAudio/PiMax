@@ -17,22 +17,8 @@
   }
 #endif
 
-static constexpr auto pi = MathConstants<double>::pi;
-static constexpr auto e = MathConstants<double>::euler;
-static constexpr auto halfPi = MathConstants<double>::halfPi;
-//float lastInputGain = 0.0;
-/*refactor use of param smoothing where input gain has already been smoothed.
-Perhaps include in this header file an inline-able function for param smoothing*/
-
 namespace waveshapers
 {
-	/*double str_x_PreAmp(double xn, float gain)
-	{
-		double yn = 0.0;
-
-		return yn;
-	}*/
-
 	inline double gamma_PreAmp_v1(double xn, float gain)
 	{
 		double yn = 0.0;
