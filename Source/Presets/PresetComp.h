@@ -10,7 +10,7 @@
 
 #pragma once
 
-struct PresetComp : Component
+struct PresetComp : Component, private Timer
 {
     PresetComp(AudioProcessorValueTreeState& vts) : manager(vts)
     {
@@ -22,6 +22,13 @@ struct PresetComp : Component
 
         addChildComponent(editor);
         editor.setJustification(Justification::centredLeft);
+
+        startTimerHz(2);
+    }
+
+    ~PresetComp()
+    {
+        stopTimer();
     }
 
     void loadPresets()
@@ -92,6 +99,12 @@ struct PresetComp : Component
         box.setText(currentPreset, NotificationType::dontSendNotification);
     }
 
+    void setPresetWithChange(const String& newPreset) noexcept
+    {
+        currentPreset = newPreset;
+        box.setText(currentPreset, NotificationType::sendNotificationAsync);
+    }
+
     void savePreset() noexcept
     {
         if (box.getText() == "" || currentPreset == "")
@@ -129,7 +142,7 @@ struct PresetComp : Component
 
             if (manager.savePreset(name, manager.userDir)) {
                 loadPresets();
-                setCurrentPreset(name);
+                setPresetWithChange(name);
             }
             else
                 box.setText("invalid name!", NotificationType::dontSendNotification);
@@ -163,8 +176,11 @@ struct PresetComp : Component
             box.setText(currentPreset, NotificationType::dontSendNotification);
     }
 
-    void paint(Graphics& g) override
-    {}
+    void timerCallback() override
+    {
+        if (manager.hasStateChanged() && currentPreset != "")
+            box.setText(currentPreset + "*", NotificationType::dontSendNotification);
+    }
 
     void resized() override
     {

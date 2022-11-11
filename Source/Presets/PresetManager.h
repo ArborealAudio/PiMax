@@ -10,12 +10,25 @@
 
 #pragma once
 
-struct PresetManager
+struct PresetManager : private AudioProcessorValueTreeState::Listener
 {
     PresetManager(AudioProcessorValueTreeState& vts) : apvts(vts)
     {
         if (!userDir.isDirectory())
             userDir.createDirectory();
+
+        for (auto* param : apvts.processor.getParameters())
+        {
+            if (const auto p = dynamic_cast<RangedAudioParameter*>(param))
+                if (p->paramID != "hq" && p->paramID != "renderHQ" && p->paramID != "bypass")
+                    apvts.addParameterListener(p->paramID, this);
+        }
+    }
+
+    void parameterChanged(const String&, float)
+    {
+        if (!stateChanged)
+            stateChanged = true;
     }
 
     StringArray loadFactoryPresetList()
@@ -123,9 +136,13 @@ struct PresetManager
             jassertfalse;
 
         apvts.replaceState(newstate);
+
+        stateChanged = false;
             
         return true;
     }
+
+    bool hasStateChanged() { return stateChanged; }
 
     String getStateAsString()
     {
@@ -144,6 +161,8 @@ struct PresetManager
 
 private:
     AudioProcessorValueTreeState& apvts;
+
+    bool stateChanged = false;
 
     Array<File> factoryPresets;
     Array<File> userPresets;
