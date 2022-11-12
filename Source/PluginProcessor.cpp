@@ -645,9 +645,10 @@ AudioProcessorValueTreeState::ParameterLayout MaximizerAudioProcessor::createPar
 
     std::vector<std::unique_ptr<RangedAudioParameter>> params;
 
-    params.emplace_back(std::make_unique<AudioParameterFloat>(ParameterID("gain", 1), "Input Gain", -12.0, 12.0, 0.0));
-    params.emplace_back(std::make_unique < AudioParameterFloat>(ParameterID("output", 1), "Output Gain", -12.0, 0.0, -1.0));
-    params.emplace_back(std::make_unique<AudioParameterFloat>(ParameterID("curve", 1), "Curve", curveRange, 1.f, String(), AudioProcessorParameter::genericParameter,
+    params.emplace_back(std::make_unique<strix::FloatParameter>(ParameterID("gain", 1), "Input Gain", -12.0, 12.0, 0.0));
+    params.emplace_back(std::make_unique<strix::FloatParameter>(ParameterID("output", 1), "Output Gain", -12.0, 0.0, -1.0));
+    params.emplace_back(std::make_unique<strix::FloatParameter>(ParameterID("curve", 1), "Curve", curveRange, 1.f,
+        AudioParameterFloatAttributes().withStringFromValueFunction(
             [curveRange](float value, int)
             {
                 float curve = jmap(curveRange.convertTo0to1(value), -100.f, 100.f);
@@ -655,7 +656,8 @@ AudioProcessorValueTreeState::ParameterLayout MaximizerAudioProcessor::createPar
                     return String(roundToInt(curve));
                 else
                     return String(curve, 1);
-            }, nullptr));
+            })
+        ));
     params.emplace_back(std::make_unique<AudioParameterChoice>(ParameterID("distType", 1), "Saturation Type", StringArray("Symmetric", "Asymmetric"), 0));
     params.emplace_back(std::make_unique<AudioParameterChoice>(ParameterID("clipType", 1), "Saturation Limit", StringArray("Finite", "Clip", "Infinite", "Deep", "Warm"), 0));
     params.emplace_back(std::make_unique<AudioParameterBool>(ParameterID("bandSplit", 1), "Band Split On/Off", false));
@@ -663,34 +665,33 @@ AudioProcessorValueTreeState::ParameterLayout MaximizerAudioProcessor::createPar
     /*create 3 crossover freq params*/
     for (int i = 0; i < 3; ++i)
     {
-        params.emplace_back(std::make_unique<AudioParameterFloat>(ParameterID("crossover" + std::to_string(i), 1),
+        params.emplace_back(std::make_unique<strix::FloatParameter>(ParameterID("crossover" + std::to_string(i), 1),
             "Crossover " + std::to_string(i + 1) + " Freq", bandRange, i == 0 ? 150.0 :
             i == 1 ? 2500.0 : 40.0,
-            String(), AudioProcessorParameter::genericParameter,
-            [](float value, int) {float cutoff = (int)value; return String(cutoff, 0); },
-            [](const String& text) {
-                return text.contains("k") || text.contains("K") ?
-                     text.getFloatValue() * 1000.f :
-                     text.getFloatValue();
-            }
-        ));
+            AudioParameterFloatAttributes().withStringFromValueFunction([](float value, int) {float cutoff = (int)value; return String(cutoff, 0); }).withValueFromStringFunction([](const String& text)
+                {
+                    return text.contains("k") || text.contains("K") ?
+                         text.getFloatValue() * 1000.f :
+                         text.getFloatValue();
+                })
+            ));
     }
     /*create params for solo/mono/bypass for each band*/
     for (int i = 0; i < 4; ++i)
     {
-        params.emplace_back(std::make_unique<AudioParameterFloat>(ParameterID("bandInGain" + std::to_string(i), 1),
+        params.emplace_back(std::make_unique<strix::FloatParameter>(ParameterID("bandInGain" + std::to_string(i), 1),
             "Band " + std::to_string(i + 1) + " Input Gain", -12.0, 12.0, 0.0));
-        params.emplace_back(std::make_unique<AudioParameterFloat>(ParameterID("bandOutGain" + std::to_string(i), 1),
+        params.emplace_back(std::make_unique<strix::FloatParameter>(ParameterID("bandOutGain" + std::to_string(i), 1),
             "Band " + std::to_string(i + 1) + " Output Gain", -12.0, 12.0, 0.0));
-        params.emplace_back(std::make_unique<AudioParameterFloat>(ParameterID("bandWidth" + std::to_string(i), 1),
-            "Band " + std::to_string(i + 1) + " Width", widthRange, 1.0, String(), AudioProcessorParameter::genericParameter,
+        params.emplace_back(std::make_unique<strix::FloatParameter>(ParameterID("bandWidth" + std::to_string(i), 1),
+            "Band " + std::to_string(i + 1) + " Width", widthRange, 1.0, AudioParameterFloatAttributes().withStringFromValueFunction(
             [widthRange](float value, int)
             {
                 float percentage = jmap(widthRange.convertTo0to1(value), 0.f, 200.f);
 
                 return String(percentage, 0);
 
-            }, [widthRange](const String& text) { return text.getFloatValue() / 100.f; }));
+            }).withValueFromStringFunction([widthRange](const String& text) { return text.getFloatValue() / 100.f; })));
         params.emplace_back(std::make_unique<AudioParameterBool>(ParameterID("soloBand" + std::to_string(i), 1),
             "Solo Band " + std::to_string(i + 1), false));
         params.emplace_back(std::make_unique<AudioParameterBool>(ParameterID("muteBand" + std::to_string(i), 1),
@@ -702,23 +703,23 @@ AudioProcessorValueTreeState::ParameterLayout MaximizerAudioProcessor::createPar
     params.emplace_back(std::make_unique<AudioParameterBool>(ParameterID("hq", 1), "HQ", false));
     params.emplace_back(std::make_unique<AudioParameterBool>(ParameterID("renderHQ", 1), "Render HQ", false));
     params.emplace_back(std::make_unique<AudioParameterBool>(ParameterID("linearPhase", 1), "Linear Phase", false));
-    params.emplace_back(std::make_unique<AudioParameterFloat>(ParameterID("width", 1), "Width", widthRange, 1.f, String(), AudioProcessorParameter::genericParameter,
+    params.emplace_back(std::make_unique<strix::FloatParameter>(ParameterID("width", 1), "Width", widthRange, 1.f, AudioParameterFloatAttributes().withStringFromValueFunction(
             [widthRange](float value, int)
             {
                 float percentage = jmap(widthRange.convertTo0to1(value), 0.f, 200.f);
                 
                 return String(percentage, 0);
 
-            }, [widthRange](const String& text) { return text.getFloatValue() / 100.f; }));
+            }).withValueFromStringFunction([widthRange](const String& text) { return text.getFloatValue() / 100.f; })));
     params.emplace_back(std::make_unique<AudioParameterBool>(ParameterID("monoWidth", 1), "Widen Mono", false));
-    params.emplace_back(std::make_unique<AudioParameterFloat>(ParameterID("mix", 1), "Dry/Wet Mix", mixRange, 1.f, String(), AudioProcessorParameter::genericParameter,
+    params.emplace_back(std::make_unique<strix::FloatParameter>(ParameterID("mix", 1), "Dry/Wet Mix", mixRange, 1.f, AudioParameterFloatAttributes().withStringFromValueFunction(
             [](float value, int)
             {
                 float percentage = jmap(value, 0.f, 100.f);
 
                 return String(percentage, 0);
 
-            }, [widthRange](const String& text) { return text.getFloatValue() / 100.f; }));
+            }).withValueFromStringFunction([widthRange](const String& text) { return text.getFloatValue() / 100.f; })));
     params.emplace_back(std::make_unique<AudioParameterBool>(ParameterID("autoGain", 1), "Auto Gain", false));
     params.emplace_back(std::make_unique<AudioParameterBool>(ParameterID("boost", 1), "Input Boost", false));
     params.emplace_back(std::make_unique<AudioParameterBool>(ParameterID("bypass", 1), "Bypass", false));
