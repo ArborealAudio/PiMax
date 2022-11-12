@@ -33,24 +33,33 @@ public:
 			band.reset();
 	}
 
-	/*processes the first filter object and returns the high-pass output*/
-	void processSample(int channel, T inputSample, T& outputHigh)
-	{
-		outputHigh = bands[0].processSample(channel, inputSample);
-	}
+    /*process one channel and return the high output*/
+    void process(const T* input, T* outputHigh, size_t numSamples, int ch)
+    {
+        for (size_t i = 0; i < numSamples; ++i)
+        {
+            outputHigh[i] = bands[0].processSample(ch, input[i]);
+        }
+    }
 
-	/*processes the first filter object and returns the low- and high-pass outputs*/
-	void processSample(int channel, T inputSample, T& outputLow, T& outputHigh)
-	{
-		bands[0].processSample(channel, inputSample, outputLow, outputHigh);
-	}
+    /*process one channel and return low and high outputs*/
+    void process(const T* input, T* outputLow, T* outputHigh, size_t numSamples, int ch)
+    {
+        for (size_t i = 0; i < numSamples; ++i)
+        {
+            bands[0].processSample(ch, input[i], outputLow[i], outputHigh[i]);
+        }
+    }
 
-	/*processes two inputs and returns two outputs, where the low output overwrites the first input, high output the second input*/
-	void processTwoSamples(int channel, T input1, T input2, T& outputLow, T& outputHigh)
-	{
-		outputHigh = bands[0].processSample(channel, input2);
-		outputLow = bands[1].processSample(channel, input1);
-	}
+    /*process low and high channels independently*/
+    void process(T* low, T* high, size_t numSamples, int ch)
+    {
+        for (size_t i = 0; i < numSamples; ++i)
+        {
+            high[i] = bands[0].processSample(ch, high[i]);
+            low[i] = bands[1].processSample(ch, low[i]);
+        }
+    }
 
 private:
 

@@ -179,13 +179,10 @@ struct MultibandProcessor
                     auto low = lowBand.getChannelPointer(ch);
                     auto high = highBand.getChannelPointer(ch);
 
-                    for (size_t i = 0; i < numSamples; ++i)
-                    {
-                        if (n == 0)
-                            bands[n].processSample(ch, low[i], low[i], high[i]);
-                        else
-                            bands[n].processTwoSamples(ch, low[i], high[i], low[i], high[i]);
-                    }
+                    if (n == 0)
+                        bands[n].process(low, low, high, numSamples, ch);
+                    else
+                        bands[n].process(low, high, numSamples, ch);
                 }
             }
         }
