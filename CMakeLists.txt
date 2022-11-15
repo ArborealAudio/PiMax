@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.15)
 
 project(PiMax VERSION 1.1.0)
 
+set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9")
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -23,12 +24,13 @@ endif()
 
 juce_add_plugin(PiMax
     COMPANY_NAME "Arboreal Audio"
+    COMPANY_COPYRIGHT "(c) 2022 Arboreal Audio, LLC"
     COPY_PLUGIN_AFTER_BUILD TRUE
     PLUGIN_MANUFACTURER_CODE Arau
     PLUGIN_CODE Hmsj
     FORMATS ${JUCE_FORMATS}
     VST2_CATEGORY kPlugCategEffect
-    VST3_CATEGORY Fx Distortion
+    VST3_CATEGORIES Fx Distortion Mastering
     AU_MAIN_TYPE kAudioUnitType_Effect
     PRODUCT_NAME "PiMax"
     HARDENED_RUNTIME_ENABLED TRUE)
@@ -108,7 +110,6 @@ PRIVATE
     BinaryData
     juce::juce_audio_utils
     juce::juce_dsp
-    juce::juce_opengl
     juce::juce_product_unlocking
     juce::juce_cryptography
     gin
@@ -118,3 +119,8 @@ PUBLIC
     juce::juce_recommended_config_flags
     juce::juce_recommended_lto_flags
     juce::juce_recommended_warning_flags)
+
+if (NOT APPLE)
+    target_link_libraries(PiMax PRIVATE
+    juce::juce_opengl)
+endif()
