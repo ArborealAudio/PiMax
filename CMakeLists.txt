@@ -37,6 +37,22 @@ clap_juce_extensions_plugin(TARGET PiMax
     CLAP_ID "com.ArborealAudio.PiMax"
     CLAP_FEATURES fx saturation loudness multiband)
 
+if (UNIX AND NOT APPLE)
+    set(IPP_SHARED FALSE)
+    list(APPEND CMAKE_MODULE_PATH "/opt/intel/oneapi/ipp/2021.6.1/lib/cmake/ipp")
+    find_package(IPP REQUIRED)
+    if(${IPP_FOUND})
+        message("FOUND: IPP Libs")
+        add_compile_definitions(_IPP_SEQUENTIAL_STATIC=1)
+        target_include_directories(PiMax SYSTEM INTERFACE
+        "${ipp_cmake_package_dir}/${IPP_INC_REL_PATH}")
+        target_link_libraries(PiMax ${IPP_LIBRARIES})
+    else()
+        message("NOT FOUND: IPP Libs")
+    endif()
+endif()
+
+
 juce_generate_juce_header(PiMax)
 
 target_sources(PiMax
