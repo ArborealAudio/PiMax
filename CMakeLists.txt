@@ -28,7 +28,7 @@ juce_add_plugin(PiMax
     PLUGIN_CODE Hmsj
     FORMATS ${JUCE_FORMATS}
     VST2_CATEGORY kPlugCategEffect
-    VST3_CATEGORY Fx
+    VST3_CATEGORY Fx Distortion
     AU_MAIN_TYPE kAudioUnitType_Effect
     PRODUCT_NAME "PiMax"
     HARDENED_RUNTIME_ENABLED TRUE)
@@ -37,21 +37,22 @@ clap_juce_extensions_plugin(TARGET PiMax
     CLAP_ID "com.ArborealAudio.PiMax"
     CLAP_FEATURES fx saturation loudness multiband)
 
-if (UNIX AND NOT APPLE)
+if ((UNIX AND NOT APPLE) OR WIN32)
     set(IPP_SHARED FALSE)
-    list(APPEND CMAKE_MODULE_PATH "/opt/intel/oneapi/ipp/2021.6.1/lib/cmake/ipp")
+    if (UNIX AND NOT APPLE)
+        list(APPEND CMAKE_MODULE_PATH "/opt/intel/oneapi/ipp/2021.6.1/lib/cmake/ipp")
+    endif()
     find_package(IPP REQUIRED)
     if(${IPP_FOUND})
         message("FOUND: IPP Libs")
         add_compile_definitions(_IPP_SEQUENTIAL_STATIC=1)
-        target_include_directories(PiMax SYSTEM INTERFACE
+        target_include_directories(PiMax SYSTEM PUBLIC
         "${ipp_cmake_package_dir}/${IPP_INC_REL_PATH}")
         target_link_libraries(PiMax ${IPP_LIBRARIES})
     else()
         message("NOT FOUND: IPP Libs")
     endif()
 endif()
-
 
 juce_generate_juce_header(PiMax)
 
