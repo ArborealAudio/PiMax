@@ -40,9 +40,8 @@ clap_juce_extensions_plugin(TARGET PiMax
     CLAP_FEATURES fx saturation loudness multiband)
 
 if ((UNIX AND NOT APPLE) OR WIN32)
-    set(IPP_SHARED FALSE)
     if (UNIX AND NOT APPLE)
-        list(APPEND CMAKE_MODULE_PATH "/opt/intel/oneapi/ipp/2021.6.1/lib/cmake/ipp")
+        list(APPEND CMAKE_MODULE_PATH "/opt/intel/oneapi/ipp/latest/lib/cmake/ipp")
     endif()
     find_package(IPP REQUIRED)
     if(${IPP_FOUND})
