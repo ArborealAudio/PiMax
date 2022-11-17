@@ -6,9 +6,9 @@ set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9")
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(JUCE CONFIG REQUIRED)
+add_subdirectory(modules/juce)
 
-add_subdirectory(Source/modules/clap-juce-extensions)
+add_subdirectory(modules/clap-juce-extensions)
 
 juce_set_vst2_sdk_path("$ENV{HOME}/vst2_sdk")
 
@@ -47,7 +47,7 @@ if ((UNIX AND NOT APPLE) OR WIN32)
     if(${IPP_FOUND})
         message("FOUND: IPP Libs")
         add_compile_definitions(_IPP_SEQUENTIAL_STATIC=1)
-        target_include_directories(PiMax SYSTEM PUBLIC
+        target_include_directories(PiMax PUBLIC
         "${ipp_cmake_package_dir}/${IPP_INC_REL_PATH}")
         target_link_libraries(PiMax ${IPP_LIBRARIES})
     else()
@@ -64,10 +64,12 @@ PRIVATE
     Source/DownloadManager.h
     Source/OnlineActivation.h)
 
+    
 add_subdirectory(Source/UI)
 add_subdirectory(Source/Processors)
 add_subdirectory(Source/Presets)
-
+    
+target_include_directories(PiMax PRIVATE "modules/farbot/include")
 juce_add_modules(
     "$ENV{HOME}/modules/Gin/modules/gin"
     "$ENV{HOME}/modules/Gin/modules/gin_gui"

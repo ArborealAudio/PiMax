@@ -7,3 +7,6 @@
 [submodule "scripts"]
 	path = scripts
 	url = https://github.com/ArborealAudio/scripts
+[submodule "Source/modules/juce"]
+	path = Source/modules/juce
+	url = https://github.com/juce-framework/juce

@@ -21,8 +21,8 @@ enum class ClipType
 };
 
 #include <JuceHeader.h>
-#include "modules/farbot/include/farbot/AsyncCaller.hpp"
-#include "modules/farbot/include/farbot/RealtimeObject.hpp"
+#include <farbot/AsyncCaller.hpp>
+#include <farbot/RealtimeObject.hpp>
 #include "Processors/MaximPizer.h"
 #include "Processors/Waveshapers.h"
 #include "Processors/StereoWidener.h"
