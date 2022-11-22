@@ -63,11 +63,7 @@ public:
 
 private:
 
-#if USE_SIMD_SAT
-	std::array<dsp::LinkwitzRileyFilter<dsp::SIMDRegister<float>>, 4> bands;
-#else
 	std::array<dsp::LinkwitzRileyFilter<T>, 2> bands;
-#endif
 	double lastSampleRate = 0.0;
 
 };
