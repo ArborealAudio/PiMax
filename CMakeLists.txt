@@ -2,9 +2,9 @@ cmake_minimum_required(VERSION 3.15)
 
 project(PiMax VERSION 1.1.0)
 
-set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9")
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_OSX_DEPLOYMENT_TARGET 10.9)
 
 add_subdirectory(Source/modules/juce)
 add_subdirectory(Source/modules/clap-juce-extensions)
