@@ -36,8 +36,8 @@ void WaveshaperComponent::paint(Graphics& g)
 
     auto w = getWidth();
 
-    float gain = pow(10.f, (*audioProcessor.gain_dB / 20.f));
-    float curve = *audioProcessor.curve;
+    float gain = pow(10.f, (audioProcessor.gain_dB->get() / 20.f));
+    float curve = audioProcessor.curve->get();
 
     ColourGradient gradient(Colour(0xa7a7a7a7).withAlpha(gain / 8.f),
         getLocalBounds().getCentreX(), getLocalBounds().getCentreY(),
@@ -57,7 +57,7 @@ void WaveshaperComponent::paint(Graphics& g)
 
     ClipType clip = (ClipType)audioProcessor.clip->load();
     auto distIndex = audioProcessor.distIndex->load();
-    auto outGain = pow(10.f, *audioProcessor.output_dB * 0.05f);
+    auto outGain = pow(10.f, audioProcessor.output_dB->get() * 0.05f);
 
     for (int n = 0; n < w; ++n)
         mag[n] = jmap(float(n) / float(w), -1.f, 1.f);
