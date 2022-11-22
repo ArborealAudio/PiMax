@@ -127,17 +127,9 @@ struct MultibandProcessor
         }
     }
 
-    /* since this is being called from paramChanged, this should flag for an update on the audio callback */
-
-    void flagCrossoverUpdate(int crossover) noexcept
+    void updateCrossoverNonLin(int crossoverID)
     {
-        crossoverChangedID = crossover;
-        updateCrossovers = true;
-    }
-
-    void updateCrossoverNonLin()
-    {
-        bands[crossoverChangedID].updateFilter(*crossovers[crossoverChangedID]);
+        bands[crossoverID].updateFilter(*crossovers[crossoverID]);
     }
 
     void updateCrossoverLin(int crossover) noexcept
@@ -234,13 +226,12 @@ struct MultibandProcessor
     template <typename T>
     void processBands(dsp::AudioBlock<T>& block)
     {
-        if (updateCrossovers)
-            updateCrossoverNonLin();
-
         const auto numSamples = block.getNumSamples();
 
         for (size_t n = 0; n <= numBands; ++n)
         {
+            if (n < numBands)
+                updateCrossoverNonLin(n);
             auto gain = pow(10.f, *bandInGain[n] * 0.05f);
             auto outGain = pow(10.f, *bandOutGain[n] * 0.05f);
 
