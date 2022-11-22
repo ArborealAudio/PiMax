@@ -6,9 +6,8 @@ set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9")
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_subdirectory(modules/juce)
-
-add_subdirectory(modules/clap-juce-extensions)
+add_subdirectory(Source/modules/juce)
+add_subdirectory(Source/modules/clap-juce-extensions)
 
 juce_set_vst2_sdk_path("$ENV{HOME}/vst2_sdk")
 
@@ -37,7 +36,8 @@ juce_add_plugin(PiMax
 
 clap_juce_extensions_plugin(TARGET PiMax
     CLAP_ID "com.ArborealAudio.PiMax"
-    CLAP_FEATURES fx saturation loudness multiband)
+    CLAP_PROCESS_EVENTS_RESOLUTION_SAMPLES 64
+    CLAP_FEATURES audio-effect distortion mastering)
 
 if ((UNIX AND NOT APPLE) OR WIN32)
     if (UNIX AND NOT APPLE)
@@ -63,13 +63,12 @@ PRIVATE
     Source/PluginEditor.cpp
     Source/DownloadManager.h
     Source/OnlineActivation.h)
-
     
 add_subdirectory(Source/UI)
 add_subdirectory(Source/Processors)
 add_subdirectory(Source/Presets)
     
-target_include_directories(PiMax PRIVATE "modules/farbot/include")
+target_include_directories(PiMax PRIVATE "Source/modules/farbot/include")
 juce_add_modules(
     "$ENV{HOME}/modules/Gin/modules/gin"
     "$ENV{HOME}/modules/Gin/modules/gin_gui"
