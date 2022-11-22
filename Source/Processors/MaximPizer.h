@@ -12,8 +12,10 @@ class MaximPizer
 
     strix::SVTFilter<float> hiShelf, lowShelf;
 
-	std::atomic<float>* curve, *clip, *type, *boost, *gain;
-    float curve_m = 0, type_m = 0;
+	std::atomic<float>*clip, *type, *boost, *gain;
+    strix::FloatParameter *curve;
+    float lastCurve = 1.f;
+    float type_m = 0;
     ClipType clip_m;
     bool boost_m = false;
 
@@ -24,7 +26,7 @@ public:
 	MaximPizer(AudioProcessorValueTreeState& a) : apvts(a)
 	{
         gain = apvts.getRawParameterValue("gain");
-		curve = apvts.getRawParameterValue("curve");
+		curve = dynamic_cast<strix::FloatParameter*>(apvts.getParameter("curve"));
 		clip = apvts.getRawParameterValue("clipType");
 		type = apvts.getRawParameterValue("distType");
 		boost = apvts.getRawParameterValue("boost");
@@ -53,13 +55,16 @@ public:
 
     void loadAtomics()
     {
-        curve_m = curve->load();
         clip_m = (ClipType)clip->load();
         type_m = type->load();
         boost_m = boost->load();
 
-        hiShelf.setCutoffFreq(5000.0 * (1.f / (curve_m * curve_m * curve_m)));
-        lowShelf.setCutoffFreq(150.f * (curve_m * curve_m));
+        if (lastCurve != *curve)
+        {
+            hiShelf.setCutoffFreq(5000.0 * (1.f / (*curve * *curve * *curve)));
+            lowShelf.setCutoffFreq(150.f * (*curve * *curve));
+            lastCurve = *curve;
+        }
     }
 
 	template <typename T>
@@ -93,10 +98,9 @@ public:
 	void processRegular(size_t channel, size_t numSamples, T* in) noexcept
 	{
 		T yn, x1, x2;
-		double k = curve_m;
-		if (boost_m)
-			k *= k;
-
+        double k = *curve;
+        if (boost_m)
+            k *= k;
         for (int i = 0; i < numSamples; ++i)
         {
             /*if we're in regular bounds, apply curve algo*/
@@ -106,7 +110,7 @@ public:
 
             if (xn > -1.0 && xn < 1.0) {
                 if (k > 1.0) {
-                    const auto j = pow(k, acos(xn * xn));
+                    const auto j = this->pow(k, acos(xn * xn));
                     x1 = dsp::FastMathApproximations::sin(halfPi * j * xn);
                     if (xn >= 0.0)
                         x2 = dsp::FastMathApproximations::sin(halfPi * pow(xn, k));
@@ -116,7 +120,7 @@ public:
                 }
                 else if (k < 1.0) {
                     const auto k_r = (1.0 / k);
-                    const auto j = pow(k_r, acos(xn * xn));
+                    const auto j = this->pow(k_r, acos(xn * xn));
                     x1 = dsp::FastMathApproximations::sin(halfPi * j * xn);
                     if (xn >= 0.0)
                         x2 = dsp::FastMathApproximations::sin(halfPi * pow(xn, k_r));
@@ -166,13 +170,11 @@ public:
     template <typename T>
     void processDeep(size_t ch, size_t numSamples, T* xn)
     {
-        const double k = curve_m * curve_m;
-
         FloatVectorOperations::multiply(xn, halfPi, numSamples);
-
+        const double k = *curve * *curve;
         for (int i = 0; i < numSamples; ++i)
         {
-            xn[i] = xn[i] / std::pow((1.0 + std::pow(std::abs(xn[i]), k)), 1.0 / k);
+            xn[i] = xn[i] / this->pow((1.0 + this->pow(std::abs(xn[i]), k)), 1.0 / k);
             xn[i] += 0.2f * lowShelf.processSample(ch, xn[i]);
             xn[i] += 0.2f * hiShelf.processSample(ch, xn[i]);
         }
@@ -186,7 +188,7 @@ public:
     {
         FloatVectorOperations::multiply(xn, halfPi, numSamples);
 
-        auto lfGain = curve_m >= 1.f ? curve_m * curve_m - 1.f : 0.f;
+        auto lfGain = *curve >= 1.f ? *curve * *curve - 1.f : 0.f;
 
         for (int i = 0; i < numSamples; ++i)
         {
