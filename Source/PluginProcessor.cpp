@@ -231,13 +231,10 @@ void MaximizerAudioProcessor::parameterChanged(const String& parameterID, float 
         mPi.prepare(newSpec);
     }
 
-    if (parameterID.contains("crossover")) {
+    /* flag crossover changes in linear-phase mode */
+    if (parameterID.contains("crossover") && *linearPhase) {
         crossover_changedID = parameterID.getTrailingIntValue();
-        /* flag non-linear filters for update */
-        if (!*linearPhase)
-            m_Proc.flagCrossoverUpdate(crossover_changedID);
-        else /* flag for audio thread message post */
-            crossover_changed = true;
+        crossover_changed = true;
     }
 }
 
@@ -291,7 +288,7 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     dsp::ProcessContextReplacing<float> context(block);
     auto& outBlock = context.getOutputBlock();
 
-    mixer.pushDrySamples(dsp::AudioBlock<float> (buffer));
+    mixer.pushDrySamples(dsp::AudioBlock<float>(buffer));
 
     float gain_raw = pow(10.f, (*gain_dB / 20.f));
     float output_raw = pow(10.f, (*output_dB / 20.f));
@@ -577,7 +574,7 @@ void MaximizerAudioProcessor::updateBandSpecs()
 void MaximizerAudioProcessor::updateBandCrossovers()
 {
     m_Proc.updateCrossoverLin(crossover_changedID);
-    m_Proc.flagCrossoverUpdate(crossover_changedID);
+    m_Proc.updateCrossoverNonLin(crossover_changedID);
 
     needs_update = false;
 }
@@ -645,16 +642,20 @@ AudioProcessorValueTreeState::ParameterLayout MaximizerAudioProcessor::createPar
     params.emplace_back(std::make_unique<strix::FloatParameter>(ParameterID("gain", 1), "Input Gain", -12.0, 12.0, 0.0));
     params.emplace_back(std::make_unique<strix::FloatParameter>(ParameterID("output", 1), "Output Gain", -12.0, 0.0, -1.0));
     params.emplace_back(std::make_unique<strix::FloatParameter>(ParameterID("curve", 1), "Curve", curveRange, 1.f,
-        AudioParameterFloatAttributes().withStringFromValueFunction(
-            [curveRange](float value, int)
-            {
-                float curve = jmap(curveRange.convertTo0to1(value), -100.f, 100.f);
-                if (fabs(curve) >= 9.999)
-                    return String(roundToInt(curve));
-                else
-                    return String(curve, 1);
-            })
-        ));
+                                                                AudioParameterFloatAttributes().withStringFromValueFunction(
+                                                                                                   [curveRange](float value, int)
+                                                                                                   {
+                                                                                                       float curve = jmap(curveRange.convertTo0to1(value), -100.f, 100.f);
+                                                                                                       if (fabs(curve) >= 9.999)
+                                                                                                           return String(roundToInt(curve));
+                                                                                                       else
+                                                                                                           return String(curve, 1);
+                                                                                                   })
+                                                                    .withValueFromStringFunction(
+                                                                        [curveRange](const String &str)
+                                                                        {
+                                                                            return jmap(str.getFloatValue(), -100.f, 100.f, curveRange.start, curveRange.end);
+                                                                        })));
     params.emplace_back(std::make_unique<AudioParameterChoice>(ParameterID("distType", 1), "Saturation Type", StringArray("Symmetric", "Asymmetric"), 0));
     params.emplace_back(std::make_unique<AudioParameterChoice>(ParameterID("clipType", 1), "Saturation Limit", StringArray("Finite", "Clip", "Infinite", "Deep", "Warm"), 0));
     params.emplace_back(std::make_unique<AudioParameterBool>(ParameterID("bandSplit", 1), "Band Split On/Off", false));
