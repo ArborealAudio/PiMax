@@ -24,14 +24,13 @@ ResponseCurveComponent::ResponseCurveComponent(MaximizerAudioProcessor& p) : aud
         sliders.emplace_back(std::make_unique<CrossoverSlider>());
         addChildComponent(*sliders[i]);
         sliders[i]->setMouseDragSensitivity(400);
-        sliders[i]->setTooltip("Adjusts crossover frequency of the adjacent bands. Right/Ctrl-click to remove a crossover.");
+        sliders[i]->setTooltip("Adjusts crossover frequency of the adjacent bands. Right-click to remove a crossover.");
         sliders[i]->onValueChange = [this] { sliderValueChanged = true; };
         lowPass.emplace_back();
         highPass.emplace_back();
-        *lowPass[i].coefficients = *dsp::IIR::Coefficients<float>::makeLowPass(sampleRate,
-            *audioProcessor.crossovers[i]);
-        *highPass[i].coefficients = *dsp::IIR::Coefficients<float>::makeHighPass(sampleRate,
-            *audioProcessor.crossovers[i]);
+        crossovers[i] = dynamic_cast<strix::FloatParameter *>(p.apvts.getParameter("crossover" + String(i)));
+        *lowPass[i].coefficients = *dsp::IIR::Coefficients<float>::makeLowPass(sampleRate, crossovers[i]->get());
+        *highPass[i].coefficients = *dsp::IIR::Coefficients<float>::makeHighPass(sampleRate, crossovers[i]->get());
         p.apvts.addParameterListener("crossover" + String(i), this);
     }
 
@@ -116,66 +115,54 @@ ResponseCurveComponent::~ResponseCurveComponent()
     audioProcessor.apvts.removeParameterListener("bandSplit", this);
     for (int i = 0; i < 3; ++i)
     {
-        audioProcessor.apvts.removeParameterListener("crossover" + std::to_string(i), this);
+        audioProcessor.apvts.removeParameterListener("crossover" + String(i), this);
     }
-    sampleRate = 0;
     stopTimer();
 }
 
 void ResponseCurveComponent::paint(Graphics& g)
 {
-    if (*audioProcessor.bandSplit) {
+    if (!*audioProcessor.bandSplit)
+        return;
 
-        ColourGradient gradient(Colour(0xa7a7a7a7).withAlpha(0.125f),
-            getLocalBounds().getCentreX(), getLocalBounds().getCentreY(),
-            Colours::transparentWhite, getLocalBounds().getX(), getLocalBounds().getY(), true);
-        g.setGradientFill(gradient);
-        g.fillAll();
+    ColourGradient gradient(Colour(0xa7a7a7a7).withAlpha(0.125f),
+        getLocalBounds().getCentreX(), getLocalBounds().getCentreY(),
+        Colours::transparentWhite, getLocalBounds().getX(), getLocalBounds().getY(), true);
+    g.setGradientFill(gradient);
+    g.fillAll();
 
-        for (int i = 0; i < numBands; ++i) {
-            sliders[i]->setVisible(true);
-            if (i == 0 && numBands == 1) {
-                sliders[1]->setVisible(false);
-                sliders[2]->setVisible(false);
-            }
-            else if (i == 1 && numBands == 2) {
-                sliders[2]->setVisible(false);
-            }
+    for (int i = 0; i < numBands; ++i) {
+        sliders[i]->setVisible(true);
+        if (i == 0 && numBands == 1) {
+            sliders[1]->setVisible(false);
+            sliders[2]->setVisible(false);
         }
-
-        auto responseArea = getLocalBounds();
-
-        auto w = responseArea.getWidth();
-
-        auto slider0Pos = sliders[0]->getPositionOfValue(sliders[0]->getValue());
-        auto slider1Pos = sliders[1]->getPositionOfValue(sliders[1]->getValue());
-        auto slider2Pos = sliders[2]->getPositionOfValue(sliders[2]->getValue());
-        
-        if (sliderValueChanged)
-            setSliderLimits(slider0Pos, slider1Pos, slider2Pos);
-
-        drawResponseCurve(g, responseArea.toFloat(), w);
-
-        g.drawRoundedRectangle(responseArea.toFloat(), 4.f, 1.f);
-
-        drawBandArea(g, slider0Pos, slider1Pos, slider2Pos, responseArea.toFloat());
-
-        drawBandParams(g, slider0Pos, slider1Pos, slider2Pos, w);
-
-        if (isMouseOver() || addButton.isMouseOver())
-            drawAddButton(g, responseArea.toFloat());
+        else if (i == 1 && numBands == 2) {
+            sliders[2]->setVisible(false);
+        }
     }
-    else
-    {
-        for (auto& s : sliders)
-            s->setVisible(false);
-        for (auto& b : solo)
-            b->setVisible(false);
-        for (auto& b : mute)
-            b->setVisible(false);
-        for (auto& b : bypass)
-            b->setVisible(false);
-    }
+
+    auto responseArea = getLocalBounds();
+
+    auto w = responseArea.getWidth();
+
+    auto slider0Pos = sliders[0]->getPositionOfValue(sliders[0]->getValue());
+    auto slider1Pos = sliders[1]->getPositionOfValue(sliders[1]->getValue());
+    auto slider2Pos = sliders[2]->getPositionOfValue(sliders[2]->getValue());
+    
+    if (sliderValueChanged)
+        setSliderLimits(slider0Pos, slider1Pos, slider2Pos);
+
+    drawResponseCurve(g, responseArea.toFloat(), w);
+
+    g.drawRoundedRectangle(responseArea.toFloat(), 4.f, 1.f);
+
+    drawBandArea(g, slider0Pos, slider1Pos, slider2Pos, responseArea.toFloat());
+
+    drawBandParams(g, slider0Pos, slider1Pos, slider2Pos, w);
+
+    if (isMouseOver() || addButton.isMouseOver())
+        drawAddButton(g, responseArea.toFloat());
 }
 
 inline void ResponseCurveComponent::setSliderLimits(const float slider0Pos, const float slider1Pos, const float slider2Pos)
@@ -373,7 +360,8 @@ inline void ResponseCurveComponent::drawBandParams(Graphics& g, const float slid
     const float slider2Pos, const float width)
 {
     if (isMouseOverOrDragging(true) && !sliders[0]->isMouseOverOrDragging() && !sliders[1]->isMouseOverOrDragging()
-        && !sliders[2]->isMouseOverOrDragging()) {
+        && !sliders[2]->isMouseOverOrDragging())
+    {
 
         #ifndef FLEX_ARGS
         #define FLEX_ARGS FlexBox::Direction::row, FlexBox::Wrap::wrap, FlexBox::AlignContent::spaceAround,\
@@ -593,6 +581,8 @@ inline void ResponseCurveComponent::drawAddButton(Graphics& g, const Rectangle<f
 
 void ResponseCurveComponent::parameterChanged(const String& parameterID, float newValue)
 {
+    paramChangedID = parameterID;
+    paramChangedValue = newValue;
     paramChanged = true;
 }
 
@@ -604,16 +594,19 @@ void ResponseCurveComponent::timerCallback()
     if (paramChanged) {
         paramChanged = false;
 
-        // make sure IIRs update along with crossovers
+        if (paramChangedID == "bandSplit")
+        {
+            this->setVisible((bool)paramChangedValue);
+            repaint();
+            return;
+        }
 
+        // make sure IIRs update along with crossovers
+        auto crossoverID = paramChangedID.getTrailingIntValue();
         for (int i = 0; i < numBands; ++i)
         {
-            *lowPass[i].coefficients = dsp::IIR::ArrayCoefficients<float>::makeLowPass
-                (sampleRate, *audioProcessor.crossovers[i]);
-            *highPass[i].coefficients = dsp::IIR::ArrayCoefficients<float>::makeHighPass
-                (sampleRate, *audioProcessor.crossovers[i]);
-            lowPass[i].reset();
-            highPass[i].reset();
+            *lowPass[i].coefficients = dsp::IIR::ArrayCoefficients<float>::makeLowPass(sampleRate, crossovers[i]->get());
+            *highPass[i].coefficients = dsp::IIR::ArrayCoefficients<float>::makeHighPass(sampleRate, crossovers[i]->get());
         }
         repaint();
     }
@@ -655,12 +648,12 @@ inline void ResponseCurveComponent::setBand() noexcept
     }
     for (int i = 0; i < 4; ++i)
     {
-        bandIn[i] = audioProcessor.apvts.getParameterAsValue("bandInGain" + std::to_string(i));
-        bandOut[i] = audioProcessor.apvts.getParameterAsValue("bandOutGain" + std::to_string(i));
-        bandWidth[i] = audioProcessor.apvts.getParameterAsValue("bandWidth" + std::to_string(i));
-        bandSolo[i] = audioProcessor.apvts.getParameterAsValue("soloBand" + std::to_string(i));
-        bandMute[i] = audioProcessor.apvts.getParameterAsValue("muteBand" + std::to_string(i));
-        bandBypass[i] = audioProcessor.apvts.getParameterAsValue("bypassBand" + std::to_string(i));
+        bandIn[i] = audioProcessor.apvts.getParameterAsValue("bandInGain" + String(i));
+        bandOut[i] = audioProcessor.apvts.getParameterAsValue("bandOutGain" + String(i));
+        bandWidth[i] = audioProcessor.apvts.getParameterAsValue("bandWidth" + String(i));
+        bandSolo[i] = audioProcessor.apvts.getParameterAsValue("soloBand" + String(i));
+        bandMute[i] = audioProcessor.apvts.getParameterAsValue("muteBand" + String(i));
+        bandBypass[i] = audioProcessor.apvts.getParameterAsValue("bypassBand" + String(i));
     }
 
     if (numBands > 1)
@@ -752,17 +745,17 @@ inline void ResponseCurveComponent::removeBand(int index) noexcept
     std::array<Value, 4> bandBypass;
     std::array<double, 3> value;
     for (int i = 0; i < 3; ++i) {
-        slider[i] = audioProcessor.apvts.getParameterAsValue("crossover" + std::to_string(i));
+        slider[i] = audioProcessor.apvts.getParameterAsValue("crossover" + String(i));
         value[i] = sliders[i]->getValue();
     }
     for (int i = 0; i < 4; ++i)
     {
-        bandIn[i] = audioProcessor.apvts.getParameterAsValue("bandInGain" + std::to_string(i));
-        bandOut[i] = audioProcessor.apvts.getParameterAsValue("bandOutGain" + std::to_string(i));
-        bandWidth[i] = audioProcessor.apvts.getParameterAsValue("bandWidth" + std::to_string(i));
-        bandSolo[i] = audioProcessor.apvts.getParameterAsValue("soloBand" + std::to_string(i));
-        bandMute[i] = audioProcessor.apvts.getParameterAsValue("muteBand" + std::to_string(i));
-        bandBypass[i] = audioProcessor.apvts.getParameterAsValue("bypassBand" + std::to_string(i));
+        bandIn[i] = audioProcessor.apvts.getParameterAsValue("bandInGain" + String(i));
+        bandOut[i] = audioProcessor.apvts.getParameterAsValue("bandOutGain" + String(i));
+        bandWidth[i] = audioProcessor.apvts.getParameterAsValue("bandWidth" + String(i));
+        bandSolo[i] = audioProcessor.apvts.getParameterAsValue("soloBand" + String(i));
+        bandMute[i] = audioProcessor.apvts.getParameterAsValue("muteBand" + String(i));
+        bandBypass[i] = audioProcessor.apvts.getParameterAsValue("bypassBand" + String(i));
     }
 
     sliders[index]->wasRightClicked = false;

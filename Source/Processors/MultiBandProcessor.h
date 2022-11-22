@@ -7,17 +7,17 @@ struct MultibandProcessor
 {
 	MultibandProcessor(AudioProcessorValueTreeState& vts) : apvts(vts)
     {
-        for (int i = 0; i < 3; ++i)
+        for (size_t i = 0; i < 3; ++i)
         {
             bands[i] = (LRFilter<float>());
-            crossovers[i] = apvts.getRawParameterValue("crossover" + std::to_string(i));
+            crossovers[i] = dynamic_cast<strix::FloatParameter*>(apvts.getParameter("crossover" + std::to_string(i)));
         }
 
         for (int i = 0; i < 4; ++i)
         {
-            bandInGain[i] = (apvts.getRawParameterValue("bandInGain" + std::to_string(i)));
-            bandOutGain[i] = (apvts.getRawParameterValue("bandOutGain" + std::to_string(i)));
-            bandWidth[i] = (apvts.getRawParameterValue("bandWidth" + std::to_string(i)));
+            bandInGain[i] = dynamic_cast<strix::FloatParameter*>(apvts.getParameter("bandInGain" + std::to_string(i)));
+            bandOutGain[i] = dynamic_cast<strix::FloatParameter*>(apvts.getParameter("bandOutGain" + std::to_string(i)));
+            bandWidth[i] = dynamic_cast<strix::FloatParameter*>(apvts.getParameter("bandWidth" + std::to_string(i)));
             soloBand[i] = (apvts.getRawParameterValue("soloBand" + std::to_string(i)));
             muteBand[i] = (apvts.getRawParameterValue("muteBand" + std::to_string(i)));
             bypassBand[i] = (apvts.getRawParameterValue("bypassBand" + std::to_string(i)));
@@ -98,7 +98,7 @@ struct MultibandProcessor
     /*passes crossover points to filter objects*/
     inline void initCrossovers() noexcept
     {
-        for (int i = 0; i < 3; ++i) {
+        for (size_t i = 0; i < 3; ++i) {
             if (*crossovers[i] > (lastSampleRate * 0.5))
                 bands[i].updateFilter(lastSampleRate * 0.5 - 1.0);
             else
@@ -127,12 +127,20 @@ struct MultibandProcessor
         }
     }
 
-    inline void updateCrossoverNonLin(int crossover) noexcept
+    /* since this is being called from paramChanged, this should flag for an update on the audio callback */
+
+    void flagCrossoverUpdate(int crossover) noexcept
     {
-        bands[crossover].updateFilter(*crossovers[crossover]);
+        crossoverChangedID = crossover;
+        updateCrossovers = true;
     }
 
-    inline void updateCrossoverLin(int crossover) noexcept
+    void updateCrossoverNonLin()
+    {
+        bands[crossoverChangedID].updateFilter(*crossovers[crossoverChangedID]);
+    }
+
+    void updateCrossoverLin(int crossover) noexcept
     {
         linBand[crossover].setParams(*crossovers[crossover], lastSampleRate, 2);
     }
@@ -226,6 +234,9 @@ struct MultibandProcessor
     template <typename T>
     void processBands(dsp::AudioBlock<T>& block)
     {
+        if (updateCrossovers)
+            updateCrossoverNonLin();
+
         const auto numSamples = block.getNumSamples();
 
         for (size_t n = 0; n <= numBands; ++n)
@@ -276,9 +287,13 @@ struct MultibandProcessor
         sumBands(block);
     }
 
-    std::array<std::atomic<float>*, 4> muteBand, soloBand, bypassBand, bandInGain, bandOutGain, bandWidth;
+    std::array<std::atomic<float> *, 4> muteBand, soloBand, bypassBand;
+    std::array<strix::FloatParameter*, 4> bandInGain, bandOutGain, bandWidth;
     std::array<float, 4> lastInGain, lastOutGain, lastBandWidth;
-    std::array<std::atomic<float>*, 3> crossovers;
+    std::array<strix::FloatParameter*, 3> crossovers;
+
+    std::atomic<bool> updateCrossovers = false;
+    int crossoverChangedID = 0;
 
     std::array<LRFilter<float>, 3> bands;
 

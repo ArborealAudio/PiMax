@@ -52,6 +52,7 @@ struct CrossoverSlider : Slider
 
     void mouseDrag(const MouseEvent& e) override
     {
+        e.source.enableUnboundedMouseMovement(true);
         mouseDragging = true;
         Slider::mouseDrag(e);
     }
@@ -114,6 +115,12 @@ struct BandParamSlider : Slider
         }
     }
 
+    void mouseDrag(const MouseEvent& e) override
+    {
+        e.source.enableUnboundedMouseMovement(true);
+        Slider::mouseDrag(e);
+    }
+
     void mouseExit(const MouseEvent& event) override
     {
         painted = false;
@@ -163,8 +170,12 @@ private:
 
     std::vector<dsp::IIR::Filter<float>> lowPass, highPass;
     std::vector<dsp::IIR::Coefficients<float>> lowPassCoeffs, highPassCoeffs;
+    std::array<strix::FloatParameter *, 3> crossovers;
     std::vector<double> magLVec, magM1Vec, magM2Vec, magHVec;
     std::atomic<bool> paramChanged = false;
+    String paramChangedID = "";
+    std::atomic<float> paramChangedValue = 0.f;
+
     int numBands = 2;
     double sampleRate = 0.0;
 

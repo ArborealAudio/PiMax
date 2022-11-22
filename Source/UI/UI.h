@@ -58,6 +58,12 @@ public:
             else
                 Slider::mouseDown(event);
         }
+
+        void mouseDrag(const MouseEvent& event) override
+        {
+            event.source.enableUnboundedMouseMovement(true);
+            Slider::mouseDrag(event);
+        }
     };
 
     struct GainSlider : public Slider
@@ -78,6 +84,13 @@ public:
 
             return sliderBounds.contains(x, y) || textBox.contains(x, y);
         }
+
+        void mouseDrag(const MouseEvent& event) override
+        {
+            event.source.enableUnboundedMouseMovement(true);
+            Slider::mouseDrag(event);
+        }
+        
     private:
         bool textOnLeft = false;
     };

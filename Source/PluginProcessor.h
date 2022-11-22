@@ -111,8 +111,8 @@ public:
 
     AudioProcessorValueTreeState apvts;
 
-    std::atomic<float>* bandSplit, *monoWidth, *delta, *gain_dB, *curve, *output_dB, *clip, *distIndex, *autoGain, *linearPhase;
-    std::array<std::atomic<float>*, 3> crossovers;
+    std::atomic<float>* bandSplit, *monoWidth, *delta, *clip, *distIndex, *autoGain, *linearPhase;
+    strix::FloatParameter *gain_dB, *curve, *output_dB;
 
     int numBands = 2, lastNumBands = 2;
 
@@ -182,8 +182,9 @@ private:
 
     float m_lastGain = 1.0;
 
-    std::atomic<float>* hq, *renderHQ, *width, *mix, *bypass, *boost;
-    
+    std::atomic<float>* hq, *renderHQ, *bypass, *boost;
+    strix::FloatParameter *width, *mix;
+
     float lastInputGain = 1.0, lastOutGain = 1.0;
 
     bool lastBoost = false, lastAsym = false;

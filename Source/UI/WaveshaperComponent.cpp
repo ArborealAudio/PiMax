@@ -57,7 +57,7 @@ void WaveshaperComponent::paint(Graphics& g)
 
     ClipType clip = (ClipType)audioProcessor.clip->load();
     auto distIndex = audioProcessor.distIndex->load();
-    auto outGain = pow(10.f, audioProcessor.output_dB->load() / 20.f);
+    auto outGain = pow(10.f, *audioProcessor.output_dB * 0.05f);
 
     for (int n = 0; n < w; ++n)
         mag[n] = jmap(float(n) / float(w), -1.f, 1.f);

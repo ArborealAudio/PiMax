@@ -28,27 +28,25 @@ MaximizerAudioProcessor::MaximizerAudioProcessor()
     apvts.addParameterListener("hq", this);
     renderHQ = apvts.getRawParameterValue("renderHQ");
     apvts.addParameterListener("renderHQ", this);
-    gain_dB = apvts.getRawParameterValue("gain");
-    curve = apvts.getRawParameterValue("curve");
+    gain_dB = dynamic_cast<strix::FloatParameter*>(apvts.getParameter("gain"));
+    curve = dynamic_cast<strix::FloatParameter*>(apvts.getParameter("curve"));
     distIndex = apvts.getRawParameterValue("distType");
     clip = apvts.getRawParameterValue("clipType");
-    output_dB = apvts.getRawParameterValue("output");
+    output_dB = dynamic_cast<strix::FloatParameter*>(apvts.getParameter("output"));
     bandSplit = apvts.getRawParameterValue("bandSplit");
     apvts.addParameterListener("bandSplit", this);
     linearPhase = apvts.getRawParameterValue("linearPhase");
     apvts.addParameterListener("linearPhase", this);
-    width = apvts.getRawParameterValue("width");
+    width = dynamic_cast<strix::FloatParameter*>(apvts.getParameter("width"));
     monoWidth = apvts.getRawParameterValue("monoWidth");
-    mix = apvts.getRawParameterValue("mix");
+    mix = dynamic_cast<strix::FloatParameter*>(apvts.getParameter("mix"));
     autoGain = apvts.getRawParameterValue("autoGain");
     bypass = apvts.getRawParameterValue("bypass");
     delta = apvts.getRawParameterValue("delta");
     boost = apvts.getRawParameterValue("boost");
 
-    for (int i = 0; i < 3; ++i) {
-        crossovers[i] = apvts.getRawParameterValue("crossover" + std::to_string(i));
+    for (int i = 0; i < 3; ++i)
         apvts.addParameterListener("crossover" + std::to_string(i), this);
-    }
 
     for (auto& b : m_Proc.bandBuffer)
         b.setSize(getTotalNumOutputChannels(), 16384);
@@ -235,11 +233,10 @@ void MaximizerAudioProcessor::parameterChanged(const String& parameterID, float 
 
     if (parameterID.contains("crossover")) {
         crossover_changedID = parameterID.getTrailingIntValue();
-
-        /*only update non-lin filters on this thread if we're using them for processing*/
+        /* flag non-linear filters for update */
         if (!*linearPhase)
-            m_Proc.updateCrossoverNonLin(crossover_changedID);
-        else
+            m_Proc.flagCrossoverUpdate(crossover_changedID);
+        else /* flag for audio thread message post */
             crossover_changed = true;
     }
 }
@@ -248,9 +245,9 @@ void MaximizerAudioProcessor::valueTreeRedirected(ValueTree& treeWhichHasBeenCha
 {
     auto child = treeWhichHasBeenChanged.getChildWithProperty("id", "numBands");
     if (child.isValid()) {
-        auto num = child.getProperty("value");
-        if (num.operator int() != numBands)
-            updateNumBands((int)num);
+        int num = child.getProperty("value");
+        if (num != numBands)
+            updateNumBands(num);
     }
 }
 
@@ -580,7 +577,7 @@ void MaximizerAudioProcessor::updateBandSpecs()
 void MaximizerAudioProcessor::updateBandCrossovers()
 {
     m_Proc.updateCrossoverLin(crossover_changedID);
-    m_Proc.updateCrossoverNonLin(crossover_changedID);
+    m_Proc.flagCrossoverUpdate(crossover_changedID);
 
     needs_update = false;
 }
