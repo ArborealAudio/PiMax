@@ -8,19 +8,27 @@
 
 #pragma once
 
-#define USE_SIMD_SAT 0
-#define USE_SIMD_FIR 0
 #define USE_CONVOLUTION 1
+#define PRODUCTION_BUILD 1
+
+enum class ClipType
+{
+    Finite,
+    Clip,
+    Infinite,
+    Deep,
+    Warm
+};
 
 #include <JuceHeader.h>
+#include <farbot/AsyncCaller.hpp>
+#include <farbot/RealtimeObject.hpp>
 #include "Processors/MaximPizer.h"
 #include "Processors/Waveshapers.h"
 #include "Processors/StereoWidener.h"
-#include "Processors/MultiBand Processor.h"
-#include "ff_meters-master/ff_meters.h"
+#include "Processors/MultiBandProcessor.h"
 #include "Presets/PresetManager.h"
 #include "OnlineActivation.h"
-#include "farbot/AsyncCaller.hpp"
 
 #ifndef NDEBUG
 #define X(textToWrite)                                                         \
@@ -44,7 +52,7 @@
 class MaximizerAudioProcessor : public AudioProcessor,
                                 public AudioProcessorValueTreeState::Listener,
                                 public ValueTree::Listener,
-                                Timer
+                                public Timer
 {
 public:
     //==============================================================================
@@ -89,29 +97,26 @@ public:
     void valueTreeRedirected(ValueTree& treeWhichHasBeenChanged) override;
     std::function<void()> onPresetChange;
 
-    void timerCallback() override { if (needs_update && asyncCall.process()) needs_update = false; }
-
     inline void updateOversample() noexcept;
 
     void updateNumBands(int newNumBands) noexcept;
 
-    inline var checkUnlock()
+    var checkUnlock()
     {
         return isUnlocked;
     }
 
-    foleys::LevelMeterSource& getInputMeterSource() { return inputMeter; }
-    foleys::LevelMeterSource& getOutputMeterSource() { return outputMeter; }
+    strix::VolumeMeterSource &getInputMeterSource() { return inputMeter; }
+    strix::VolumeMeterSource &getOutputMeterSource() { return outputMeter; }
 
     AudioProcessorValueTreeState apvts;
 
-    std::atomic<float>* bandSplit, *monoWidth, *delta,
-        *gain_dB, *curve, *output_dB, *clip, *distIndex, *autoGain, *linearPhase;
-    std::array<std::atomic<float>*, 3> crossovers;
+    std::atomic<float>* bandSplit, *monoWidth, *delta, *clip, *distIndex, *autoGain, *linearPhase;
+    strix::FloatParameter *gain_dB, *curve, *output_dB;
 
     int numBands = 2, lastNumBands = 2;
 
-    double lastDownSampleRate = 0.0;
+    double lastDownSampleRate = 44100.0;
 
     std::array<dsp::Oversampling<float>, 3> oversample
     { {
@@ -129,9 +134,7 @@ public:
 
     int osIndex = 0;
 
-    int numSamples = 0;
-
-    int lastUIWidth, lastUIHeight;
+    int numSamples = 0, maxNumSamples = 0;
 
     String currentPreset = "Default";
 
@@ -147,13 +150,15 @@ public:
 
 private:
 
-    farbot::AsyncCaller<farbot::fifo_options::concurrency::single> asyncCall;
-
     void checkActivation();
 
     void processDelta(AudioBuffer<float>& buffer, float inGain, float outGain);
 
     void updateBandSpecs();
+
+    void updateBandCrossovers();
+
+    farbot::AsyncCaller<farbot::fifo_options::concurrency::single> async;
 
     AudioProcessorValueTreeState::ParameterLayout createParams();
 
@@ -163,32 +168,43 @@ private:
     std::unique_ptr<PresetManager> manager = std::make_unique<PresetManager>(apvts);
 
     MaximPizer mPi;
-    double xm1[2]{ 0.0, 0.0 };
-    double ym1[2]{ 0.0, 0.0 };
+    double xm1[2]{ 0.1, 0.1 };
+    double ym1[2]{ 0.1, 0.1 };
 
-    StereoWidener widener;
+    StereoWidener<float> widener;
 
     MultibandProcessor m_Proc;
 
     int filterLength = 0;
     dsp::DryWetMixer<float> mixer;
 
-    double lastSampleRate = 0.0, lastK = 0.0;
+    double lastSampleRate = 44100.0;
 
     float m_lastGain = 1.0;
 
-    std::atomic<float>* hq, *renderHQ, *width, *mix, *bypass, *boost;
-    
+    std::atomic<float>* hq, *renderHQ, *bypass, *boost;
+    strix::FloatParameter *width, *mix;
+
     float lastInputGain = 1.0, lastOutGain = 1.0;
 
-    foleys::LevelMeterSource inputMeter, outputMeter;
-    
+    bool lastBoost = false, lastAsym = false;
+    int muteRemaining = 0;
+    float lastFadeGain = 0.f;
+
+    strix::VolumeMeterSource inputMeter, outputMeter;
+
     AudioBuffer<float> bypassBuffer;
     bool lastBypass = false;
     bool bufferCopied = false;
     
-    std::atomic<bool> needs_resize = false, crossover_changed = false, needs_update = false;
+    std::atomic<bool> needs_resize = false, crossover_changed = false, needs_update = false, isProcMB = false;
     int crossover_changedID = 0;
+
+    void timerCallback() override
+    {
+        if (needs_update && !isProcMB)
+            async.process();
+    }
     
     dsp::DelayLine<float> bypassDelay {44100};
 

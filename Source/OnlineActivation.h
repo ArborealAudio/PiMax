@@ -78,22 +78,21 @@ struct UnlockStatus
 
     juce::URL getURL()
     {
-        return URL("https://arborealaudio.com/");
+        return URL("https://3pvj52nx17.execute-api.us-east-1.amazonaws.com");
     }
 
     String readReplyForKey(const juce::String& key, bool activate)
     {
         URL url(getURL()
-            .withNewSubPath("wp-json/lmfwc/v2/licenses/" + key)
-            .withParameter("consumer_key", "ck_2ce7d78fab4ee7db66e6b5ee17f045111bdc3d00")
-            .withParameter("consumer_secret", "cs_b8548efc0a05b35817bce7f994e20008cbafb751"));
+            .withNewSubPath("/default/licenses/" + key));
 
         if (activate)
-            url = url.withNewSubPath("wp-json/lmfwc/v2/licenses/activate/" + key);
+            url = url.withNewSubPath("/default/licenses/activate/" + key);
 
         DBG("Trying to unlock via URL: " << url.toString(true));
 
-        if (auto stream = URL(url).createInputStream(URL::InputStreamOptions(URL::ParameterHandling::inAddress)))
+        if (auto stream = URL(url).createInputStream(URL::InputStreamOptions(URL::ParameterHandling::inAddress)
+        .withExtraHeaders("x-api-key: Fb5mXNfHiNaSKABQEl0PiFmYBthvv457bOCA1ou2")))
         {
             return stream->readEntireStreamAsString();
         }
@@ -131,7 +130,7 @@ struct UnlockStatus
             return 0;
 
         auto keyResponse = readReplyForKey(key, false);
-        DBG(keyResponse);
+        DBG("keyResponse: " << keyResponse);
 
         auto keyTree = strix::createValueTreeFromJSON(keyResponse);
 
@@ -201,6 +200,7 @@ struct UnlockStatus
             xmlGB.setAttribute("GBuuid", String(gbuuid));
 
             xmlGB.writeTo(dirGB);
+            dirGB.setReadOnly(true);
         #endif
         }
     }
@@ -249,7 +249,7 @@ struct UnlockForm : Component
             if (key.isTextInputActive())
                 key.applyColourToAllText(Colours::white);
 
-            if (trialRemaining_ms > 0) {
+            if ((int)trialRemaining_ms > 0) {
                 auto timeRemaining = (Time::getCurrentTime() + RelativeTime::milliseconds(trialRemaining_ms)
                     - Time::getCurrentTime());
                 auto daysRemaining = timeRemaining.getDescription();
@@ -269,10 +269,12 @@ struct UnlockForm : Component
                 close.setEnabled(false);
                 if (textBounds.contains(getMouseXYRelative())) {
                     setMouseCursor(MouseCursor::PointingHandCursor);
-                    if (isMouseButtonDown()) {
-                        URL("https://arborealaudio.com/product/pimax").launchInDefaultBrowser();
+                    if (isMouseButtonDown() && !clickedLink) {
+                        URL("https://arborealaudio.com/plugins/pimax").launchInDefaultBrowser();
+                        clickedLink = true;
                         return;
                     }
+                    else clickedLink = false;
                 }
                 else
                     setMouseCursor(MouseCursor::NormalCursor);
@@ -331,10 +333,9 @@ private:
     TextEditor key;
 
     TopButtonLNF lnf;
-    TextButton reg{ "Register" },
-        close{"Close"};
+    TextButton reg{ "Register" }, close{"Close"};
 
-    bool successRepaint = false;
+    bool successRepaint = false, clickedLink = false;
 
     UnlockStatus& status;
 };
@@ -343,33 +344,16 @@ struct ActivationComponent : Component, Timer
 {
     ActivationComponent(var unlocked, int64 trialTime) : unlockForm(status, trialTime), isUnlocked(unlocked)
     {
-        addChildComponent(unlockButton);
-        lnf.setType(TopButtonLNF::Type::Regular);
-        unlockButton.setLookAndFeel(&lnf);
         addChildComponent(unlockForm);
-        if (!isUnlocked) {
-            unlockButton.setVisible(true);
+        if (!isUnlocked)
             unlockForm.setVisible(true);
-        }
-        else
-        {
-            File dir;
-            PluginHostType host;
-            if (!host.isGarageBand())
-                dir = File(File::getSpecialLocation(File::SpecialLocationType::userApplicationDataDirectory)
-                    .getFullPathName() + "/Arboreal Audio/PiMax/License/license.aal");
-            else
-                dir = File("~/Music/Audio Music Apps/Arboreal Audio/PiMax/License/license.aal");
-
-            auto xml = parseXML(dir);
-        }
-        unlockButton.onClick = [this] { if (onButtonClick != nullptr) onButtonClick(); };
-        unlockButton.setBounds(90, 30, 62, 28);
 
         startTimer(100);
     }
 
-    ~ActivationComponent() { unlockButton.setLookAndFeel(nullptr); stopTimer(); }
+    ~ActivationComponent() { stopTimer(); }
+
+    bool isFormVisible() { return unlockForm.isVisible(); }
 
     void setImage(const Image& newImage)
     {
@@ -388,7 +372,8 @@ struct ActivationComponent : Component, Timer
         if (unlockForm.isVisible())
         {
             if (needBlur) {
-                gin::applyStackBlur(img, 35);
+                //gin::applyStackBlur(img, 35);
+                Blur::blurImage<4, true>(img);
                 needBlur = false;
             }
             g.drawImage(img, unlockForm.getBounds().toFloat(), RectanglePlacement::centred);
@@ -397,7 +382,7 @@ struct ActivationComponent : Component, Timer
 
     void resized() override
     {
-        unlockForm.setBounds(240, 50, 240, 360);
+        unlockForm.setBounds(getLocalBounds());
     }
 
     void timerCallback() override
@@ -413,16 +398,12 @@ struct ActivationComponent : Component, Timer
     
     bool hitTest(int x, int y) override
     {
-        if (unlockButton.isVisible() && !unlockForm.isVisible() &&
-            unlockButton.getBounds().contains((float)x, (float)y))
-            return true;
-        else if (unlockForm.isVisible())
+        if (unlockForm.isVisible())
             return true;
         else
             return false;
     }
 
-    std::function<void()> onButtonClick;
     std::function<void(var)> onUnlock;
 
 private:
@@ -436,16 +417,12 @@ private:
 
     inline void unlockApp()
     {
-        unlockButton.setEnabled(false);
-        unlockButton.setVisible(false);
         status.writeHashKey();
         repaint();
     }
 
     Image img;
     
-    TopButtonLNF lnf;
-    TextButton unlockButton{ "Unlock" };
     UnlockStatus status;
     UnlockForm unlockForm;
 

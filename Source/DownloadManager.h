@@ -11,7 +11,11 @@
 #pragma once
 
 const String versionURL
+#if PRODUCTION_BUILD
 { "https://arborealaudio.com/wp-content/versions/PiMax-latest.json" };
+#else
+{ "https://arborealaudio.com/versions/test/PiMax-latest.json" };
+#endif
 
 const String downloadURLWin
 { "https://arborealaudio.com/wp-content/downloads/PiMax-windows.exe" };
@@ -55,16 +59,35 @@ struct DownloadManager : Component
     {
         if (auto stream = URL(versionURL).createInputStream(URL::InputStreamOptions(URL::ParameterHandling::inAddress)))
         {
-            auto json = strix::createValueTreeFromJSON(stream->readEntireStreamAsString());
-            
-            changes = json.getChildWithName("changes").getProperty("property0");
+            auto data = JSON::parse(stream->readEntireStreamAsString());
 
-            auto latestVersion = json.getChildWithName("version").getProperty("property0");
+            auto changesObj = data.getProperty("changes", var());
+            if (changesObj.isArray())
+            {
+                std::vector<String> chVec;
+                for (size_t i = 0; i < changesObj.size(); ++i)
+                {
+                    chVec.emplace_back(changesObj[i].toString());
+                }
+
+                StringArray changesList{chVec.data(), (int)chVec.size()};
+                changes = changesList.joinIntoString(", ");
+            }
+            else
+                changes = changesObj;
+
+            auto latestVersion = data.getProperty("version", var());
             
-            DBG("Current: " << String(ProjectInfo::versionString).removeCharacters("."));
+            DBG("Current: " << String(ProjectInfo::versionString));
             DBG("Latest: " << latestVersion.toString());
             
+#if PRODUCTION_BUILD
             return String(ProjectInfo::versionString).removeCharacters(".") < latestVersion.toString().removeCharacters(".");
+#else
+            DBG("Update result: " << int(String(ProjectInfo::versionString).removeCharacters(".")
+                < latestVersion.toString().removeCharacters(".")));
+            return true;
+#endif
         }
         else
             return false;
@@ -181,7 +204,7 @@ private:
             downloadStatus.store(false);
         else
             downloadFinished.store(true);
-#elif JUCE_MAC
+#elif JUCE_MAC || JUCE_LINUX
         auto dmg = File("~/Downloads/PiMax-mac.dmg");
 
         if (!download.saveToFile(dmg))

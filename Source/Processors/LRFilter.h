@@ -2,6 +2,7 @@
 
 /*custom Linkwitz-Riley filter object which contains two independent filter objects for the purpose
 of properly cascading band-passed outputs*/
+template <typename T>
 class LRFilter
 {
 public:
@@ -32,36 +33,37 @@ public:
 			band.reset();
 	}
 
+    /*process one channel and return the high output*/
+    void process(const T* input, T* outputHigh, size_t numSamples, int ch)
+    {
+        for (size_t i = 0; i < numSamples; ++i)
+        {
+            outputHigh[i] = bands[0].processSample(ch, input[i]);
+        }
+    }
 
-	/*processes the first filter object and returns the high-pass output*/
-	template <typename T>
-	void processSample(int channel, T inputSample, T& outputHigh)
-	{
-		outputHigh = bands[0].processSample(channel, inputSample);
-	}
+    /*process one channel and return low and high outputs*/
+    void process(const T* input, T* outputLow, T* outputHigh, size_t numSamples, int ch)
+    {
+        for (size_t i = 0; i < numSamples; ++i)
+        {
+            bands[0].processSample(ch, input[i], outputLow[i], outputHigh[i]);
+        }
+    }
 
-	/*processes the first filter object and returns the low- and high-pass outputs*/
-	template <typename T>
-	void processSample(int channel, T inputSample, T& outputLow, T& outputHigh)
-	{
-		bands[0].processSample(channel, inputSample, outputLow, outputHigh);
-	}
-
-	/*processes two inputs and returns two outputs, where the low output overwrites the first input, high output the second input*/
-	template <typename T>
-	void processTwoSamples(int channel, T input1, T input2, T& outputLow, T& outputHigh)
-	{
-		outputHigh = bands[0].processSample(channel, input2);
-		outputLow = bands[1].processSample(channel, input1);
-	}
+    /*process low and high channels independently*/
+    void process(T* low, T* high, size_t numSamples, int ch)
+    {
+        for (size_t i = 0; i < numSamples; ++i)
+        {
+            high[i] = bands[0].processSample(ch, high[i]);
+            low[i] = bands[1].processSample(ch, low[i]);
+        }
+    }
 
 private:
 
-#if USE_SIMD_SAT
-	std::array<dsp::LinkwitzRileyFilter<dsp::SIMDRegister<float>>, 4> bands;
-#else
-	std::array<dsp::LinkwitzRileyFilter<float>, 2> bands;
-#endif
+	std::array<dsp::LinkwitzRileyFilter<T>, 2> bands;
 	double lastSampleRate = 0.0;
 
 };

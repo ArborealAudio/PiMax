@@ -10,19 +10,42 @@
 
 #pragma once
 
-struct PresetManager
+struct PresetManager : private AudioProcessorValueTreeState::Listener
 {
     PresetManager(AudioProcessorValueTreeState& vts) : apvts(vts)
     {
         if (!userDir.isDirectory())
             userDir.createDirectory();
+
+        for (auto* param : apvts.processor.getParameters())
+        {
+            if (const auto p = dynamic_cast<RangedAudioParameter*>(param))
+                if (p->paramID != "hq" && p->paramID != "renderHQ" && p->paramID != "bypass")
+                    apvts.addParameterListener(p->paramID, this);
+        }
+    }
+
+    ~PresetManager()
+    {
+        for (auto* param : apvts.processor.getParameters())
+        {
+            if (const auto p = dynamic_cast<RangedAudioParameter*>(param))
+                if (p->paramID != "hq" && p->paramID != "renderHQ" && p->paramID != "bypass")
+                    apvts.removeParameterListener(p->paramID, this);
+        }
+    }
+
+    void parameterChanged(const String&, float)
+    {
+        if (!stateChanged)
+            stateChanged = true;
     }
 
     StringArray loadFactoryPresetList()
     {
         StringArray names;
 
-        for (int i = 0; i < 12; ++i)
+        for (int i = 0; i < BinaryData::namedResourceListSize; ++i)
         {
             if (String(BinaryData::originalFilenames[i]).endsWith(".aap"))
                 names.set(i, String(BinaryData::originalFilenames[i]).upToFirstOccurrenceOf(".", false, false));
@@ -56,12 +79,8 @@ struct PresetManager
 
         if (xml->isValidXmlName(filename))
             xml->setTagName(filename);
-        else {
-            if (filename.contains(" "))
-                xml->setTagName(filename.removeCharacters(" "));
-            else
-                return false;
-        }
+        else
+            xml->setTagName(filename.removeCharacters("\"#@,;:<>*^|?\\/ "));
 
         return xml->writeTo(file);
     }
@@ -83,11 +102,26 @@ struct PresetManager
                 return false;
 
             auto xml = parseXML(file);
-            if (!xml->hasTagName(filename.removeCharacters(" ")))
+            if (!xml->hasTagName(filename.removeCharacters("\"#@,;:<>*^|?\\/ ")))
                 return false;
 
             newstate = ValueTree::fromXml(*xml);
         }
+
+        /*if a preset doesn't have the new params, assume to be zero*/
+        if (!apvts.state.getChildWithProperty("id", "delta").isValid())
+        {
+            ValueTree delta{ "PARAM", {{"id", "delta"}, {"value", 0.0}} };
+            newstate.addChild(delta, -1, nullptr);
+        }
+
+        if (!apvts.state.getChildWithProperty("id", "boost").isValid())
+        {
+            ValueTree boost{ "PARAM", {{"id", "boost"}, {"value", 0.0}} };
+            newstate.addChild(boost, -1, nullptr);
+        }
+
+        /*preset-agnostic params*/
 
         auto hq = apvts.state.getChildWithProperty("id", "hq");
         auto renderHQ = apvts.state.getChildWithProperty("id", "renderHQ");
@@ -112,37 +146,13 @@ struct PresetManager
             jassertfalse;
 
         apvts.replaceState(newstate);
+
+        stateChanged = false;
             
         return true;
     }
 
-    /*bool compareStates(const String& presetName)
-    {
-        auto file = presetDir.getChildFile(presetName).withFileExtension("aap");
-        if (!file.existsAsFile()) {
-            file = userDir.getChildFile(presetName).withFileExtension("aap");
-        }
-
-        auto xml = parseXML(file);
-
-        auto presetState = ValueTree::fromXml(*xml);
-        auto hq = apvts.state.getChildWithProperty("id", "hq");
-        auto renderHQ = apvts.state.getChildWithProperty("id", "renderHQ");
-        auto newHQ = presetState.getChildWithProperty("id", "hq");
-        auto newRenderHQ = presetState.getChildWithProperty("id", "renderHQ");
-
-        if (newHQ.isValid())
-            newHQ.copyPropertiesFrom(hq, nullptr);
-        else
-            jassertfalse;
-
-        if (newRenderHQ.isValid())
-            newRenderHQ.copyPropertiesFrom(renderHQ, nullptr);
-        else
-            jassertfalse;
-
-        return apvts.state.isEquivalentTo(presetState);
-    }*/
+    bool hasStateChanged() { return stateChanged; }
 
     String getStateAsString()
     {
@@ -161,6 +171,8 @@ struct PresetManager
 
 private:
     AudioProcessorValueTreeState& apvts;
+
+    bool stateChanged = false;
 
     Array<File> factoryPresets;
     Array<File> userPresets;

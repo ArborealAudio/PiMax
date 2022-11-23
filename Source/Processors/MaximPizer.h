@@ -1,198 +1,206 @@
 #pragma once
 
+static constexpr auto halfPi = MathConstants<double>::halfPi;
+static constexpr double sqrtHalfPi = 1.25331413731550025;
+static constexpr auto pi = MathConstants<float>::pi;
+static constexpr auto e = MathConstants<float>::euler;
+
 class MaximPizer
 {
-	static constexpr auto halfPi = MathConstants<double>::halfPi;
 
-	AudioProcessorValueTreeState& apvts;
+    AudioProcessorValueTreeState& apvts;
 
-	std::atomic<float>* curve, *clip, *type, *boost;
+    strix::SVTFilter<float> hiShelf, lowShelf;
 
-#if USE_SIMD_SAT
-	using Vec2 = dsp::SIMDRegister<float>;
-	Vec2 x_n1[2]{ 0.0, 0.0 }, x_n2[2]{ 0.0, 0.0 }, y_n1[2]{ 0.0, 0.0 };
-#else
-	double x_n1[2]{ 0.0, 0.0}, x_n2[2]{ 0.0, 0.0 }, y_n1[2]{ 0.0, 0.0 };
-#endif
+	std::atomic<float>*clip, *type, *boost, *gain;
+    strix::FloatParameter *curve;
+    float lastCurve = 1.f;
+    float type_m = 0;
+    ClipType clip_m;
+    bool boost_m = false;
+
+	double x_n1[2]{0.0}, x_n2[2]{0.0}, y_n1[2]{0.0};
 
 public:
 
 	MaximPizer(AudioProcessorValueTreeState& a) : apvts(a)
 	{
-		curve = apvts.getRawParameterValue("curve");
+        gain = apvts.getRawParameterValue("gain");
+		curve = dynamic_cast<strix::FloatParameter*>(apvts.getParameter("curve"));
 		clip = apvts.getRawParameterValue("clipType");
 		type = apvts.getRawParameterValue("distType");
 		boost = apvts.getRawParameterValue("boost");
 	}
 
-	void prepare()
+	void prepare(const dsp::ProcessSpec& spec)
 	{
-		x_n1[0] = 0.0;
-		x_n1[1] = 0.0;
-		x_n2[0] = 0.0;
-		x_n2[1] = 0.0;
-		y_n1[0] = 0.0;
-		y_n1[1] = 0.0;
+		x_n1[0] = x_n1[1] = x_n2[0] = x_n2[1] = y_n1[0] = y_n1[1] = 0.0;
+
+        hiShelf.prepare(spec);
+        hiShelf.setType(strix::FilterType::firstOrderHighpass);
+        hiShelf.setCutoffFreq(5000.0 * (1.f / (*curve * *curve * *curve)));
+        hiShelf.setResonance(0.5f);
+
+        lowShelf.prepare(spec);
+        lowShelf.setType(strix::FilterType::firstOrderLowpass);
+        lowShelf.setCutoffFreq(150.f * (*curve * *curve));
+        lowShelf.setResonance(0.5f);
+	}
+
+    void reset()
+    {
+        hiShelf.reset();
+        x_n1[0] = x_n1[1] = x_n2[0] = x_n2[1] = y_n1[0] = y_n1[1] = 0.0;
+    }
+
+    void loadAtomics()
+    {
+        clip_m = (ClipType)clip->load();
+        type_m = type->load();
+        boost_m = boost->load();
+
+        if (lastCurve != *curve)
+        {
+            hiShelf.setCutoffFreq(5000.0 * (1.f / (*curve * *curve * *curve)));
+            lowShelf.setCutoffFreq(150.f * (*curve * *curve));
+            lastCurve = *curve;
+        }
+    }
+
+	template <typename T>
+	void process(dsp::AudioBlock<T>& block)
+	{
+        loadAtomics();
+        
+        for (size_t ch = 0; ch < block.getNumChannels(); ++ch)
+        {
+            auto in = block.getChannelPointer(ch);
+
+            if (type_m)
+                FloatVectorOperations::add(in, 0.1, block.getNumSamples());
+                        
+            switch (clip_m)
+            {
+            case ClipType::Deep:
+                processDeep(ch, block.getNumSamples(), in);
+                break;
+             case ClipType::Warm:
+                processWarm(ch, block.getNumSamples(), in);
+                break; 
+            default:
+                processRegular(ch, block.getNumSamples(), in);
+                break;
+            };
+        }
 	}
 
 	template <typename T>
-	void process(const dsp::ProcessContextReplacing<T>& context)
-	{
-		const auto& input = context.getInputBlock();
-		auto& output = context.getOutputBlock();
-
-		for (size_t i = 0; i < input.getNumSamples(); ++i)
-		{
-			auto x = input.getSample(0, i);
-			x = processSample(0, x);
-			output.setSample(0, i, x);
-		}
-	}
-
-	//template <typename T>
-	//inline dsp::SIMDRegister<T> processSample(int channel, dsp::SIMDRegister<T> xn) noexcept
-	//{
-	//	dsp::SIMDRegister<T> yn, x1, x2;
-	//	double k = *curve;
-	//	auto xPi = xn * halfPi;
-
-	//	/*DC offset for asym (need to ramp offset incase of switch)*/
-	//	xn += *type == 1 ? 0.2 : 0.0;
-
-	//	using xs = xsimd::batch<T>;
-
-	//	auto sum = xsimd::add(xsimd::abs((xs)xn.value), xsimd::abs((xs)x_n2[channel].value));
-	//	sum = xsimd::div(sum, (xs)2.0);
-	//	const auto a = (Vec2)jlimit((xs)0.0, (xs)1.0, sum);
-
-	//	auto g_n1 = dsp::SIMDRegister<T>::greaterThan(xn.value, (T)-1.0);
-	//	auto l_1 = dsp::SIMDRegister<T>::lessThan(xn.value, (T)1.0);
-	//	auto g_0 = dsp::SIMDRegister<T>::greaterThanOrEqual(xn.value, (T)0.0);
-
-	//	if (k > 1.0) {
-	//		const auto j = (Vec2)xsimd::pow((xs)k, xsimd::acos((xs)xn.value * (xs)xn.value)) & g_n1 & l_1;
-	//		auto xk = xsimd::pow((xs)xn.value, (xs)k);
-	//		x1 = (Vec2)xsimd::sin((xs)xPi.value * (xs)j) & g_n1 & l_1;
-	//		x2 = ((Vec2)xsimd::sin((xs)halfPi * xk) & g_n1 & l_1 & g_0) +
-	//			((Vec2)-xsimd::sin((xs)halfPi * -xk) & g_n1 & l_1 & ~g_0);
-	//		yn = (Vec2)x1 * ((Vec2)1.0 - a) + x2 * a & g_n1 & l_1;
-	//	}
-	//	else if (k < 1.0) {
-	//		const auto k_r = (1.0 / k);
-	//		const auto j = (Vec2)xsimd::pow((xs)k_r, xsimd::acos((xs)xn.value * (xs)xn.value)) & g_n1 & l_1;
-	//		auto xk = xsimd::pow((xs)xn.value, (xs)k_r);
-	//		x1 = (Vec2)xsimd::sin((xs)xPi.value * (xs)j) & g_n1 & l_1;
-	//		x2 = ((Vec2)xsimd::sin((xs)halfPi * xk) & l_1 & g_0) +
-	//			((Vec2)-xsimd::sin((xs)halfPi * -xk) & g_n1 & ~g_0);
-	//		yn = (Vec2)x1 * a + x2 * ((Vec2)1.0 - a) & g_n1 & l_1;
-	//	}
-	//	else
-	//		yn = (Vec2)xsimd::sin((xs)xPi.value) & g_n1 & l_1;
-
-	//	if (*clip == 1) {
-	//		yn = ((Vec2)1.0 & ~l_1) +
-	//			((Vec2)-1.0 & ~g_n1);
-	//	}
-
-	//	else if (*clip != 2) {
-	//		auto one_min_x = (Vec2)xsimd::sub((xs)1.0, xn.value);
-	//		auto one_plus_x = (Vec2)xsimd::add((xs)1.0, xn.value);
-	//		auto pos_denom = (Vec2)1.0 + one_min_x * one_min_x * halfPi;
-	//		auto neg_denom = (Vec2)1.0 + one_plus_x * one_plus_x * halfPi;
-	//		auto y_pos = (Vec2)xsimd::div((xs) 1.0, (xs)pos_denom.value);
-	//		auto y_neg = (Vec2)xsimd::div((xs) -1.0, (xs)neg_denom.value);
-	//		yn = (y_pos & g_0 & ~l_1) + (y_neg & ~g_0 & ~g_n1);
-	//	}
-
-	//	else
-	//		yn = (Vec2)xsimd::sin((xs)xPi.value);
-
-	//	auto avgsum = yn + y_n1[channel];
-	//	auto avg = yn - xsimd::div((xs)avgsum.value, (xs)2.0);
-	//	if (k > 1.0)
-	//		yn -= avg * (Vec2)(1.0 - 1.0 / k);
-	//	else if (k < 1.0)
-	//		yn += avg * (Vec2)(1.0 - k);
-
-	//	x_n2[channel] = x_n1[channel];
-	//	x_n1[channel] = xn;
-	//	y_n1[channel] = yn;
-
-	//	return yn;
-	//}
-
-	template <typename T>
-	inline T processSample(int channel, T xn) noexcept
+	void processRegular(size_t channel, size_t numSamples, T* in) noexcept
 	{
 		T yn, x1, x2;
-		double k = *curve;
-		if (*boost)
-			k *= k;
+        double k = *curve;
+        if (boost_m)
+            k *= k;
+        for (int i = 0; i < numSamples; ++i)
+        {
+            /*if we're in regular bounds, apply curve algo*/
+            const auto xn = in[i];
 
-		/*DC offset for asym (need to ramp offset incase of switch)*/
-		xn += *type == 1 ? 0.1 : 0.0;
+            const auto a = jlimit(0.0, 1.0, (std::abs(xn) + std::abs(x_n2[channel])) / 2.0);
 
-		/*if we're in regular bounds, apply curve algo*/
+            if (xn > -1.0 && xn < 1.0) {
+                if (k > 1.0) {
+                    const auto j = this->pow(k, acos(xn * xn));
+                    x1 = dsp::FastMathApproximations::sin(halfPi * j * xn);
+                    if (xn >= 0.0)
+                        x2 = dsp::FastMathApproximations::sin(halfPi * pow(xn, k));
+                    else
+                        x2 = -dsp::FastMathApproximations::sin(halfPi * pow(-xn, k));
+                    yn = x1 * (1.0 - a) + x2 * a;
+                }
+                else if (k < 1.0) {
+                    const auto k_r = (1.0 / k);
+                    const auto j = this->pow(k_r, acos(xn * xn));
+                    x1 = dsp::FastMathApproximations::sin(halfPi * j * xn);
+                    if (xn >= 0.0)
+                        x2 = dsp::FastMathApproximations::sin(halfPi * pow(xn, k_r));
+                    else
+                        x2 = -dsp::FastMathApproximations::sin(halfPi * pow(-xn, k_r));
+                    yn = x1 * a + x2 * (1.0 - a);
+                }
+                else
+                    yn = sin(halfPi * xn);
+            }
+            /*check for clip*/
+            else
+            {
+                switch (clip_m)
+                {
+                case ClipType::Finite:
+                    if (xn >= 0.0)
+                        //yn = pow(1.0 / cosh(xn - 1.0), pi);
+                        yn = 1.0 / (1.0 + (1.0 - xn) * (1.0 - xn) * halfPi);
+                    else
+                        //yn = -pow(1.0 / cosh(xn + 1.0), pi);
+                        yn = -1.0 / (1.0 + (1.0 + xn) * (1.0 + xn) * halfPi);
+                    break;
+                case ClipType::Clip:
+                    yn = jlimit((T) -1.0, (T) 1.0, xn);
+                    break;
+                case ClipType::Infinite:
+                    /*full sine for infinite type*/
+                    yn = sin(halfPi * xn);
+                    break;
+                }
+            }
 
-		const auto a = jlimit(0.0, 1.0, (std::abs(xn) + std::abs(x_n2[channel])) / 2.0);
+            auto avg = yn - (yn + y_n1[channel]) / 2.0;
+            if (k > 1.0)
+                yn -= avg * (1.0 - 1.0 / k);
+            else if (k < 1.0)
+                yn += avg * (1.0 - k);
 
-		if (xn > -1.0 && xn < 1.0) {
-			if (k > 1.0) {
-				const auto j = pow(k, acos(xn * xn));
-				x1 = dsp::FastMathApproximations::sin(halfPi * j * xn);
-				if (xn >= 0.0)
-					x2 = dsp::FastMathApproximations::sin(halfPi * pow(xn, k));
-				else
-					x2 = -dsp::FastMathApproximations::sin(halfPi * pow(-xn, k));
-				yn = x1 * (1.0 - a) + x2 * a;
-			}
-			else if (k < 1.0) {
-				const auto k_r = (1.0 / k);
-				const auto j = pow(k_r, acos(xn * xn));
-				x1 = dsp::FastMathApproximations::sin(halfPi * j * xn);
-				if (xn >= 0.0)
-					x2 = dsp::FastMathApproximations::sin(halfPi * pow(xn, k_r));
-				else
-					x2 = -dsp::FastMathApproximations::sin(halfPi * pow(-xn, k_r));
-				yn = x1 * a + x2 * (1.0 - a);
-			}
-
-			else
-				yn = sin(halfPi * xn);
-
-		}
-
-		/*check for clip*/
-		else if (*clip == 1) {
-			yn = jlimit((T) -1.0, (T) 1.0, xn);
-		}
-		/*single-period for finite type*/
-		else if (*clip != 2) {
-			if (xn >= 0.0)
-				//yn = pow(1.0 / cosh(xn - 1.0), pi);
-				yn = 1.0 / (1.0 + (1.0 - xn) * (1.0 - xn) * halfPi);
-			else
-				//yn = -pow(1.0 / cosh(xn + 1.0), pi);
-				yn = -1.0 / (1.0 + (1.0 + xn) * (1.0 + xn) * halfPi);
-		}
-		/*full sine for infinite type*/
-		else {
-			yn = sin(halfPi * xn);
-		}
-
-		auto avg = yn - (yn + y_n1[channel]) / 2.0;
-		if (k > 1.0)
-			yn -= avg * (1.0 - 1.0 / k);
-		else if (k < 1.0)
-			yn += avg * (1.0 - k);
-
-		x_n2[channel] = x_n1[channel];
-		x_n1[channel] = xn;
-		y_n1[channel] = yn;
-		
-		return yn;
+            x_n2[channel] = x_n1[channel];
+            x_n1[channel] = xn;
+            y_n1[channel] = yn;
+            in[i] = yn;
+        }
 	}
 
+    template <typename T>
+    void processDeep(size_t ch, size_t numSamples, T* xn)
+    {
+        FloatVectorOperations::multiply(xn, halfPi, numSamples);
+        const double k = *curve * *curve;
+        for (int i = 0; i < numSamples; ++i)
+        {
+            xn[i] = xn[i] / this->pow((1.0 + this->pow(std::abs(xn[i]), k)), 1.0 / k);
+            xn[i] += 0.2f * lowShelf.processSample(ch, xn[i]);
+            xn[i] += 0.2f * hiShelf.processSample(ch, xn[i]);
+        }
+
+        if (k < 1.0)
+            FloatVectorOperations::multiply(xn, 1.0 / k, numSamples);
+    }
+
+    template <typename T>
+    void processWarm(size_t ch, size_t numSamples, T* xn)
+    {
+        FloatVectorOperations::multiply(xn, halfPi, numSamples);
+
+        auto lfGain = *curve >= 1.f ? *curve * *curve - 1.f : 0.f;
+
+        for (int i = 0; i < numSamples; ++i)
+        {
+            auto hf = 0.3f * hiShelf.processSample(ch, xn[i]);
+            auto lf = lfGain * lowShelf.processSample(ch, xn[i]);
+            xn[i] -= hf;
+            xn[i] += lf;
+            xn[i] = (-1.0 / (1.0 + std::exp(xn[i])) + 0.5);
+        }
+
+        FloatVectorOperations::multiply(xn, e, numSamples);
+    }
 
 	inline double acos(double x)
 	{
