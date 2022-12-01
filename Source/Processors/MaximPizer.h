@@ -97,16 +97,16 @@ public:
 	template <typename T>
 	void processRegular(size_t channel, size_t numSamples, T* in) noexcept
 	{
-		T yn, x1, x2;
+		T yn = 0.0, x1 = 0.0, x2 = 0.0;
         double k = *curve;
         if (boost_m)
             k *= k;
-        for (int i = 0; i < numSamples; ++i)
+        for (size_t i = 0; i < numSamples; ++i)
         {
             /*if we're in regular bounds, apply curve algo*/
             const auto xn = in[i];
 
-            const auto a = jlimit(0.0, 1.0, (std::abs(xn) + std::abs(x_n2[channel])) / 2.0);
+            const auto a = jmin(1.0, (std::abs(xn) + std::abs(x_n2[channel])) / 2.0);
 
             if (xn > -1.0 && xn < 1.0) {
                 if (k > 1.0) {
