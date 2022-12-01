@@ -46,7 +46,7 @@ MaximizerAudioProcessor::MaximizerAudioProcessor()
     boost = apvts.getRawParameterValue("boost");
 
     for (int i = 0; i < 3; ++i)
-        apvts.addParameterListener("crossover" + std::to_string(i), this);
+        apvts.addParameterListener("crossover" + String(i), this);
 
     for (auto& b : m_Proc.bandBuffer)
         b.setSize(getTotalNumOutputChannels(), 16384);
@@ -67,7 +67,7 @@ MaximizerAudioProcessor::~MaximizerAudioProcessor()
     apvts.removeParameterListener("bandSplit", this);
     apvts.removeParameterListener("linearPhase", this);
     for (int i = 0; i < 3; ++i)
-        apvts.removeParameterListener("crossover" + std::to_string(i), this);
+        apvts.removeParameterListener("crossover" + String(i), this);
 
     apvts.state.removeListener(this);
 
