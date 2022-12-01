@@ -9,7 +9,9 @@
 #pragma once
 
 #define USE_CONVOLUTION 1
-#define PRODUCTION_BUILD 1
+#if NDEBUG
+    #define PRODUCTION_BUILD 1
+#endif
 
 enum class ClipType
 {
