@@ -255,13 +255,14 @@ struct UnlockForm : Component
             }
             else
             {
-                Rectangle<int> textBounds{45, 45, 150, 50};
+                Rectangle<int> textBounds{45, 45, 150, 85};
                 g.setFont(getCustomFont(FontStyle::Regular).withHeight(15.f));
                 g.setColour(Colours::darkred);
                 g.fillRoundedRectangle(textBounds.toFloat(), 5.f);
                 g.setColour(Colour(0xffa7a7a7));
-                g.drawFittedText("Please purchase a license to continue using PiMax:\n"
-                                 "arborealaudio.com",
+                g.drawFittedText("Please purchase a license @\n"
+                                 "arborealaudio.com\n"
+                                 "to continue using PiMax",
                                  textBounds, Justification::centred, 3);
                 close.setEnabled(false);
                 if (textBounds.contains(getMouseXYRelative()))
@@ -273,7 +274,7 @@ struct UnlockForm : Component
                         clickedLink = true;
                         return;
                     }
-                    else
+                    else if (!isMouseButtonDown() && clickedLink)
                         clickedLink = false;
                 }
                 else
@@ -294,7 +295,7 @@ struct UnlockForm : Component
         key.centreWithSize(150, 25);
         reg.centreWithSize(68, 25);
         close.centreWithSize(50, 25);
-        key.setBounds(key.getBounds().translated(0, -60));
+        // key.setBounds(key.getBounds().translated(0, -60));
         reg.setBounds(reg.getBounds().translated(0, 60));
         close.setBounds(close.getBounds().translated(0, 110));
     }
@@ -377,7 +378,6 @@ struct ActivationComponent : Component, Timer
         {
             if (needBlur)
             {
-                // gin::applyStackBlur(img, 35);
                 Blur::blurImage<4, true>(img);
                 needBlur = false;
             }
