@@ -202,7 +202,7 @@ UI::UI (MaximizerAudioProcessor& p) : audioProcessor(p), gain__slider(false), ou
     auto children = getChildren();
     for (auto child : children)
     {
-        child->setTransform(AffineTransform::scale(1.2));
+        child->setTransform(AffineTransform::scale(1.2f));
     }
     setSize(720, 480);
 
