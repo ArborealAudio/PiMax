@@ -247,7 +247,7 @@ void MaximizerAudioProcessor::valueTreeRedirected(ValueTree& treeWhichHasBeenCha
     }
 }
 
-void MaximizerAudioProcessor::updateNumBands(int newNumBands) noexcept
+void MaximizerAudioProcessor::updateNumBands(int newNumBands)
 {
     numBands = newNumBands;
 
@@ -259,7 +259,7 @@ void MaximizerAudioProcessor::updateNumBands(int newNumBands) noexcept
     auto val = apvts.state.getChildWithProperty("id", "numBands");
     val.setProperty("value", numBands, nullptr);
 
-    if (onPresetChange != nullptr && hasEditor())
+    if (onPresetChange && getActiveEditor())
         onPresetChange();
 }
 

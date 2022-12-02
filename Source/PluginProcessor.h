@@ -101,7 +101,7 @@ public:
 
     inline void updateOversample() noexcept;
 
-    void updateNumBands(int newNumBands) noexcept;
+    void updateNumBands(int newNumBands);
 
     var checkUnlock()
     {
@@ -145,10 +145,6 @@ public:
     int64 trialRemaining_ms = 0;
 
     bool hasUpdated = false;
-    std::function<void(bool)> updateStatus = [this](bool newUpdate)
-    {
-        hasUpdated = newUpdate;
-    };
 
 private:
 
