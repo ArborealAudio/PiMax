@@ -57,7 +57,7 @@ MaximizerAudioProcessor::MaximizerAudioProcessor()
 
     checkActivation();
 
-    startTimer(200);
+    startTimerHz(20);
 }
 
 MaximizerAudioProcessor::~MaximizerAudioProcessor()
@@ -161,7 +161,6 @@ void MaximizerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
     mPi.prepare(spec);
 
     m_Proc.prepare(spec);
-    m_Proc.initCrossovers();
     m_Proc.setOversamplingFactor(oversample[osIndex].getOversamplingFactor());
     
     filterLength = m_Proc.linBand[0].size;
@@ -316,7 +315,7 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
             buffer.applyGainRamp(0, numSamples, 3.98f, 1.f);
     lastBoost = (bool)*boost;
 
-    inputMeter.measureBlock(buffer);
+    inputMeter.copyBuffer(buffer);
 
     dsp::AudioBlock<float> osBlock;
     if (totalNumOutputChannels > 1)
@@ -446,7 +445,7 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     else
         buffer.applyGain(output_raw);
 
-    outputMeter.measureBlock(buffer);
+    outputMeter.copyBuffer(buffer);
 
     mixer.setWetMixProportion(*mix);
     mixer.mixWetSamples(dsp::AudioBlock<float> (buffer));
