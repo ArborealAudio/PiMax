@@ -11,8 +11,8 @@
 //==============================================================================
 MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(MaximizerAudioProcessor& p)
     : AudioProcessorEditor(&p),
-    audioProcessor(p),
     responseCurveComponent(p),
+    audioProcessor(p),
     ui(p),
     waveshaperComponent(p),
     activationComp(p.isUnlocked, p.trialRemaining_ms),
@@ -147,7 +147,7 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(MaximizerAudioProce
         downloadManager.setVisible(false);
     downloadManager.onUpdateChange = [&](bool updated)
     {
-        p.updateStatus(updated);
+        p.hasUpdated = updated;
     };
 }
 
@@ -175,7 +175,7 @@ void MaximizerAudioProcessorEditor::paint (Graphics& g)
     g.setColour(Colour(0xa7a7a7a7));
     g.setFont(getCustomFont(FontStyle::Bold).withHeight(h * 0.125f));
 
-    int titleWidth = getWidth() * 0.208f;
+    int titleWidth = w * 0.208f;
 
     Rectangle<int> textBounds{ getLocalBounds().getCentreX() - (titleWidth / 2), (int)(h * 0.0201f), titleWidth, (int)(h * 0.1042f) };
     g.drawText("PiMax", textBounds, Justification::centred, false);
@@ -199,7 +199,6 @@ void MaximizerAudioProcessorEditor::paint (Graphics& g)
 void MaximizerAudioProcessorEditor::resized()
 {
     auto w = getWidth();
-    auto h = getHeight();
     auto scale = (float)w / 720.f;
     
     activationComp.centreWithSize(240, 360);
