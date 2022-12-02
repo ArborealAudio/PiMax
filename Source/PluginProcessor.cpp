@@ -734,6 +734,7 @@ void MaximizerAudioProcessor::checkActivation()
     uint64 gbuuid;
     
     auto uuid = String(OnlineUnlockStatus::MachineIDUtilities::getLocalMachineIDs().strings[0].hashCode64());
+    auto newID = String(SystemStats::getUniqueDeviceID().hashCode64());
 
 #if JUCE_WINDOWS
     String timeFile = "HKEY_CURRENT_USER\\SOFTWARE\\Arboreal Audio\\PiMax\\TrialKey";
@@ -746,12 +747,16 @@ void MaximizerAudioProcessor::checkActivation()
 #elif JUCE_LINUX
     File timeFile = File(File::getSpecialLocation(File::userApplicationDataDirectory).getFullPathName() + "/Arboreal Audio/PiMax/License/trialkey.aal");
 #endif
-    if (!host.isGarageBand()) {
-        if (dir.exists() && !checkUnlock()) {
+    if (!host.isGarageBand())
+    {
+        if (dir.exists() && !checkUnlock())
+        {
             auto xml = parseXML(dir);
-            isUnlocked = (uuid == xml->getStringAttribute("uuid"));
+            isUnlocked = (newID == xml->getStringAttribute("uuid") && xml->getStringAttribute("uuid") != "" && xml->getStringAttribute("uuid") != " ");
+            if (!isUnlocked) // try old ID second
+                isUnlocked = (uuid == xml->getStringAttribute("uuid"));
             if (xml->hasAttribute("key"))
-                isUnlocked = xml->getStringAttribute("key") != " ";
+                isUnlocked = (xml->getStringAttribute("key") != "" && xml->getStringAttribute("key") != " ");
         }
     }
     /*Garageband requires a special directory*/

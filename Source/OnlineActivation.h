@@ -17,20 +17,20 @@ namespace strix
     const Identifier rootId = "root";
     const Identifier propertyId = "property";
 
-    inline void setProperty(ValueTree& source, const Identifier& id, const var& v)
+    inline void setProperty(ValueTree &source, const Identifier &id, const var &v)
     {
         jassert(id.isValid() && !v.isVoid());
         source.setProperty(id, v, nullptr);
     }
 
-    inline void appendValueTree(ValueTree& parent, const Identifier& id, const var& v)
+    inline void appendValueTree(ValueTree &parent, const Identifier &id, const var &v)
     {
         if (!parent.isValid() || id.isNull() || v.isVoid())
             return;
 
-        if (auto* ar = v.getArray())
+        if (auto *ar = v.getArray())
         {
-            for (const auto& item : *ar)
+            for (const auto &item : *ar)
             {
                 ValueTree child(rootId);
                 parent.appendChild(child, nullptr);
@@ -40,12 +40,12 @@ namespace strix
             return;
         }
 
-        if (auto* object = v.getDynamicObject())
+        if (auto *object = v.getDynamicObject())
         {
             ValueTree child(id);
             parent.appendChild(child, nullptr);
 
-            for (const auto& prop : object->getProperties())
+            for (const auto &prop : object->getProperties())
                 appendValueTree(parent, prop.name, prop.value);
 
             return;
@@ -56,7 +56,7 @@ namespace strix
         setProperty(child, Identifier(String("property") + String(parent.getNumProperties())), v);
     }
 
-    inline ValueTree createValueTreeFromJSON(const var& json)
+    inline ValueTree createValueTreeFromJSON(const var &json)
     {
         if (json.isVoid())
             return {};
@@ -66,7 +66,7 @@ namespace strix
         return root;
     }
 
-    inline ValueTree createValueTreeFromJSON(const String& data)
+    inline ValueTree createValueTreeFromJSON(const String &data)
     {
         return createValueTreeFromJSON(JSON::parse(data));
     }
@@ -81,18 +81,17 @@ struct UnlockStatus
         return URL("https://3pvj52nx17.execute-api.us-east-1.amazonaws.com");
     }
 
-    String readReplyForKey(const juce::String& key, bool activate)
+    String readReplyForKey(const juce::String &key, bool activate)
     {
         URL url(getURL()
-            .withNewSubPath("/default/licenses/" + key));
+                    .withNewSubPath("/default/licenses/" + key));
 
         if (activate)
             url = url.withNewSubPath("/default/licenses/activate/" + key);
 
         DBG("Trying to unlock via URL: " << url.toString(true));
-
         if (auto stream = URL(url).createInputStream(URL::InputStreamOptions(URL::ParameterHandling::inAddress)
-        .withExtraHeaders("x-api-key: Fb5mXNfHiNaSKABQEl0PiFmYBthvv457bOCA1ou2")))
+                                                         .withExtraHeaders("x-api-key: Fb5mXNfHiNaSKABQEl0PiFmYBthvv457bOCA1ou2").withConnectionTimeoutMs(10000)))
         {
             return stream->readEntireStreamAsString();
         }
@@ -101,12 +100,12 @@ struct UnlockStatus
     }
 
     /*check for valid order no*/
-    String readReplyForOrderNo(const juce::String& orderNo)
+    String readReplyForOrderNo(const juce::String &orderNo)
     {
         juce::URL url(getURL()
-            .withNewSubPath("wp-json/wc/v3/orders/" + orderNo)
-            .withParameter("consumer_key", "ck_afdaee27c41b45d26e864d0b2dad05d7d6bc9ee6")
-            .withParameter("consumer_secret", "cs_0160660cf7a03dfab1e016a6922bf1b7a942e16f"));
+                          .withNewSubPath("wp-json/wc/v3/orders/" + orderNo)
+                          .withParameter("consumer_key", "ck_afdaee27c41b45d26e864d0b2dad05d7d6bc9ee6")
+                          .withParameter("consumer_secret", "cs_0160660cf7a03dfab1e016a6922bf1b7a942e16f"));
 
         DBG("Trying to unlock via URL: " << url.toString(true));
 
@@ -124,7 +123,7 @@ struct UnlockStatus
     }
 
     /*0 = failed key | 1 = success | 2 = activations maxed*/
-    inline int authorize(const String& key)
+    inline int authorize(const String &key)
     {
         if (key.isEmpty())
             return 0;
@@ -138,18 +137,18 @@ struct UnlockStatus
         if (!success)
             return 0;
 
-        //auto orderId = keyTree.getChildWithName("orderId").getProperty("property0");
+        // auto orderId = keyTree.getChildWithName("orderId").getProperty("property0");
 
-        //auto orderResponse = readReplyForOrderNo(orderId);
+        // auto orderResponse = readReplyForOrderNo(orderId);
 
-        //auto orderTree = strix::createValueTreeFromJSON(orderResponse);
+        // auto orderTree = strix::createValueTreeFromJSON(orderResponse);
 
-        //auto orderEmail = orderTree.getChildWithName("email").getProperty("property0").toString();
-        //owner = orderTree.getChildWithName("first_name").getProperty("property0").toString();
+        // auto orderEmail = orderTree.getChildWithName("email").getProperty("property0").toString();
+        // owner = orderTree.getChildWithName("first_name").getProperty("property0").toString();
         //
-        //owner.append(" ", 1);
-        //owner += orderTree.getChildWithName("last_name").getProperty("property0").toString();
-        
+        // owner.append(" ", 1);
+        // owner += orderTree.getChildWithName("last_name").getProperty("property0").toString();
+
         auto activationResponse = strix::createValueTreeFromJSON(readReplyForKey(key, true));
         auto activationCount = activationResponse.getChildWithName("timesActivated").getProperty("property0");
         auto activationLim = activationResponse.getChildWithName("timesActivatedMax").getProperty("property0");
@@ -168,54 +167,48 @@ struct UnlockStatus
         if (isUnlocked())
         {
             auto dir = File(File::getSpecialLocation(File::SpecialLocationType::userApplicationDataDirectory)
-                .getFullPathName() + "/Arboreal Audio/PiMax/License/license.aal");
+                                .getFullPathName() +
+                            "/Arboreal Audio/PiMax/License/license.aal");
 
             if (!dir.exists())
                 dir.create();
 
-            auto ids = OnlineUnlockStatus::MachineIDUtilities::getLocalMachineIDs();
+            auto id = SystemStats::getUniqueDeviceID();
 
-            XmlElement xml{ "Key" };
-
-            for (int i = 0; i < ids.size(); ++i)
-                xml.setAttribute("uuid", String(ids[i].hashCode64()));
-
+            XmlElement xml{"Key"};
+            xml.setAttribute("uuid", String(id.hashCode64()));
             xml.setAttribute("key", m_key);
 
             xml.writeTo(dir);
             dir.setReadOnly(true);
-            
-        #if JUCE_MAC
+
+#if JUCE_MAC
             auto dirGB = File("~/Music/Audio Music Apps/Arboreal Audio/PiMax/License/license.aal");
             auto gbuuid = File("~/Music/Audio Music Apps").getFileIdentifier();
 
             if (!dirGB.exists())
                 dirGB.create();
-            
+
             XmlElement xmlGB{"Key"};
-            
-            for (int i = 0; i < ids.size(); ++i)
-                xmlGB.setAttribute("uuid", String(ids[i].hashCode64()));
-            
+            xmlGB.setAttribute("uuid", String(id.hashCode64()));
             xmlGB.setAttribute("GBuuid", String(gbuuid));
 
             xmlGB.writeTo(dirGB);
             dirGB.setReadOnly(true);
-        #endif
+#endif
         }
     }
 
 private:
-
-    ValueTree state{ "UNLOCKED", {{"value", 0}} };
+    ValueTree state{"UNLOCKED", {{"value", 0}}};
 
     String m_key;
 };
 
 struct UnlockForm : Component
 {
-    UnlockForm(UnlockStatus& s, int64 trialTime) : status(s),
-        userInstructions("Register PiMax"), trialRemaining_ms(trialTime)
+    UnlockForm(UnlockStatus &s, int64 trialTime) : status(s),
+                                                   userInstructions("Register PiMax"), trialRemaining_ms(trialTime)
     {
         addAndMakeVisible(key);
         key.setTextToShowWhenEmpty("serial number", Colours::grey);
@@ -227,8 +220,10 @@ struct UnlockForm : Component
         addAndMakeVisible(close);
         close.setLookAndFeel(&lnf);
 
-        reg.onClick = [this] {runAuth(); };
-        close.onClick = [this] {dismiss(); };
+        reg.onClick = [this]
+        { runAuth(); };
+        close.onClick = [this]
+        { dismiss(); };
     }
 
     ~UnlockForm()
@@ -237,50 +232,56 @@ struct UnlockForm : Component
         close.setLookAndFeel(nullptr);
     }
 
-    void paint(Graphics& g) override
+    void paint(Graphics &g) override
     {
         g.fillAll(Colours::darkslategrey.withAlpha(0.25f));
         g.setColour(Colour(0xa7a7a7a7));
         g.drawRoundedRectangle(getLocalBounds().toFloat().reduced(1.5f), 5.f, 1.5f);
         g.setFont(getCustomFont(FontStyle::Regular).withHeight(20.f));
 
-        if (!successRepaint) {
+        if (!successRepaint)
+        {
             g.drawFittedText(userInstructions, getLocalBounds().withTrimmedBottom(300), Justification::centred, 4);
             if (key.isTextInputActive())
                 key.applyColourToAllText(Colours::white);
 
-            if ((int)trialRemaining_ms > 0) {
-                auto timeRemaining = (Time::getCurrentTime() + RelativeTime::milliseconds(trialRemaining_ms)
-                    - Time::getCurrentTime());
+            if ((int)trialRemaining_ms > 0)
+            {
+                auto timeRemaining = (Time::getCurrentTime() + RelativeTime::milliseconds(trialRemaining_ms) - Time::getCurrentTime());
                 auto daysRemaining = timeRemaining.getDescription();
-                Rectangle<int> textBounds{ 45, 60, 150, 25 };
+                Rectangle<int> textBounds{45, 60, 150, 25};
                 g.setFont(getCustomFont(FontStyle::Regular).withHeight(15.f));
                 g.drawFittedText(daysRemaining + " left in free trial", textBounds, Justification::centred, 2);
             }
-            else {
-                Rectangle<int> textBounds{ 45, 45, 150, 50 };
+            else
+            {
+                Rectangle<int> textBounds{45, 45, 150, 50};
                 g.setFont(getCustomFont(FontStyle::Regular).withHeight(15.f));
                 g.setColour(Colours::darkred);
                 g.fillRoundedRectangle(textBounds.toFloat(), 5.f);
                 g.setColour(Colour(0xffa7a7a7));
                 g.drawFittedText("Please purchase a license to continue using PiMax:\n"
-                    "arborealaudio.com",
-                    textBounds, Justification::centred, 3);
+                                 "arborealaudio.com",
+                                 textBounds, Justification::centred, 3);
                 close.setEnabled(false);
-                if (textBounds.contains(getMouseXYRelative())) {
+                if (textBounds.contains(getMouseXYRelative()))
+                {
                     setMouseCursor(MouseCursor::PointingHandCursor);
-                    if (isMouseButtonDown() && !clickedLink) {
+                    if (isMouseButtonDown() && !clickedLink)
+                    {
                         URL("https://arborealaudio.com/plugins/pimax").launchInDefaultBrowser();
                         clickedLink = true;
                         return;
                     }
-                    else clickedLink = false;
+                    else
+                        clickedLink = false;
                 }
                 else
                     setMouseCursor(MouseCursor::NormalCursor);
             }
         }
-        else {
+        else
+        {
             key.setVisible(false);
             reg.setVisible(false);
             close.setEnabled(true);
@@ -302,17 +303,20 @@ struct UnlockForm : Component
     {
         auto result = status.authorize(key.getText());
 
-        if (result == 0) {
+        if (result == 0)
+        {
             key.unfocusAllComponents();
             key.setText("", false);
             key.setTextToShowWhenEmpty("invalid serial number", Colours::red);
             repaint();
         }
-        else if (result == 1) {
+        else if (result == 1)
+        {
             successRepaint = true;
             repaint();
         }
-        else {
+        else
+        {
             key.unfocusAllComponents();
             key.setText("", false);
             key.setTextToShowWhenEmpty("Activations maxed!", Colours::red);
@@ -333,11 +337,11 @@ private:
     TextEditor key;
 
     TopButtonLNF lnf;
-    TextButton reg{ "Register" }, close{"Close"};
+    TextButton reg{"Register"}, close{"Close"};
 
     bool successRepaint = false, clickedLink = false;
 
-    UnlockStatus& status;
+    UnlockStatus &status;
 };
 
 struct ActivationComponent : Component, Timer
@@ -355,7 +359,7 @@ struct ActivationComponent : Component, Timer
 
     bool isFormVisible() { return unlockForm.isVisible(); }
 
-    void setImage(const Image& newImage)
+    void setImage(const Image &newImage)
     {
         img = newImage;
 
@@ -367,12 +371,13 @@ struct ActivationComponent : Component, Timer
         showForm();
     }
 
-    void paint(Graphics& g) override
+    void paint(Graphics &g) override
     {
         if (unlockForm.isVisible())
         {
-            if (needBlur) {
-                //gin::applyStackBlur(img, 35);
+            if (needBlur)
+            {
+                // gin::applyStackBlur(img, 35);
                 Blur::blurImage<4, true>(img);
                 needBlur = false;
             }
@@ -395,7 +400,7 @@ struct ActivationComponent : Component, Timer
                 onUnlock(true);
         }
     }
-    
+
     bool hitTest(int x, int y) override
     {
         if (unlockForm.isVisible())
@@ -422,7 +427,7 @@ private:
     }
 
     Image img;
-    
+
     UnlockStatus status;
     UnlockForm unlockForm;
 
@@ -430,6 +435,5 @@ private:
 
     bool needBlur = false;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ActivationComponent)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ActivationComponent)
 };
-
