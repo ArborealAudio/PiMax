@@ -9,6 +9,8 @@ class MenuComponent : public Component
 {
     AudioProcessorValueTreeState &vts;
 
+    LookAndFeel_V4 lnf;
+
     DrawableButton menuButton;
     std::unique_ptr<Drawable> icon;
 
@@ -22,16 +24,15 @@ public:
         addAndMakeVisible(menuButton);
         icon = Drawable::createFromImageData(BinaryData::Hamburger_icon_svg, BinaryData::Hamburger_icon_svgSize);
         menuButton.setImages(icon.get());
+        lnf.setColour(PopupMenu::backgroundColourId, Colours::darkslategrey.withAlpha(0.9f));
+        lnf.setColour(PopupMenu::highlightedBackgroundColourId, Colours::grey);
         menuButton.onClick = [&]
         {
-            openGL = (bool)readConfigFile("openGL");
             PopupMenu m;
+            m.setLookAndFeel(&lnf);
+            openGL = (bool)readConfigFile("openGL");
             m.addItem(1, "OpenGL", true, openGL);
             m.addItem(2, "Default UI Size");
-
-            auto &lnf = LookAndFeel::getDefaultLookAndFeel();
-            lnf.setColour(m.backgroundColourId, Colours::darkslategrey.withAlpha(0.9f));
-            lnf.setColour(m.highlightedBackgroundColourId, Colours::grey);
 
             m.showMenuAsync(PopupMenu::Options().withMinimumWidth(175)
                                                 .withStandardItemHeight(35),
