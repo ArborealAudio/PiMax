@@ -30,7 +30,7 @@ public:
     {
         if (activationComp.isFormVisible())
         {
-            if (activationComp.getBounds().contains(x, y))
+            if (activationComp.getBounds().transformedBy(activationComp.getTransform()).contains(x, y))
                 return true;
             else
                 return false;
@@ -42,6 +42,12 @@ public:
     inline void updateBandDisplay(int newNumBands) noexcept
     {
         responseCurveComponent.update(newNumBands);
+    }
+
+    void resetWindowSize()
+    {
+        setSize(720, 480);
+        writeUISize(720, 480);
     }
 
 private:
@@ -72,6 +78,8 @@ private:
 
     TooltipWindow tooltip;
 
+    MenuComponent menu;
+
     void writeUISize(int width, int height)
     {
         auto uiSizeFile = File(File::getSpecialLocation(File::userApplicationDataDirectory).getFullPathName() + "/Arboreal Audio/PiMax/config.xml");
@@ -81,16 +89,18 @@ private:
         width = jmin(width, 1440);
         height = jmin(height, 960);
     
-        XmlElement uiXml{"UISize"};
-        uiXml.setAttribute("uiWidth", width);
-        uiXml.setAttribute("uiHeight", height);
-        uiXml.writeTo(uiSizeFile);
-
+        auto uiXml = parseXML(uiSizeFile);
+        if (!uiXml)
+            uiXml.reset(new XmlElement{"Config"});
+        
+        uiXml->setAttribute("uiWidth", width);
+        uiXml->setAttribute("uiHeight", height);
+        uiXml->writeTo(uiSizeFile);
 #if JUCE_MAC
         auto gbFile = File("~/Music/Audio Music Apps/Arboreal Audio/PiMax/config.xml");
         if (!gbFile.existsAsFile())
             gbFile.create();
-        uiXml.writeTo(gbFile);
+        uiXml->writeTo(gbFile);
 #endif
     }
 
@@ -105,15 +115,13 @@ private:
 
         if (uiSizeFile.existsAsFile()) {
             auto xml = parseXML(uiSizeFile);
-            if (xml->hasTagName("UISize")) {
+            if (xml->hasTagName("Config")) {
                 width = xml->getIntAttribute("uiWidth", width);
                 height = xml->getIntAttribute("uiHeight", height);
             }
         }
     }
     
-    // This reference is provided as a quick way for your editor to
-    // access the processor object that created it.
     MaximizerAudioProcessor& audioProcessor;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MaximizerAudioProcessorEditor)
