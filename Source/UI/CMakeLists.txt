@@ -4,4 +4,5 @@ PRIVATE
     LookAndFeel.h
     ResponseCurveComponent.cpp
     WaveshaperComponent.cpp
-    Splash.h)
+    Splash.h
+    Menu.h)

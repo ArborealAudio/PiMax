@@ -1,10 +1,13 @@
 cmake_minimum_required(VERSION 3.15)
 
-project(PiMax VERSION 1.1.1)
-
+if (WIN32)
+    set(CMAKE_SYSTEM_VERSION 7 CACHE TYPE INTERNAL FORCE)
+endif()
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_OSX_DEPLOYMENT_TARGET 10.9)
+
+project(PiMax VERSION 1.1.1)
 
 add_subdirectory(Source/modules/juce)
 add_subdirectory(Source/modules/clap-juce-extensions)
@@ -84,6 +87,7 @@ PUBLIC
 
 juce_add_binary_data(BinaryData SOURCES
     "Source/Resources/arboreal tree.svg"
+    "Source/Resources/Hamburger_icon.svg"
     "Source/Resources/fonts/Sora-Regular.ttf"
     "Source/Resources/fonts/Sora-Thin.ttf"
     "Source/Resources/fonts/Sora-SemiBold.ttf"
