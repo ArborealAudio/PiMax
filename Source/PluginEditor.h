@@ -51,6 +51,7 @@ public:
     }
 
 private:
+    MaximizerAudioProcessor& audioProcessor;
 #if JUCE_WINDOWS || JUCE_LINUX
     OpenGLContext opengl;
 #endif
@@ -76,9 +77,9 @@ private:
     TopButtonLNF unlockLNF;
     TextButton unlockButton{ "Unlock" };
 
-    TooltipWindow tooltip;
+    std::unique_ptr<TooltipWindow> tooltip = nullptr;
 
-    MenuComponent menu;
+    std::unique_ptr<MenuComponent> menu = nullptr;
 
     void writeUISize(int width, int height)
     {
@@ -121,8 +122,6 @@ private:
             }
         }
     }
-    
-    MaximizerAudioProcessor& audioProcessor;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MaximizerAudioProcessorEditor)
 };

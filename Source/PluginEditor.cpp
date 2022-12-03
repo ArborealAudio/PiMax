@@ -11,18 +11,19 @@
 //==============================================================================
 MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(MaximizerAudioProcessor &p)
     : AudioProcessorEditor(&p),
-      responseCurveComponent(p),
       audioProcessor(p),
+      responseCurveComponent(p),
       ui(p),
       waveshaperComponent(p),
       activationComp(p.isUnlocked, p.trialRemaining_ms),
-      downloadManager(p.hasUpdated),
-      tooltip(nullptr, 2000),
-      menu(p.apvts)
+      downloadManager(p.hasUpdated)
 {
     getLookAndFeel().setDefaultSansSerifTypeface(getCustomFont(FontStyle::Regular).getTypeface());
 
-    tooltip.setColour(TooltipWindow::backgroundColourId, Colours::darkslategrey);
+    if ((bool)readConfigFile("tooltip"))
+        tooltip = std::make_unique<TooltipWindow>(this, 2000);
+
+    menu = std::make_unique<MenuComponent>(p.apvts);
 
 #if JUCE_WINDOWS || JUCE_LINUX
     opengl.setImageCacheSize((size_t)64 * 1024000);
@@ -33,8 +34,8 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(MaximizerAudioProce
     }
 #endif
 
-    menu.setAlwaysOnTop(true);
-    menu.windowResizeCallback = [&]
+    menu->setAlwaysOnTop(true);
+    menu->windowResizeCallback = [&]
     { resetWindowSize(); };
 #if JUCE_WINDOWS || JUCE_LINUX
     menu.openGLCallback = [&](bool state)
@@ -47,6 +48,14 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(MaximizerAudioProce
         writeConfigFile("openGL", state);
     };
 #endif
+    menu->tooltipCallback = [&]()
+    {
+        if (tooltip)
+            tooltip = nullptr;
+        else
+            tooltip.reset(new TooltipWindow(this, 2000));
+        writeConfigFile("tooltip", tooltip != nullptr);
+    };
 
     for (auto *comp : getComps())
     {
@@ -127,8 +136,8 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(MaximizerAudioProce
     p.onPresetChange = [&]
     { updateBandDisplay(p.numBands); };
 
-    addAndMakeVisible(menu);
-    menu.setBoundsRelative(0.12f, 0.05f, 0.03f, 0.03f);
+    addAndMakeVisible(*menu);
+    menu->setBoundsRelative(0.12f, 0.07f, 0.03f, 0.03f);
 
     splash.onLogoClick = [&]
     {
@@ -230,19 +239,13 @@ void MaximizerAudioProcessorEditor::resized()
     responseCurveComponent.setBounds(162, 114, 402, 210);
     waveshaperComponent.setBounds(162, 114, 402, 210);
     splash.setBounds(0, 0, 720, 480);
-    // unlockButton.setBoundsRelative(0.12f, 0.12f, 0.08f, 0.05f);
 
-    auto children = getChildren();
-    children.remove(this->getIndexOfChildComponent(&menu));
-    children.remove(this->getIndexOfChildComponent(&unlockButton));
-    children.remove(this->getIndexOfChildComponent(&activationComp));
-    children.removeLast();
-    for (auto &child : children)
+    for (auto &child : getComps())
     {
         child->setTransform(AffineTransform::scale(scale));
     }
 
-    menu.setBoundsRelative(0.12f, 0.05f, 0.03f, 0.03f);
+    menu->setBoundsRelative(0.12f, 0.07f, 0.03f, 0.03f);
     unlockButton.setBoundsRelative(0.12f, 0.12f, 0.08f, 0.05f);
     activationComp.centreWithSize(240, 360);
 
