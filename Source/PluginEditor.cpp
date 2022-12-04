@@ -137,7 +137,7 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(MaximizerAudioProce
     { updateBandDisplay(p.numBands); };
 
     addAndMakeVisible(*menu);
-    menu->setBoundsRelative(0.12f, 0.07f, 0.03f, 0.03f);
+    menu->setBoundsRelative(0.01f, 0.94f, 0.04f, 0.04f);
 
     splash.onLogoClick = [&]
     {
@@ -245,7 +245,7 @@ void MaximizerAudioProcessorEditor::resized()
         child->setTransform(AffineTransform::scale(scale));
     }
 
-    menu->setBoundsRelative(0.12f, 0.07f, 0.03f, 0.03f);
+    menu->setBoundsRelative(0.01f, 0.94f, 0.04f, 0.04f);
     unlockButton.setBoundsRelative(0.12f, 0.12f, 0.08f, 0.05f);
     activationComp.centreWithSize(240, 360);
 

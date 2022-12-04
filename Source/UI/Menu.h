@@ -24,7 +24,7 @@ public:
         addAndMakeVisible(menuButton);
         icon = Drawable::createFromImageData(BinaryData::Hamburger_icon_svg, BinaryData::Hamburger_icon_svgSize);
         menuButton.setImages(icon.get());
-        lnf.setColour(PopupMenu::backgroundColourId, Colours::darkslategrey.withAlpha(0.9f));
+        lnf.setColour(PopupMenu::backgroundColourId, Colours::black);
         lnf.setColour(PopupMenu::highlightedBackgroundColourId, Colours::grey);
         menuButton.onClick = [&]
         {
