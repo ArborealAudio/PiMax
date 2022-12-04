@@ -137,7 +137,7 @@ void ResponseCurveComponent::paint(Graphics &g)
     g.setGradientFill(gradient);
     g.fillAll();
 
-    for (int i = 0; i < numBands; ++i)
+    for (size_t i = 0; i < numBands; ++i)
     {
         sliders[i]->setVisible(true);
         if (i == 0 && numBands == 1)
@@ -612,33 +612,42 @@ inline void ResponseCurveComponent::drawAddButton(Graphics &g, const Rectangle<f
 
 void ResponseCurveComponent::parameterChanged(const String &parameterID, float newValue)
 {
-    std::lock_guard<std::mutex> lock(mutex);
-    msgs.emplace_back(message{parameterID, newValue});
+    std::unique_lock<std::mutex> lock(mutex);
+    msgs.emplace(message{parameterID, newValue});
     newMessages = true;
 }
 
 void ResponseCurveComponent::timerCallback()
 {
-    if (newMessages)
+    bool shouldRepaint = false;
     {
-        newMessages = false;
-        for (auto &msg : msgs)
+        std::unique_lock<std::mutex> lock(mutex, std::try_to_lock);
+        if (newMessages && lock.owns_lock())
         {
-            if (msg.id == "bandSplit")
+            newMessages = false;
+            auto nMsg = msgs.size();
+            for (size_t i = 0; i < nMsg; ++i)
             {
-                this->setVisible((bool)msg.value);
-                repaint();
-            }
-            else
-            {
-                size_t id = msg.id.getTrailingIntValue();
-                *lowPass[id].coefficients = dsp::IIR::ArrayCoefficients<float>::makeLowPass(sampleRate, crossovers[id]->get());
-                *highPass[id].coefficients = dsp::IIR::ArrayCoefficients<float>::makeHighPass(sampleRate, crossovers[id]->get());
-                repaint();
+                auto &msg = msgs.front();
+                if (msg.id == "bandSplit")
+                {
+                    this->setVisible((bool)msg.value);
+                }
+                else
+                {
+                    size_t id = msg.id.getTrailingIntValue();
+                    *lowPass[id].coefficients = dsp::IIR::ArrayCoefficients<float>::makeLowPass(sampleRate, crossovers[id]->get());
+                    *highPass[id].coefficients = dsp::IIR::ArrayCoefficients<float>::makeHighPass(sampleRate, crossovers[id]->get());
+                    // repaint();
+                    shouldRepaint = true;
+                }
+                msgs.pop();
             }
         }
-        msgs.clear();
     }
+
+    if (shouldRepaint)
+        repaint();
 
     /*only draw add button if mouse is over component*/
     if ((isMouseOver() || addButton.isMouseOver()) && *audioProcessor.bandSplit)
@@ -646,24 +655,17 @@ void ResponseCurveComponent::timerCallback()
     else
         addButton.setVisible(false);
 
-    if (sliders[0]->wasRightClicked && numBands > 1)
+    for (size_t n = 0; n < sliders.size(); ++n)
     {
-        removeBand(0);
-        audioProcessor.updateNumBands(numBands);
-    }
-    else
-    {
-        sliders[0]->wasRightClicked = false;
-    }
-    if (sliders[1]->wasRightClicked && numBands > 1)
-    {
-        removeBand(1);
-        audioProcessor.updateNumBands(numBands);
-    }
-    if (sliders[2]->wasRightClicked && numBands > 1)
-    {
-        removeBand(2);
-        audioProcessor.updateNumBands(numBands);
+        if (sliders[n]->wasRightClicked && numBands > 1)
+        {
+            removeBand(n);
+            audioProcessor.updateNumBands(numBands);
+        }
+        else if (n == 0 && numBands == 1)
+        {
+            sliders[0]->wasRightClicked = false;
+        }
     }
 }
 
@@ -780,6 +782,13 @@ inline void ResponseCurveComponent::setBand() noexcept
     }
 
     sliders[numBands - 1]->setBounds(getLocalBounds());
+
+    {
+        std::unique_lock<std::mutex> lock(mutex);
+        for (size_t n = 0; n < sliders.size(); ++n)
+            msgs.emplace(message{"crossover" + String(n), slider[n].getValue()});
+        newMessages = true;
+    }
 }
 
 inline void ResponseCurveComponent::removeBand(int index) noexcept

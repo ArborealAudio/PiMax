@@ -182,7 +182,7 @@ private:
         String id;
         float value;
     };
-    std::vector<message> msgs;
+    std::queue<message> msgs;
 
     int numBands = 2;
     double sampleRate = 44100.0;
