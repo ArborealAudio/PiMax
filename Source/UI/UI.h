@@ -43,7 +43,7 @@ static int readConfigFile(const String &property)
         return 0;
 
     auto xml = parseXML(config);
-    if (xml != nullptr && xml->hasTagName("Config"))
+    if (xml != nullptr && (xml->hasTagName("Config") || xml->hasTagName("UISize")))
         return xml->getIntAttribute(property, 0);
 
     return 0;

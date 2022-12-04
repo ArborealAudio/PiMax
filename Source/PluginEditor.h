@@ -116,7 +116,7 @@ private:
 
         if (uiSizeFile.existsAsFile()) {
             auto xml = parseXML(uiSizeFile);
-            if (xml->hasTagName("Config")) {
+            if (xml->hasTagName("Config") || xml->hasTagName("UISize")) {
                 width = xml->getIntAttribute("uiWidth", width);
                 height = xml->getIntAttribute("uiHeight", height);
             }
