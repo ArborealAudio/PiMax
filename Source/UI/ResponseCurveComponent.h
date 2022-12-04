@@ -172,6 +172,9 @@ private:
     std::vector<dsp::IIR::Coefficients<float>> lowPassCoeffs, highPassCoeffs;
     std::array<strix::FloatParameter *, 3> crossovers;
     std::vector<double> magLVec, magM1Vec, magM2Vec, magHVec;
+
+    std::mutex mutex;
+
     std::atomic<bool> newMessages = false;
 
     struct message

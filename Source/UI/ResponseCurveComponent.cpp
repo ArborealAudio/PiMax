@@ -612,6 +612,7 @@ inline void ResponseCurveComponent::drawAddButton(Graphics &g, const Rectangle<f
 
 void ResponseCurveComponent::parameterChanged(const String &parameterID, float newValue)
 {
+    std::lock_guard<std::mutex> lock(mutex);
     msgs.emplace_back(message{parameterID, newValue});
     newMessages = true;
 }
