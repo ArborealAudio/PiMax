@@ -117,7 +117,7 @@ struct MultibandProcessor
     {
         numBands = newNumBands;
 
-        for (int i = 0; i < bands.size(); ++i) {
+        for (size_t i = 0; i < bands.size(); ++i) {
             if (!*linearPhase) {
                 bands[i].updateFilter(*crossovers[i]);
                 bands[i].reset();
