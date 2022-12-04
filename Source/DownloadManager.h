@@ -188,13 +188,13 @@ private:
     String changes;
 
     std::function<void(gin::DownloadManager::DownloadResult)> result =
-        [this](gin::DownloadManager::DownloadResult download)
+        [this](gin::DownloadManager::DownloadResult dlResult)
     {
         repaint();
 
-        downloadStatus.store(download.ok);
+        downloadStatus.store(dlResult.ok);
 
-        if (!download.ok)
+        if (!dlResult.ok)
             return;
 
 #if JUCE_WINDOWS
@@ -207,7 +207,7 @@ private:
 #elif JUCE_MAC || JUCE_LINUX
         auto dmg = File("~/Downloads/PiMax-mac.dmg");
 
-        if (!download.saveToFile(dmg))
+        if (!dlResult.saveToFile(dmg))
             downloadStatus.store(false);
         else
             downloadFinished.store(true);
