@@ -38,7 +38,7 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(MaximizerAudioProce
     menu->windowResizeCallback = [&]
     { resetWindowSize(); };
 #if JUCE_WINDOWS || JUCE_LINUX
-    menu.openGLCallback = [&](bool state)
+    menu->openGLCallback = [&](bool state)
     {
         if (state)
             opengl.attachTo(*this);
