@@ -12,16 +12,14 @@
 
 const String versionURL
 #if PRODUCTION_BUILD
-{ "https://arborealaudio.com/versions/PiMax-latest.json" };
+    {"https://arborealaudio.com/versions/PiMax-latest.json"};
 #else
-{ "https://arborealaudio.com/versions/test/PiMax-latest.json" };
+    {"https://arborealaudio.com/versions/test/PiMax-latest.json"};
 #endif
 
-const String downloadURLWin
-{ "https://arborealaudioinstallers.s3.amazonaws.com/pimax/PiMax-windows.exe" };
+const String downloadURLWin{"https://arborealaudioinstallers.s3.amazonaws.com/pimax/PiMax-windows.exe"};
 
-const String downloadURLMac
-{ "https://arborealaudioinstallers.s3.amazonaws.com/pimax/PiMax-mac.dmg" };
+const String downloadURLMac{"https://arborealaudioinstallers.s3.amazonaws.com/pimax/PiMax-mac.dmg"};
 
 struct DownloadManager : Component
 {
@@ -35,17 +33,34 @@ struct DownloadManager : Component
         addChildComponent(retry);
         retry.setLookAndFeel(&lnf);
 
-        if (checkForUpdate() && !updated) {
-            DBG("need update");
-            setVisible(true);
-        }
-        else {
-            setVisible(false);
-        }
+        future = std::async(std::launch::async, [&]{checkForUpdate();});
 
-        no.onClick = [this] { setVisible(false); updated = true; onUpdateChange(updated); };
-        yes.onClick = [this] { downloadFinished.store(false); downloadUpdate(); };
-        
+        onUpdateCheck = [&](bool needsUpdate)
+        {
+            if (needsUpdate && !updated)
+            {
+                DBG("need update");
+                setVisible(true);
+            }
+            else
+            {
+                setVisible(false);
+            }
+        };
+        // if (checkForUpdate() && !updated)
+        // {
+        //     DBG("need update");
+        //     setVisible(true);
+        // }
+        // else
+        // {
+        //     setVisible(false);
+        // }
+
+        no.onClick = [this]
+        { setVisible(false); updated = true; onUpdateChange(updated); };
+        yes.onClick = [this]
+        { downloadFinished.store(false); downloadUpdate(); };
     }
 
     ~DownloadManager()
@@ -55,9 +70,9 @@ struct DownloadManager : Component
         retry.setLookAndFeel(nullptr);
     }
 
-    bool checkForUpdate()
+    void checkForUpdate()
     {
-        if (auto stream = URL(versionURL).createInputStream(URL::InputStreamOptions(URL::ParameterHandling::inAddress)))
+        if (auto stream = URL(versionURL).createInputStream(URL::InputStreamOptions(URL::ParameterHandling::inAddress).withConnectionTimeoutMs(10000)))
         {
             auto data = JSON::parse(stream->readEntireStreamAsString());
 
@@ -77,20 +92,23 @@ struct DownloadManager : Component
                 changes = changesObj;
 
             auto latestVersion = data.getProperty("version", var());
-            
+
             DBG("Current: " << String(ProjectInfo::versionString));
             DBG("Latest: " << latestVersion.toString());
-            
+
 #if PRODUCTION_BUILD
-            return String(ProjectInfo::versionString).removeCharacters(".") < latestVersion.toString().removeCharacters(".");
+            // return String(ProjectInfo::versionString).removeCharacters(".") < latestVersion.toString().removeCharacters(".");
+            if (onUpdateCheck)
+                onUpdateCheck(String(ProjectInfo::versionString).removeCharacters(".") < latestVersion.toString().removeCharacters("."));
 #else
-            DBG("Update result: " << int(String(ProjectInfo::versionString).removeCharacters(".")
-                < latestVersion.toString().removeCharacters(".")));
-            return true;
+            DBG("Update result: " << int(String(ProjectInfo::versionString).removeCharacters(".") < latestVersion.toString().removeCharacters(".")));
+            if (onUpdateCheck)
+                onUpdateCheck(true);
 #endif
         }
         else
-            return false;
+            if (onUpdateCheck)
+                onUpdateCheck(false);
     }
 
     void downloadUpdate()
@@ -108,12 +126,13 @@ struct DownloadManager : Component
         isInstalling.store(false);
     }
 
-    void paint(Graphics& g) override
+    void paint(Graphics &g) override
     {
-        if (isVisible()) {
+        if (isVisible())
+        {
             g.setColour(Colours::darkslategrey);
             g.fillRoundedRectangle(getLocalBounds().toFloat(), 15.f);
-            
+
 #if !JUCE_MAC
             g.setFont(getCustomFont(FontStyle::Regular).withHeight(14.f));
 #else
@@ -121,30 +140,35 @@ struct DownloadManager : Component
 #endif
             g.setColour(Colour(0xa7a7a7a7));
 
-            auto textbounds = Rectangle<int>{ getLocalBounds().withTrimmedBottom(70) };
+            auto textbounds = Rectangle<int>{getLocalBounds().withTrimmedBottom(70)};
 
-            if (!downloadFinished.load()) {
+            if (!downloadFinished.load())
+            {
                 if (!isDownloading.load())
                     g.drawFittedText("A new update is available! Would you like to download?\n\nChanges:\n" + changes, textbounds, Justification::centredTop, 10, 0.f);
                 else
                     g.drawFittedText("Downloading... " + String(downloadProgress.load(), 2) + "%",
-                        textbounds, Justification::centred,
-                        1, 1.f);
+                                     textbounds, Justification::centred,
+                                     1, 1.f);
             }
-            else {
-                if (downloadStatus.load()) {
+            else
+            {
+                if (downloadStatus.load())
+                {
                     g.drawFittedText("Download complete.\nThe installer is in your Downloads folder. You must close your DAW to run the installation.",
-                        textbounds, Justification::centred,
-                        7, 1.f);
+                                     textbounds, Justification::centred,
+                                     7, 1.f);
                     yes.setVisible(false);
                     no.setButtonText("Close");
                 }
-                else {
+                else
+                {
                     g.drawFittedText("Download failed. Please try again.",
-                        textbounds, Justification::centred,
-                        7, 1.f);
+                                     textbounds, Justification::centred,
+                                     7, 1.f);
                     retry.setVisible(true);
-                    retry.onClick = [this] {yes.onClick(); };
+                    retry.onClick = [this]
+                    { yes.onClick(); };
                 }
             }
         }
@@ -157,11 +181,9 @@ struct DownloadManager : Component
         auto halfWidth = getWidth() / 2;
         auto halfHeight = getHeight() / 2;
 
-        Rectangle<int> yesBounds{ getLocalBounds().withTrimmedTop(halfHeight).withTrimmedRight(halfWidth)
-                                .reduced(20, 30)};
-        Rectangle<int> noBounds{ getLocalBounds().withTrimmedTop(halfHeight).withTrimmedLeft(halfWidth)
-                                .reduced(20, 30) };
-        Rectangle<int> retryBounds{ getLocalBounds().withTrimmedTop(halfHeight).reduced(20, 30) };
+        Rectangle<int> yesBounds{getLocalBounds().withTrimmedTop(halfHeight).withTrimmedRight(halfWidth).reduced(20, 30)};
+        Rectangle<int> noBounds{getLocalBounds().withTrimmedTop(halfHeight).withTrimmedLeft(halfWidth).reduced(20, 30)};
+        Rectangle<int> retryBounds{getLocalBounds().withTrimmedTop(halfHeight).reduced(20, 30)};
 
         yes.setBounds(yesBounds);
         no.setBounds(noBounds);
@@ -171,9 +193,13 @@ struct DownloadManager : Component
     std::function<void(bool)> onUpdateChange;
 
 private:
+    std::function<void(bool)> onUpdateCheck;
+
+    std::future<void> future;
+
     gin::DownloadManager download;
 
-    TextButton yes{ "Yes" }, no{ "No" }, retry{ "Retry" };
+    TextButton yes{"Yes"}, no{"No"}, retry{"Retry"};
 
     TopButtonLNF lnf;
 
@@ -199,7 +225,7 @@ private:
 
 #if JUCE_WINDOWS
         auto exe = File("C:/Users/" + SystemStats::getLogonName() + "/Downloads/PiMax-windows.exe");
-        
+
         if (!dlResult.saveToFile(exe))
             downloadStatus.store(false);
         else
@@ -212,7 +238,7 @@ private:
         else
             downloadFinished.store(true);
 #endif
-        
+
         updated = true;
         if (onUpdateChange != nullptr)
             onUpdateChange(updated);
@@ -224,5 +250,4 @@ private:
         downloadProgress = 100.f * ((float)downloaded / (float)total);
         repaint();
     };
-
 };
