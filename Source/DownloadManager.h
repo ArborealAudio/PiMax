@@ -12,16 +12,16 @@
 
 const String versionURL
 #if PRODUCTION_BUILD
-{ "https://arborealaudio.com/wp-content/versions/PiMax-latest.json" };
+{ "https://arborealaudio.com/versions/PiMax-latest.json" };
 #else
 { "https://arborealaudio.com/versions/test/PiMax-latest.json" };
 #endif
 
 const String downloadURLWin
-{ "https://arborealaudio.com/wp-content/downloads/PiMax-windows.exe" };
+{ "https://arborealaudioinstallers.s3.amazonaws.com/pimax/PiMax-windows.exe" };
 
 const String downloadURLMac
-{ "https://arborealaudio.com/wp-content/downloads/PiMax-mac.dmg" };
+{ "https://arborealaudioinstallers.s3.amazonaws.com/pimax/PiMax-mac.dmg" };
 
 struct DownloadManager : Component
 {
@@ -200,7 +200,7 @@ private:
 #if JUCE_WINDOWS
         auto exe = File("C:/Users/" + SystemStats::getLogonName() + "/Downloads/PiMax-windows.exe");
         
-        if (!download.saveToFile(exe))
+        if (!dlResult.saveToFile(exe))
             downloadStatus.store(false);
         else
             downloadFinished.store(true);
