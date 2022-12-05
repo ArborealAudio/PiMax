@@ -220,9 +220,13 @@ struct UnlockForm : Component
         addAndMakeVisible(close);
         close.setLookAndFeel(&lnf);
 
-        reg.onClick = [this]
-        { runAuth(); };
-        close.onClick = [this]
+        reg.onClick = [&]
+        {
+            future = std::async(std::launch::async, [&]{runAuth();});
+            waiting = true;
+            repaint();
+        };
+        close.onClick = [&]
         { dismiss(); };
     }
 
@@ -239,7 +243,7 @@ struct UnlockForm : Component
         g.drawRoundedRectangle(getLocalBounds().toFloat().reduced(1.5f), 5.f, 1.5f);
         g.setFont(getCustomFont(FontStyle::Regular).withHeight(20.f));
 
-        if (!successRepaint)
+        if (!successRepaint && !waiting)
         {
             g.drawFittedText(userInstructions, getLocalBounds().withTrimmedBottom(300), Justification::centred, 4);
             if (key.isTextInputActive())
@@ -281,7 +285,13 @@ struct UnlockForm : Component
                     setMouseCursor(MouseCursor::NormalCursor);
             }
         }
-        else
+        if (waiting)
+        {
+            key.setVisible(false);
+            reg.setVisible(false);
+            g.drawText("Checking license key...", getLocalBounds(), Justification::centred);
+        }
+        else if (!waiting && successRepaint)
         {
             key.setVisible(false);
             reg.setVisible(false);
@@ -306,6 +316,7 @@ struct UnlockForm : Component
 
         if (result == 0)
         {
+            waiting = false;
             key.unfocusAllComponents();
             key.setText("", false);
             key.setTextToShowWhenEmpty("invalid serial number", Colours::red);
@@ -314,10 +325,12 @@ struct UnlockForm : Component
         else if (result == 1)
         {
             successRepaint = true;
+            waiting = false;
             repaint();
         }
         else
         {
+            waiting = false;
             key.unfocusAllComponents();
             key.setText("", false);
             key.setTextToShowWhenEmpty("Activations maxed!", Colours::red);
@@ -340,7 +353,10 @@ private:
     TopButtonLNF lnf;
     TextButton reg{"Register"}, close{"Close"};
 
-    bool successRepaint = false, clickedLink = false;
+    std::atomic<bool> successRepaint = false, waiting = false;
+    bool clickedLink = false;
+
+    std::future<void> future;
 
     UnlockStatus &status;
 };
