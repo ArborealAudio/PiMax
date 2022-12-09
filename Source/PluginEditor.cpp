@@ -18,12 +18,15 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(MaximizerAudioProce
       activationComp(p.isUnlocked, p.trialRemaining_ms),
       downloadManager(p.hasUpdated)
 {
-    getLookAndFeel().setDefaultSansSerifTypeface(getCustomFont(FontStyle::Regular).getTypeface());
+    auto &globalLNF = LookAndFeel::getDefaultLookAndFeel();
+    globalLNF.setDefaultSansSerifTypeface(getCustomFont(FontStyle::Regular).getTypeface());
+    globalLNF.setColour(PopupMenu::backgroundColourId, Colour(0xff30414d).darker(0.5f));
+    globalLNF.setColour(PopupMenu::highlightedBackgroundColourId, Colours::grey);
 
     if ((bool)readConfigFile("tooltip"))
         tooltip = std::make_unique<TooltipWindow>(this, 2000);
 
-    menu = std::make_unique<MenuComponent>(p.apvts);
+    menu = std::make_unique<MenuComponent>();
 
 #if JUCE_WINDOWS || JUCE_LINUX
     opengl.setImageCacheSize((size_t)64 * 1024000);

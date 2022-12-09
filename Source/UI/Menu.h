@@ -7,29 +7,20 @@
 
 class MenuComponent : public Component
 {
-    AudioProcessorValueTreeState &vts;
-
-    LookAndFeel_V4 lnf;
-
     DrawableButton menuButton;
     std::unique_ptr<Drawable> icon;
 
     bool openGL = false;
 
 public:
-    MenuComponent(AudioProcessorValueTreeState &a) : vts(a),
-                                                     menuButton("Menu", DrawableButton::ButtonStyle::ImageFitted)
+    MenuComponent() : menuButton("Menu", DrawableButton::ButtonStyle::ImageFitted)
     {
-        // openGL = (bool)readConfigFile("openGL");
         addAndMakeVisible(menuButton);
         icon = Drawable::createFromImageData(BinaryData::Hamburger_icon_svg, BinaryData::Hamburger_icon_svgSize);
         menuButton.setImages(icon.get());
-        lnf.setColour(PopupMenu::backgroundColourId, Colours::black);
-        lnf.setColour(PopupMenu::highlightedBackgroundColourId, Colours::grey);
         menuButton.onClick = [&]
         {
             PopupMenu m;
-            m.setLookAndFeel(&lnf);
 #if !JUCE_MAC
             openGL = (bool)readConfigFile("openGL");
             m.addItem(1, "OpenGL", true, openGL);
