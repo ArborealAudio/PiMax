@@ -91,7 +91,8 @@ struct UnlockStatus
 
         DBG("Trying to unlock via URL: " << url.toString(true));
         if (auto stream = URL(url).createInputStream(URL::InputStreamOptions(URL::ParameterHandling::inAddress)
-                                                         .withExtraHeaders("x-api-key: Fb5mXNfHiNaSKABQEl0PiFmYBthvv457bOCA1ou2").withConnectionTimeoutMs(10000)))
+                                                         .withExtraHeaders("x-api-key: Fb5mXNfHiNaSKABQEl0PiFmYBthvv457bOCA1ou2")
+                                                         .withConnectionTimeoutMs(10000)))
         {
             return stream->readEntireStreamAsString();
         }
@@ -207,8 +208,8 @@ private:
 
 struct UnlockForm : Component
 {
-    UnlockForm(UnlockStatus &s, int64 trialTime) : status(s),
-                                                   userInstructions("Register PiMax"), trialRemaining_ms(trialTime)
+    UnlockForm(UnlockStatus &s, int64 trialTime) : userInstructions("Register PiMax"), trialRemaining_ms(trialTime),
+                                                   status(s)
     {
         addAndMakeVisible(key);
         key.setTextToShowWhenEmpty("serial number", Colours::grey);
@@ -222,7 +223,8 @@ struct UnlockForm : Component
 
         reg.onClick = [&]
         {
-            future = std::async(std::launch::async, [&]{runAuth();});
+            future = std::async(std::launch::async, [&]
+                                { runAuth(); });
             waiting = true;
             repaint();
         };
@@ -245,6 +247,8 @@ struct UnlockForm : Component
 
         if (!successRepaint && !waiting)
         {
+            key.setVisible(true);
+            reg.setVisible(true);
             g.drawFittedText(userInstructions, getLocalBounds().withTrimmedBottom(300), Justification::centred, 4);
             if (key.isTextInputActive())
                 key.applyColourToAllText(Colours::white);
@@ -317,7 +321,7 @@ struct UnlockForm : Component
         if (result == 0)
         {
             waiting = false;
-            key.unfocusAllComponents();
+            // key.unfocusAllComponents();
             key.setText("", false);
             key.setTextToShowWhenEmpty("invalid serial number", Colours::red);
             repaint();
@@ -331,7 +335,7 @@ struct UnlockForm : Component
         else
         {
             waiting = false;
-            key.unfocusAllComponents();
+            // key.unfocusAllComponents();
             key.setText("", false);
             key.setTextToShowWhenEmpty("Activations maxed!", Colours::red);
             repaint();
