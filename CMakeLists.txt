@@ -73,9 +73,9 @@ add_subdirectory(Source/Presets)
     
 target_include_directories(PiMax PRIVATE "Source/modules/farbot/include")
 juce_add_modules(
-    "$ENV{HOME}/modules/Gin/modules/gin"
-    "$ENV{HOME}/modules/Gin/modules/gin_gui"
-    "$ENV{HOME}/modules/Arbor_modules")
+    "modules/Gin/modules/gin"
+    "modules/Gin/modules/gin_gui"
+    "modules/Arbor_modules")
 
 target_compile_definitions(PiMax
 PUBLIC
