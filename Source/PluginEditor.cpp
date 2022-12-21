@@ -20,8 +20,8 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(MaximizerAudioProce
 {
     auto &globalLNF = LookAndFeel::getDefaultLookAndFeel();
     globalLNF.setDefaultSansSerifTypeface(getCustomFont(FontStyle::Regular).getTypeface());
-    globalLNF.setColour(PopupMenu::backgroundColourId, Colour(0xff30414d).darker(0.5f));
-    globalLNF.setColour(PopupMenu::highlightedBackgroundColourId, Colours::grey);
+    // globalLNF.setColour(PopupMenu::backgroundColourId, Colour(0xff30414d).darker(0.5f));
+    // globalLNF.setColour(PopupMenu::highlightedBackgroundColourId, Colours::grey);
 
     if ((bool)readConfigFile("tooltip"))
         tooltip = std::make_unique<TooltipWindow>(this, 2000);
@@ -196,6 +196,7 @@ MaximizerAudioProcessorEditor::~MaximizerAudioProcessorEditor()
 #endif
     curve__slider.setLookAndFeel(nullptr);
     unlockButton.setLookAndFeel(nullptr);
+    menu->setLookAndFeel(nullptr);
 }
 
 void MaximizerAudioProcessorEditor::paint(Graphics &g)

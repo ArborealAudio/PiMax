@@ -21,6 +21,7 @@ public:
         menuButton.onClick = [&]
         {
             PopupMenu m;
+            m.setLookAndFeel(new PopupLNF());
 #if !JUCE_MAC
             openGL = (bool)readConfigFile("openGL");
             m.addItem(1, "OpenGL", true, openGL);

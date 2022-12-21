@@ -285,6 +285,12 @@ public:
 
 struct ComboBoxLNF : public LookAndFeel_V4
 {
+    ComboBoxLNF()
+    {
+        setColour(PopupMenu::backgroundColourId, Colour(0xff30414d).darker(0.5f));
+        setColour(PopupMenu::highlightedBackgroundColourId, Colours::grey);
+    }
+
     enum class Type
     {
         Preset,
@@ -379,9 +385,49 @@ struct ComboBoxLNF : public LookAndFeel_V4
         g.drawFittedText(text, label.getLocalBounds(), type == Type::Preset ? Justification::centredLeft : Justification::centred, 1, 1.f);
     }
 
-    void drawPopupMenuBackground(Graphics &g, int width, int height) override
+    void drawPopupMenuItem(Graphics &g, const Rectangle<int> &area, bool isSeparator, bool isActive, bool isHighlighted, bool isTicked, bool hasSubMenu, const String &text, const String &shortcutKeyText, const Drawable *icon, const Colour *textColour) override
     {
-        g.fillAll(Colours::black);
+        if (isHighlighted)
+        {
+            g.setColour(Colours::grey);
+            g.fillRoundedRectangle(area.toFloat(), 10.f);
+        }
+
+        if (isTicked)
+        {
+            g.setColour(Colours::white);
+            g.fillEllipse(area.withTrimmedRight(area.getWidth() - area.getHeight()).reduced(area.getHeight() * 0.33f).toFloat());
+        }
+
+        g.setColour(Colours::white);
+        g.drawFittedText(text, area, Justification::centred, 1);
+    }
+};
+
+struct PopupLNF : LookAndFeel_V4 // simple, hideous struct just for overriding popup menu style
+{
+    PopupLNF()
+    {
+        setColour(PopupMenu::backgroundColourId, Colour(0xff30414d).darker(0.5f));
+        setColour(PopupMenu::highlightedBackgroundColourId, Colours::grey);
+    }
+
+    void drawPopupMenuItem(Graphics &g, const Rectangle<int> &area, bool isSeparator, bool isActive, bool isHighlighted, bool isTicked, bool hasSubMenu, const String &text, const String &shortcutKeyText, const Drawable *icon, const Colour *textColour) override
+    {
+        if (isHighlighted)
+        {
+            g.setColour(Colours::grey);
+            g.fillRoundedRectangle(area.toFloat(), 10.f);
+        }
+
+        if (isTicked)
+        {
+            g.setColour(Colours::white);
+            g.fillEllipse(area.withTrimmedRight(area.getWidth() - area.getHeight()).reduced(area.getHeight() * 0.33f).toFloat());
+        }
+
+        g.setColour(Colours::white);
+        g.drawFittedText(text, area, Justification::centred, 1);
     }
 };
 
