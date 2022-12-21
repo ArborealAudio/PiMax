@@ -16,8 +16,11 @@ const String versionURL
 #else
     {"https://arborealaudio.com/versions/test/PiMax-latest.json"};
 #endif
-
+#if !_M_IX86
 const String downloadURLWin{"https://arborealaudioinstallers.s3.amazonaws.com/pimax/PiMax-windows.exe"};
+#else
+const String downloadURLWin{"https://arborealaudioinstallers.s3.amazonaws.com/pimax/PiMax-win32.exe"};
+#endif
 
 const String downloadURLMac{"https://arborealaudioinstallers.s3.amazonaws.com/pimax/PiMax-mac.dmg"};
 
@@ -40,10 +43,12 @@ struct DownloadManager : Component
             if (needsUpdate && !updated)
             {
                 DBG("need update");
+                MessageManagerLock lock;
                 setVisible(true);
             }
             else
             {
+                MessageManagerLock lock;
                 setVisible(false);
             }
         };
