@@ -191,7 +191,6 @@ UI::UI (MaximizerAudioProcessor& p) : audioProcessor(p), gain__slider(false), ou
     mixSlider.setBounds(480, 300, 50, 75);
 
     addAndMakeVisible(presetComp);
-    presetComp.setLookAndFeel(new PopupLNF());
     presetComp.setCurrentPreset(p.currentPreset);
     presetComp.box.onChange = [&]
     {
@@ -226,7 +225,6 @@ UI::~UI()
     linearPhaseButton.setLookAndFeel(nullptr);
     widthSlider.setLookAndFeel(nullptr);
     mixSlider.setLookAndFeel(nullptr);
-    presetComp.setLookAndFeel(nullptr);
 }
 
 //==============================================================================
