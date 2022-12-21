@@ -43,24 +43,13 @@ struct DownloadManager : Component
             if (needsUpdate && !updated)
             {
                 DBG("need update");
-                MessageManagerLock lock;
                 setVisible(true);
             }
             else
             {
-                MessageManagerLock lock;
                 setVisible(false);
             }
         };
-        // if (checkForUpdate() && !updated)
-        // {
-        //     DBG("need update");
-        //     setVisible(true);
-        // }
-        // else
-        // {
-        //     setVisible(false);
-        // }
 
         no.onClick = [this]
         { setVisible(false); updated = true; onUpdateChange(updated); };
