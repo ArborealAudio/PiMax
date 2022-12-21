@@ -2,7 +2,7 @@
 
 #include "ResponseCurveComponent.h"
 
-ResponseCurveComponent::ResponseCurveComponent(MaximizerAudioProcessor& p) : audioProcessor(p)
+ResponseCurveComponent::ResponseCurveComponent(MaximizerAudioProcessor &p) : audioProcessor(p)
 {
     sliders.reserve(3);
     lowPass.reserve(3);
@@ -12,9 +12,11 @@ ResponseCurveComponent::ResponseCurveComponent(MaximizerAudioProcessor& p) : aud
     solo.reserve(4);
     mute.reserve(4);
     bypass.reserve(4);
-    bandInGain.reserve(4); bandOutGain.reserve(4); bandWidth.reserve(4);
+    bandInGain.reserve(4);
+    bandOutGain.reserve(4);
+    bandWidth.reserve(4);
 
-    if (p.lastDownSampleRate >! 0.0)
+    if (p.lastDownSampleRate > !0.0)
         sampleRate = 88200.0;
     else
         sampleRate = 2.0 * p.lastDownSampleRate;
@@ -25,7 +27,8 @@ ResponseCurveComponent::ResponseCurveComponent(MaximizerAudioProcessor& p) : aud
         addChildComponent(*sliders[i]);
         sliders[i]->setMouseDragSensitivity(400);
         sliders[i]->setTooltip("Adjusts crossover frequency of the adjacent bands. Right-click to remove a crossover.");
-        sliders[i]->onValueChange = [this] { sliderValueChanged = true; };
+        sliders[i]->onValueChange = [this]
+        { sliderValueChanged = true; };
         lowPass.emplace_back();
         highPass.emplace_back();
         crossovers[i] = dynamic_cast<strix::FloatParameter *>(p.apvts.getParameter("crossover" + String(i)));
@@ -43,7 +46,8 @@ ResponseCurveComponent::ResponseCurveComponent(MaximizerAudioProcessor& p) : aud
         solo[i]->setColour(TextButton::buttonOnColourId, Colours::lightgreen);
         solo[i]->setTooltip("Solos the current band.");
         solo[i]->setAlwaysOnTop(true);
-        solo[i]->onClick = [this]() {repaint(); };
+        solo[i]->onClick = [this]()
+        { repaint(); };
         addChildComponent(*solo[i]);
         mute.emplace_back(std::make_unique<TextButton>());
         mute[i]->setClickingTogglesState(true);
@@ -51,7 +55,8 @@ ResponseCurveComponent::ResponseCurveComponent(MaximizerAudioProcessor& p) : aud
         mute[i]->setColour(TextButton::buttonColourId, Colour(0xff30414d));
         mute[i]->setColour(TextButton::buttonOnColourId, Colours::red);
         mute[i]->setTooltip("Mutes the current band.");
-        mute[i]->onClick = [this]() {repaint(); };
+        mute[i]->onClick = [this]()
+        { repaint(); };
         addChildComponent(*mute[i]);
         bypass.emplace_back(std::make_unique<TextButton>());
         bypass[i]->setClickingTogglesState(true);
@@ -59,7 +64,8 @@ ResponseCurveComponent::ResponseCurveComponent(MaximizerAudioProcessor& p) : aud
         bypass[i]->setColour(TextButton::buttonColourId, Colour(0xff30414d));
         bypass[i]->setColour(TextButton::buttonOnColourId, Colours::mediumpurple);
         bypass[i]->setTooltip("Bypasses saturation for the current band.");
-        bypass[i]->onClick = [this]() {repaint(); };
+        bypass[i]->onClick = [this]()
+        { repaint(); };
         addChildComponent(*bypass[i]);
 
         bandInGain.emplace_back(std::make_unique<BandParamSlider>());
@@ -84,7 +90,7 @@ ResponseCurveComponent::ResponseCurveComponent(MaximizerAudioProcessor& p) : aud
         bandWidth[i]->setLabelType(KnobLNF::LabelType::Width);
         bandWidth[i]->setPopupDisplayEnabled(true, true, this);
         bandWidth[i]->setTooltip("Controls stereo width for the current band. Follows the toggle state of "
-        "the main Width knob for widening a mono source.");
+                                 "the main Width knob for widening a mono source.");
         bandWidth[i]->onMouseOver = [this, i]()
         {
             bandWidth[i]->setLNFImage(createComponentSnapshot(getLocalBounds()));
@@ -95,7 +101,7 @@ ResponseCurveComponent::ResponseCurveComponent(MaximizerAudioProcessor& p) : aud
     p.apvts.addParameterListener("bandSplit", this);
 
     numBands = p.numBands;
-    
+
     if (numBands < 3)
         addChildComponent(addButton);
     addButton.setButtonText("+");
@@ -120,24 +126,27 @@ ResponseCurveComponent::~ResponseCurveComponent()
     stopTimer();
 }
 
-void ResponseCurveComponent::paint(Graphics& g)
+void ResponseCurveComponent::paint(Graphics &g)
 {
     if (!*audioProcessor.bandSplit)
         return;
 
     ColourGradient gradient(Colour(0xa7a7a7a7).withAlpha(0.125f),
-        getLocalBounds().getCentreX(), getLocalBounds().getCentreY(),
-        Colours::transparentWhite, getLocalBounds().getX(), getLocalBounds().getY(), true);
+                            getLocalBounds().getCentreX(), getLocalBounds().getCentreY(),
+                            Colours::transparentWhite, getLocalBounds().getX(), getLocalBounds().getY(), true);
     g.setGradientFill(gradient);
     g.fillAll();
 
-    for (int i = 0; i < numBands; ++i) {
+    for (size_t i = 0; i < numBands; ++i)
+    {
         sliders[i]->setVisible(true);
-        if (i == 0 && numBands == 1) {
+        if (i == 0 && numBands == 1)
+        {
             sliders[1]->setVisible(false);
             sliders[2]->setVisible(false);
         }
-        else if (i == 1 && numBands == 2) {
+        else if (i == 1 && numBands == 2)
+        {
             sliders[2]->setVisible(false);
         }
     }
@@ -149,7 +158,7 @@ void ResponseCurveComponent::paint(Graphics& g)
     auto slider0Pos = sliders[0]->getPositionOfValue(sliders[0]->getValue());
     auto slider1Pos = sliders[1]->getPositionOfValue(sliders[1]->getValue());
     auto slider2Pos = sliders[2]->getPositionOfValue(sliders[2]->getValue());
-    
+
     if (sliderValueChanged)
         setSliderLimits(slider0Pos, slider1Pos, slider2Pos);
 
@@ -174,25 +183,27 @@ inline void ResponseCurveComponent::setSliderLimits(const float slider0Pos, cons
     auto slider1Lim = (slider0Pos + 50.0);
     auto slider2Lim = (slider1Pos + 50.0);
 
-    if (numBands > 1 && (slider1Pos <= slider1Lim)) {
+    if (numBands > 1 && (slider1Pos <= slider1Lim))
+    {
         sliders[0]->setValue(mapToLog10(double(slider1Pos - 50.0) / double(w), 25.0, 24000.0),
-            sendNotificationAsync);
+                             sendNotificationAsync);
         sliders[1]->setValue(mapToLog10(double(slider1Lim) / double(w), 25.0, 24000.0),
-            sendNotificationAsync);
+                             sendNotificationAsync);
     }
-    
-    if (numBands > 2 && (slider2Pos <= slider2Lim)) {
+
+    if (numBands > 2 && (slider2Pos <= slider2Lim))
+    {
         sliders[1]->setValue(mapToLog10(double(slider2Pos - 50.0) / double(w), 25.0, 24000.0),
-            sendNotificationAsync);
+                             sendNotificationAsync);
         sliders[2]->setValue(mapToLog10(double(slider2Lim) / double(w), 25.0, 24000.0),
-            sendNotificationAsync);
+                             sendNotificationAsync);
     }
 }
 
-inline void ResponseCurveComponent::drawResponseCurve(Graphics& g, const Rectangle<float>& responseArea, const float w)
+inline void ResponseCurveComponent::drawResponseCurve(Graphics &g, const Rectangle<float> &responseArea, const float w)
 {
-    const auto& lp = lowPass;
-    const auto& hp = highPass;
+    const auto &lp = lowPass;
+    const auto &hp = highPass;
 
     for (int i = 0; i < w; ++i)
     {
@@ -200,20 +211,23 @@ inline void ResponseCurveComponent::drawResponseCurve(Graphics& g, const Rectang
 
         auto freq = mapToLog10(double(i) / double(w), 25.0, 24000.0);
 
-        if (numBands > 0) {
+        if (numBands > 0)
+        {
             magL *= lp[0].coefficients->getMagnitudeForFrequency(freq, sampleRate);
             magLVec[i] = 20.0 * log10(magL);
             prevMagH *= hp[0].coefficients->getMagnitudeForFrequency(freq, sampleRate);
             magM1Vec[i] = 20.0 * log10(prevMagH);
         }
-        if (numBands > 1) {
+        if (numBands > 1)
+        {
             prevMagH *= lp[1].coefficients->getMagnitudeForFrequency(freq, sampleRate);
             magM1Vec[i] = 20.0 * log10(prevMagH);
             magH *= hp[1].coefficients->getMagnitudeForFrequency(freq, sampleRate);
             prevMagH = magH;
             magM2Vec[i] = 20.0 * log10(magH);
         }
-        if (numBands > 2) {
+        if (numBands > 2)
+        {
             prevMagH *= lp[2].coefficients->getMagnitudeForFrequency(freq, sampleRate);
             magM2Vec[i] = 20.0 * log10(prevMagH);
             magH *= hp[2].coefficients->getMagnitudeForFrequency(freq, sampleRate);
@@ -230,17 +244,16 @@ inline void ResponseCurveComponent::drawResponseCurve(Graphics& g, const Rectang
 
     g.setColour(Colours::floralwhite);
 
-    std::array<Path, 4> responseCurve
-    { {
-        Path(),
-        Path(),
-        Path(),
-        Path()
-    } };
+    std::array<Path, 4> responseCurve{{Path(),
+                                       Path(),
+                                       Path(),
+                                       Path()}};
 
-    for (int i = 0; i < numBands + 1; ++i) {
+    for (int i = 0; i < numBands + 1; ++i)
+    {
 
-        if (i == 0) {
+        if (i == 0)
+        {
             responseCurve[i].startNewSubPath(responseArea.getX(), map(magLVec.front()));
             for (size_t j = 1; j < magLVec.size(); ++j)
             {
@@ -248,7 +261,8 @@ inline void ResponseCurveComponent::drawResponseCurve(Graphics& g, const Rectang
             }
             g.strokePath(responseCurve[i], PathStrokeType(2.f));
         }
-        else if (i == 1) {
+        else if (i == 1)
+        {
             responseCurve[i].startNewSubPath(responseArea.getX(), map(magM1Vec.front()));
             for (size_t j = 1; j < magM1Vec.size(); ++j)
             {
@@ -256,7 +270,8 @@ inline void ResponseCurveComponent::drawResponseCurve(Graphics& g, const Rectang
             }
             g.strokePath(responseCurve[i], PathStrokeType(2.f));
         }
-        else if (i == 2) {
+        else if (i == 2)
+        {
             responseCurve[i].startNewSubPath(responseArea.getX(), map(magM2Vec.front()));
             for (size_t j = 1; j < magM2Vec.size(); ++j)
             {
@@ -264,7 +279,8 @@ inline void ResponseCurveComponent::drawResponseCurve(Graphics& g, const Rectang
             }
             g.strokePath(responseCurve[i], PathStrokeType(2.f));
         }
-        else if (i == 3) {
+        else if (i == 3)
+        {
             responseCurve[i].startNewSubPath(responseArea.getX(), map(magHVec.front()));
             for (size_t j = 1; j < magHVec.size(); ++j)
             {
@@ -275,43 +291,48 @@ inline void ResponseCurveComponent::drawResponseCurve(Graphics& g, const Rectang
     }
 }
 
-inline void ResponseCurveComponent::drawBandArea(Graphics& g, const float slider0Pos, const float slider1Pos,
-    const float slider2Pos, const Rectangle<float>& responseArea)
+inline void ResponseCurveComponent::drawBandArea(Graphics &g, const float slider0Pos, const float slider1Pos,
+                                                 const float slider2Pos, const Rectangle<float> &responseArea)
 {
     auto w = responseArea.getWidth();
     auto h = responseArea.getHeight();
 
     {
-        const Rectangle<float> area{ 0, 0, slider0Pos, h };
+        const Rectangle<float> area{0, 0, slider0Pos, h};
 
-        if (solo[0]->getToggleState()) {
+        if (solo[0]->getToggleState())
+        {
             g.setColour(Colours::lightgreen.withAlpha(0.1f));
             g.fillRect(area);
         }
-        if (mute[0]->getToggleState()) {
+        if (mute[0]->getToggleState())
+        {
             g.setColour(Colours::red.withAlpha(0.1f));
             g.fillRect(area);
         }
-        if (bypass[0]->getToggleState()) {
+        if (bypass[0]->getToggleState())
+        {
             g.setColour(Colours::mediumpurple.withAlpha(0.1f));
             g.fillRect(area);
         }
     }
 
     {
-        Rectangle<float> area; 
-        numBands > 1 ? area.setBounds(slider0Pos, 0, slider1Pos - slider0Pos, h ) : 
-                       area.setBounds(slider0Pos, 0, w - slider0Pos, h );
+        Rectangle<float> area;
+        numBands > 1 ? area.setBounds(slider0Pos, 0, slider1Pos - slider0Pos, h) : area.setBounds(slider0Pos, 0, w - slider0Pos, h);
 
-        if (solo[1]->getToggleState()) {
+        if (solo[1]->getToggleState())
+        {
             g.setColour(Colours::lightgreen.withAlpha(0.1f));
             g.fillRect(area);
         }
-        if (mute[1]->getToggleState()) {
+        if (mute[1]->getToggleState())
+        {
             g.setColour(Colours::red.withAlpha(0.1f));
             g.fillRect(area);
         }
-        if (bypass[1]->getToggleState()) {
+        if (bypass[1]->getToggleState())
+        {
             g.setColour(Colours::mediumpurple.withAlpha(0.1f));
             g.fillRect(area);
         }
@@ -320,18 +341,20 @@ inline void ResponseCurveComponent::drawBandArea(Graphics& g, const float slider
     if (numBands > 1)
     {
         Rectangle<float> area;
-        numBands > 2 ? area.setBounds(slider1Pos, 0, slider2Pos - slider1Pos, h) :
-                       area.setBounds( slider1Pos, 0, w - slider1Pos, h );
+        numBands > 2 ? area.setBounds(slider1Pos, 0, slider2Pos - slider1Pos, h) : area.setBounds(slider1Pos, 0, w - slider1Pos, h);
 
-        if (solo[2]->getToggleState()) {
+        if (solo[2]->getToggleState())
+        {
             g.setColour(Colours::lightgreen.withAlpha(0.1f));
             g.fillRect(area);
         }
-        if (mute[2]->getToggleState()) {
+        if (mute[2]->getToggleState())
+        {
             g.setColour(Colours::red.withAlpha(0.1f));
             g.fillRect(area);
         }
-        if (bypass[2]->getToggleState()) {
+        if (bypass[2]->getToggleState())
+        {
             g.setColour(Colours::mediumpurple.withAlpha(0.1f));
             g.fillRect(area);
         }
@@ -339,57 +362,60 @@ inline void ResponseCurveComponent::drawBandArea(Graphics& g, const float slider
 
     if (numBands > 2)
     {
-        const Rectangle<float> area{ slider2Pos, 0, w - slider2Pos, h };
+        const Rectangle<float> area{slider2Pos, 0, w - slider2Pos, h};
 
-        if (solo[3]->getToggleState()) {
+        if (solo[3]->getToggleState())
+        {
             g.setColour(Colours::lightgreen.withAlpha(0.1f));
             g.fillRect(area);
         }
-        if (mute[3]->getToggleState()) {
+        if (mute[3]->getToggleState())
+        {
             g.setColour(Colours::red.withAlpha(0.1f));
             g.fillRect(area);
         }
-        if (bypass[3]->getToggleState()) {
+        if (bypass[3]->getToggleState())
+        {
             g.setColour(Colours::mediumpurple.withAlpha(0.1f));
             g.fillRect(area);
         }
     }
 }
 
-inline void ResponseCurveComponent::drawBandParams(Graphics& g, const float slider0Pos, const float slider1Pos,
-    const float slider2Pos, const float width)
+inline void ResponseCurveComponent::drawBandParams(Graphics &g, const float slider0Pos, const float slider1Pos,
+                                                   const float slider2Pos, const float width)
 {
-    if (isMouseOverOrDragging(true) && !sliders[0]->isMouseOverOrDragging() && !sliders[1]->isMouseOverOrDragging()
-        && !sliders[2]->isMouseOverOrDragging())
+    if (isMouseOverOrDragging(true) && !sliders[0]->isMouseOverOrDragging() && !sliders[1]->isMouseOverOrDragging() && !sliders[2]->isMouseOverOrDragging())
     {
 
-        #ifndef FLEX_ARGS
-        #define FLEX_ARGS FlexBox::Direction::row, FlexBox::Wrap::wrap, FlexBox::AlignContent::spaceAround,\
-            FlexBox::AlignItems::center, FlexBox::JustifyContent::center
-        #endif
+#ifndef FLEX_ARGS
+#define FLEX_ARGS FlexBox::Direction::row, FlexBox::Wrap::wrap, FlexBox::AlignContent::spaceAround, \
+                  FlexBox::AlignItems::center, FlexBox::JustifyContent::center
+#endif
 
         FlexBox flex(FLEX_ARGS);
         FlexBox buttonsFlexBox(FLEX_ARGS);
         FlexBox knobsFlexBox(FLEX_ARGS);
 
-        for (auto& b : solo)
+        for (auto &b : solo)
             b->setVisible(false);
-        for (auto& b : mute)
+        for (auto &b : mute)
             b->setVisible(false);
-        for (auto& b : bypass)
+        for (auto &b : bypass)
             b->setVisible(false);
-        for (auto& s : bandInGain)
+        for (auto &s : bandInGain)
             s->setVisible(false);
-        for (auto& s : bandOutGain)
+        for (auto &s : bandOutGain)
             s->setVisible(false);
-        for (auto& s : bandWidth)
+        for (auto &s : bandWidth)
             s->setVisible(false);
 
         paintAddButton = true;
         auto mousePos = getMouseXYRelative();
         auto mouseX = mousePos.getX();
 
-        if (mouseX <= slider0Pos) {
+        if (mouseX <= slider0Pos)
+        {
             solo[0]->setVisible(true);
             mute[0]->setVisible(true);
             bypass[0]->setVisible(true);
@@ -401,12 +427,12 @@ inline void ResponseCurveComponent::drawBandParams(Graphics& g, const float slid
             Array<FlexItem> buttons;
             Array<FlexItem> knobs;
 
-            buttons.add (FlexItem(20, 20, *solo[0]));
-            buttons.add (FlexItem(20, 20, *mute[0]));
-            buttons.add (FlexItem(20, 20, *bypass[0]));
-            knobs.add (FlexItem(32, 32, *bandInGain[0]));
-            knobs.add (FlexItem(32, 32, *bandOutGain[0]));
-            knobs.add (FlexItem(32, 32, *bandWidth[0]));
+            buttons.add(FlexItem(20, 20, *solo[0]));
+            buttons.add(FlexItem(20, 20, *mute[0]));
+            buttons.add(FlexItem(20, 20, *bypass[0]));
+            knobs.add(FlexItem(32, 32, *bandInGain[0]));
+            knobs.add(FlexItem(32, 32, *bandOutGain[0]));
+            knobs.add(FlexItem(32, 32, *bandWidth[0]));
 
             buttonsFlexBox.items = buttons;
             knobsFlexBox.items = knobs;
@@ -416,12 +442,12 @@ inline void ResponseCurveComponent::drawBandParams(Graphics& g, const float slid
 
             flex.items.add(buttonsItem, knobsItem);
 
-            Rectangle<float> area{ 0, 51, slider0Pos, 145 };
+            Rectangle<float> area{0, 51, slider0Pos, 145};
 
             flex.performLayout(area);
         }
-        else if ((mouseX > slider0Pos && mouseX < slider1Pos && numBands > 1)
-            || (mouseX > slider0Pos && numBands < 2)) {
+        else if ((mouseX > slider0Pos && mouseX < slider1Pos && numBands > 1) || (mouseX > slider0Pos && numBands < 2))
+        {
             solo[1]->setVisible(true);
             mute[1]->setVisible(true);
             bypass[1]->setVisible(true);
@@ -444,21 +470,21 @@ inline void ResponseCurveComponent::drawBandParams(Graphics& g, const float slid
             knobsFlexBox.items = knobs;
 
             FlexItem buttonsItem(numBands > 1 ? slider1Pos - slider0Pos : width - slider0Pos,
-                60, buttonsFlexBox);
+                                 60, buttonsFlexBox);
             FlexItem knobsItem(numBands > 1 ? slider1Pos - slider0Pos : width - slider0Pos,
-                96, knobsFlexBox);
+                               96, knobsFlexBox);
 
             flex.items.add(buttonsItem, knobsItem);
 
-            Rectangle<float> area{ slider0Pos, 51,
-                numBands > 1 ? slider1Pos - slider0Pos : width - slider0Pos,
-                145 };
+            Rectangle<float> area{slider0Pos, 51,
+                                  numBands > 1 ? slider1Pos - slider0Pos : width - slider0Pos,
+                                  145};
 
             flex.performLayout(area);
-
         }
         else if ((mouseX > slider1Pos && numBands == 2) ||
-            (mouseX > slider1Pos && mouseX < slider2Pos && numBands > 2)) {
+                 (mouseX > slider1Pos && mouseX < slider2Pos && numBands > 2))
+        {
 
             solo[2]->setVisible(true);
             mute[2]->setVisible(true);
@@ -482,20 +508,20 @@ inline void ResponseCurveComponent::drawBandParams(Graphics& g, const float slid
             knobsFlexBox.items = knobs;
 
             FlexItem buttonsItem(numBands > 2 ? slider2Pos - slider1Pos : width - slider1Pos,
-                60, buttonsFlexBox);
+                                 60, buttonsFlexBox);
             FlexItem knobsItem(numBands > 2 ? slider2Pos - slider1Pos : width - slider1Pos,
-                96, knobsFlexBox);
+                               96, knobsFlexBox);
 
             flex.items.add(buttonsItem, knobsItem);
 
-            Rectangle<float> area{ slider1Pos, 51,
-                numBands > 2 ? slider2Pos - slider1Pos : width - slider1Pos,
-                145 };
+            Rectangle<float> area{slider1Pos, 51,
+                                  numBands > 2 ? slider2Pos - slider1Pos : width - slider1Pos,
+                                  145};
 
             flex.performLayout(area);
-
         }
-        else if (mouseX > slider2Pos && numBands > 2) {
+        else if (mouseX > slider2Pos && numBands > 2)
+        {
             solo[3]->setVisible(true);
             mute[3]->setVisible(true);
             bypass[3]->setVisible(true);
@@ -522,55 +548,60 @@ inline void ResponseCurveComponent::drawBandParams(Graphics& g, const float slid
 
             flex.items.add(buttonsItem, knobsItem);
 
-            Rectangle<float> area{ slider2Pos, 51, width - slider2Pos, 145 };
+            Rectangle<float> area{slider2Pos, 51, width - slider2Pos, 145};
 
             flex.performLayout(area);
         }
     }
-    else {
-        for (auto& b : solo)
+    else
+    {
+        for (auto &b : solo)
             b->setVisible(false);
-        for (auto& b : mute)
+        for (auto &b : mute)
             b->setVisible(false);
-        for (auto& b : bypass)
+        for (auto &b : bypass)
             b->setVisible(false);
-        for (auto& s : bandInGain)
+        for (auto &s : bandInGain)
             s->setVisible(false);
-        for (auto& s : bandOutGain)
+        for (auto &s : bandOutGain)
             s->setVisible(false);
-        for (auto& s : bandWidth)
+        for (auto &s : bandWidth)
             s->setVisible(false);
     }
 }
 
-inline void ResponseCurveComponent::drawAddButton(Graphics& g, const Rectangle<float>& responseArea) noexcept
+inline void ResponseCurveComponent::drawAddButton(Graphics &g, const Rectangle<float> &responseArea) noexcept
 {
-    const auto& mouseX = getMouseXYRelative().getX();
-    const auto& mouseY = addButton.getMouseXYRelative().getY();
+    const auto &mouseX = getMouseXYRelative().getX();
+    const auto &mouseY = addButton.getMouseXYRelative().getY();
 
     if (numBands > 2)
         addButton.setVisible(false);
-    else if (paintAddButton) {
+    else if (paintAddButton)
+    {
         addButton.setVisible(true);
         addButton.setBounds(mouseX - 10, getLocalBounds().getY() + 2, 20, 20);
         addButton.setAlpha(float(getHeight() - mouseY - 30) / float(getHeight() - 30));
 
-        if (addButton.isMouseOver()) {
+        if (addButton.isMouseOver())
+        {
             auto freq = mapToLog10((float)getMouseXYRelative().getX() / responseArea.getWidth(),
-                25.f, 24000.f);
+                                   25.f, 24000.f);
 
             g.setColour(Colours::grey);
-            Rectangle<float> area{ (float)getMouseXYRelative().getX() - 20.f, (float)addButton.getBottom() + 0.5f,
-                40.f, 15.f };
+            Rectangle<float> area{(float)getMouseXYRelative().getX() - 20.f, (float)addButton.getBottom() + 0.5f,
+                                  40.f, 15.f};
             g.fillRoundedRectangle(area, 3.f);
             g.setColour(Colours::floralwhite);
             g.setFont(getCustomFont(FontStyle::Regular).withHeight(14.5f));
-            if (freq < 1000.f) {
+            if (freq < 1000.f)
+            {
                 String freqStr(freq, 1);
                 freqStr.append(" Hz", 3);
                 g.drawFittedText(freqStr, area.toNearestInt(), Justification::centred, 1, 0.f);
             }
-            else {
+            else
+            {
                 String freqStr(freq / 1000.f, 2);
                 freqStr.append(" kHz", 4);
                 g.drawFittedText(freqStr, area.toNearestInt(), Justification::centred, 1, 0.f);
@@ -579,50 +610,64 @@ inline void ResponseCurveComponent::drawAddButton(Graphics& g, const Rectangle<f
     }
 }
 
-void ResponseCurveComponent::parameterChanged(const String& parameterID, float newValue)
+void ResponseCurveComponent::parameterChanged(const String &parameterID, float newValue)
 {
-    paramChangedID = parameterID;
-    paramChangedValue = newValue;
-    paramChanged = true;
+    std::unique_lock<std::mutex> lock(mutex);
+    msgs.emplace(message{parameterID, newValue});
+    newMessages = true;
 }
 
 void ResponseCurveComponent::timerCallback()
 {
-    auto w = getWidth();
-    magLVec.resize(w); magM1Vec.resize(w); magM2Vec.resize(w); magHVec.resize(w);
-    
-    if (paramChanged) {
-        paramChanged = false;
-
-        if (paramChangedID == "bandSplit")
+    bool shouldRepaint = false;
+    {
+        std::unique_lock<std::mutex> lock(mutex, std::try_to_lock);
+        if (newMessages && lock.owns_lock())
         {
-            this->setVisible((bool)paramChangedValue);
-            repaint();
-            return;
+            newMessages = false;
+            auto nMsg = msgs.size();
+            for (size_t i = 0; i < nMsg; ++i)
+            {
+                auto &msg = msgs.front();
+                if (msg.id == "bandSplit")
+                {
+                    this->setVisible((bool)msg.value);
+                }
+                else
+                {
+                    size_t id = msg.id.getTrailingIntValue();
+                    *lowPass[id].coefficients = dsp::IIR::ArrayCoefficients<float>::makeLowPass(sampleRate, crossovers[id]->get());
+                    *highPass[id].coefficients = dsp::IIR::ArrayCoefficients<float>::makeHighPass(sampleRate, crossovers[id]->get());
+                    // repaint();
+                    shouldRepaint = true;
+                }
+                msgs.pop();
+            }
         }
-
-        // make sure IIRs update along with crossovers
-        auto crossoverID = paramChangedID.getTrailingIntValue();
-        for (int i = 0; i < numBands; ++i)
-        {
-            *lowPass[i].coefficients = dsp::IIR::ArrayCoefficients<float>::makeLowPass(sampleRate, crossovers[i]->get());
-            *highPass[i].coefficients = dsp::IIR::ArrayCoefficients<float>::makeHighPass(sampleRate, crossovers[i]->get());
-        }
-        repaint();
     }
-    
+
+    if (shouldRepaint)
+        repaint();
+
     /*only draw add button if mouse is over component*/
     if ((isMouseOver() || addButton.isMouseOver()) && *audioProcessor.bandSplit)
         repaint();
     else
         addButton.setVisible(false);
 
-    if (sliders[0]->wasRightClicked && numBands > 1) { removeBand(0); audioProcessor.updateNumBands(numBands); }
-    else { sliders[0]->wasRightClicked = false; }
-    if (sliders[1]->wasRightClicked && numBands > 1) { removeBand(1); audioProcessor.updateNumBands(numBands); }
-    if (sliders[2]->wasRightClicked && numBands > 1) { removeBand(2); audioProcessor.updateNumBands(numBands); }
-
- }
+    for (size_t n = 0; n < sliders.size(); ++n)
+    {
+        if (sliders[n]->wasRightClicked && numBands > 1)
+        {
+            removeBand(n);
+            audioProcessor.updateNumBands(numBands);
+        }
+        else if (n == 0 && numBands == 1)
+        {
+            sliders[0]->wasRightClicked = false;
+        }
+    }
+}
 
 inline void ResponseCurveComponent::setBand() noexcept
 {
@@ -631,9 +676,9 @@ inline void ResponseCurveComponent::setBand() noexcept
     auto w = getLocalBounds().getWidth();
     auto x = addButton.getX() + 10;
 
-    auto freq = mapToLog10(double(x) / double(w), 25.0, 24000.0);
+    auto freq = mapToLog10(float(x) / float(w), 25.f, 24000.f);
 
-    std::array<double, 3> value;
+    std::array<float, 3> value;
     std::array<Value, 3> slider;
     std::array<Value, 4> bandIn;
     std::array<Value, 4> bandOut;
@@ -659,8 +704,10 @@ inline void ResponseCurveComponent::setBand() noexcept
     if (numBands > 1)
         sliders[numBands - 1]->setVisible(true);
 
-    if (freq < value[0]) {
-        if (numBands > 2) {
+    if (freq < value[0])
+    {
+        if (numBands > 2)
+        {
             slider[2] = value[1];
             bandIn[3] = bandIn[2].getValue();
             bandOut[3] = bandOut[2].getValue();
@@ -674,7 +721,6 @@ inline void ResponseCurveComponent::setBand() noexcept
             bandSolo[2] = bandSolo[1].getValue();
             bandMute[2] = bandMute[1].getValue();
             bandBypass[2] = bandBypass[1].getValue();
-
         }
         slider[1] = value[0];
         slider[0] = freq;
@@ -691,8 +737,10 @@ inline void ResponseCurveComponent::setBand() noexcept
         bandMute[1] = bandMute[0].getValue();
         bandBypass[1] = bandBypass[0].getValue();
     }
-    else if (numBands == 2) {
-        if (freq > value[0]) {
+    else if (numBands == 2)
+    {
+        if (freq > value[0])
+        {
             slider[1] = freq;
             bandIn[2] = 0.0;
             bandOut[2] = 0.0;
@@ -702,8 +750,10 @@ inline void ResponseCurveComponent::setBand() noexcept
             bandBypass[2] = false;
         }
     }
-    else if (numBands == 3) {
-        if (freq > value[0] && freq > value[1]) {
+    else if (numBands == 3)
+    {
+        if (freq > value[0] && freq > value[1])
+        {
             slider[2] = freq;
             bandIn[3] = 0.0;
             bandOut[3] = 0.0;
@@ -712,7 +762,8 @@ inline void ResponseCurveComponent::setBand() noexcept
             bandMute[3] = false;
             bandBypass[3] = false;
         }
-        else if (freq > value[0] && freq < value[1]) {
+        else if (freq > value[0] && freq < value[1])
+        {
             slider[1] = freq;
             slider[2] = value[1];
             bandIn[3] = bandIn[2].getValue();
@@ -731,7 +782,13 @@ inline void ResponseCurveComponent::setBand() noexcept
     }
 
     sliders[numBands - 1]->setBounds(getLocalBounds());
-    
+
+    {
+        std::unique_lock<std::mutex> lock(mutex);
+        for (size_t n = 0; n < sliders.size(); ++n)
+            msgs.emplace(message{"crossover" + String(n), slider[n].getValue()});
+        newMessages = true;
+    }
 }
 
 inline void ResponseCurveComponent::removeBand(int index) noexcept
@@ -744,7 +801,8 @@ inline void ResponseCurveComponent::removeBand(int index) noexcept
     std::array<Value, 4> bandMute;
     std::array<Value, 4> bandBypass;
     std::array<double, 3> value;
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < 3; ++i)
+    {
         slider[i] = audioProcessor.apvts.getParameterAsValue("crossover" + String(i));
         value[i] = sliders[i]->getValue();
     }
@@ -760,9 +818,12 @@ inline void ResponseCurveComponent::removeBand(int index) noexcept
 
     sliders[index]->wasRightClicked = false;
 
-    if (index > 0) {
-        if (index < 2) {
-            if (numBands > 2) {
+    if (index > 0)
+    {
+        if (index < 2)
+        {
+            if (numBands > 2)
+            {
                 slider[1] = value[2];
                 bandIn[2] = bandIn[3].getValue();
                 bandOut[2] = bandOut[3].getValue();
@@ -780,7 +841,8 @@ inline void ResponseCurveComponent::removeBand(int index) noexcept
                 sliders[2]->setVisible(false);
                 numBands -= 1;
             }
-            else {
+            else
+            {
                 slider[1] = 40.0;
                 bandIn[2] = 0.0;
                 bandOut[2] = 0.0;
@@ -792,7 +854,8 @@ inline void ResponseCurveComponent::removeBand(int index) noexcept
                 numBands -= 1;
             }
         }
-        else {
+        else
+        {
             slider[2] = 40.0;
             bandIn[3] = 0.0;
             bandOut[3] = 0.0;
@@ -804,10 +867,12 @@ inline void ResponseCurveComponent::removeBand(int index) noexcept
             numBands -= 1;
         }
     }
-    else {
+    else
+    {
         slider[0] = value[1];
         bandIn[0] = bandIn[1].getValue();
-        if (numBands > 2) {
+        if (numBands > 2)
+        {
             slider[1] = value[2];
             bandIn[1] = bandIn[2].getValue();
             bandOut[1] = bandOut[2].getValue();
@@ -831,7 +896,8 @@ inline void ResponseCurveComponent::removeBand(int index) noexcept
             sliders[2]->setVisible(false);
             numBands -= 1;
         }
-        else {
+        else
+        {
             slider[1] = 40.0;
             bandIn[1] = bandIn[2].getValue();
             bandOut[1] = bandOut[2].getValue();
@@ -851,13 +917,15 @@ inline void ResponseCurveComponent::removeBand(int index) noexcept
     }
 
     audioProcessor.updateNumBands(numBands);
-    
 }
 
 void ResponseCurveComponent::resized()
 {
     auto w = getWidth();
-    magLVec.resize(w); magM1Vec.resize(w); magM2Vec.resize(w); magHVec.resize(w);
+    magLVec.resize(w);
+    magM1Vec.resize(w);
+    magM2Vec.resize(w);
+    magHVec.resize(w);
 
     for (int i = 0; i < 3; ++i)
         sliders[i]->setBounds(getLocalBounds());

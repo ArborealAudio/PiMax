@@ -4,9 +4,12 @@
 [submodule "Source/modules/clap-juce-extensions"]
 	path = Source/modules/clap-juce-extensions
 	url = https://github.com/free-audio/clap-juce-extensions
-[submodule "scripts"]
-	path = scripts
-	url = https://github.com/ArborealAudio/scripts
 [submodule "Source/modules/juce"]
 	path = Source/modules/juce
 	url = https://github.com/juce-framework/juce
+[submodule "Source/modules/Arbor_modules"]
+	path = Source/modules/Arbor_modules
+	url = https://github.com/ArborealAudio/Arbor_modules
+[submodule "Source/modules/Gin"]
+	path = Source/modules/Gin
+	url = https://github.com/FigBug/Gin

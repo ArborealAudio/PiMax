@@ -14,6 +14,7 @@ class MaximPizer
 
 	std::atomic<float>*clip, *type, *boost, *gain;
     strix::FloatParameter *curve;
+    SmoothedValue<float> smoothCurve[2];
     float lastCurve = 1.f;
     float type_m = 0;
     ClipType clip_m;
@@ -45,7 +46,10 @@ public:
         lowShelf.setType(strix::FilterType::firstOrderLowpass);
         lowShelf.setCutoffFreq(150.f * (*curve * *curve));
         lowShelf.setResonance(0.5f);
-	}
+
+        smoothCurve[0].reset(spec.sampleRate, 0.01);
+        smoothCurve[1].reset(spec.sampleRate, 0.01);
+    }
 
     void reset()
     {
@@ -97,39 +101,42 @@ public:
 	template <typename T>
 	void processRegular(size_t channel, size_t numSamples, T* in) noexcept
 	{
-		T yn, x1, x2;
-        double k = *curve;
+		T yn = 0.0, x1 = 0.0, x2 = 0.0, k = 0.0;
+
         if (boost_m)
-            k *= k;
-        for (int i = 0; i < numSamples; ++i)
+            smoothCurve[channel].setTargetValue(*curve * *curve);
+        else
+            smoothCurve[channel].setTargetValue(*curve);
+        for (size_t i = 0; i < numSamples; ++i)
         {
+            k = smoothCurve[channel].getNextValue();
             /*if we're in regular bounds, apply curve algo*/
             const auto xn = in[i];
 
-            const auto a = jlimit(0.0, 1.0, (std::abs(xn) + std::abs(x_n2[channel])) / 2.0);
+            const auto a = jmin(1.0, (std::abs(xn) + std::abs(x_n2[channel])) / 2.0);
 
             if (xn > -1.0 && xn < 1.0) {
                 if (k > 1.0) {
-                    const auto j = this->pow(k, acos(xn * xn));
+                    const auto j = this->pow(k, this->acos(xn * xn));
                     x1 = dsp::FastMathApproximations::sin(halfPi * j * xn);
                     if (xn >= 0.0)
-                        x2 = dsp::FastMathApproximations::sin(halfPi * pow(xn, k));
+                        x2 = dsp::FastMathApproximations::sin(halfPi * this->pow(xn, k));
                     else
-                        x2 = -dsp::FastMathApproximations::sin(halfPi * pow(-xn, k));
+                        x2 = -dsp::FastMathApproximations::sin(halfPi * this->pow(-xn, k));
                     yn = x1 * (1.0 - a) + x2 * a;
                 }
                 else if (k < 1.0) {
                     const auto k_r = (1.0 / k);
-                    const auto j = this->pow(k_r, acos(xn * xn));
+                    const auto j = this->pow(k_r, this->acos(xn * xn));
                     x1 = dsp::FastMathApproximations::sin(halfPi * j * xn);
                     if (xn >= 0.0)
-                        x2 = dsp::FastMathApproximations::sin(halfPi * pow(xn, k_r));
+                        x2 = dsp::FastMathApproximations::sin(halfPi * this->pow(xn, k_r));
                     else
-                        x2 = -dsp::FastMathApproximations::sin(halfPi * pow(-xn, k_r));
+                        x2 = -dsp::FastMathApproximations::sin(halfPi * this->pow(-xn, k_r));
                     yn = x1 * a + x2 * (1.0 - a);
                 }
                 else
-                    yn = sin(halfPi * xn);
+                    yn = std::sin(halfPi * xn);
             }
             /*check for clip*/
             else
@@ -149,7 +156,7 @@ public:
                     break;
                 case ClipType::Infinite:
                     /*full sine for infinite type*/
-                    yn = sin(halfPi * xn);
+                    yn = std::sin(halfPi * xn);
                     break;
                 }
             }
@@ -171,16 +178,32 @@ public:
     void processDeep(size_t ch, size_t numSamples, T* xn)
     {
         FloatVectorOperations::multiply(xn, halfPi, numSamples);
-        const double k = *curve * *curve;
-        for (int i = 0; i < numSamples; ++i)
+        T k = 0.0;
+        if (smoothCurve[ch].isSmoothing())
         {
-            xn[i] = xn[i] / this->pow((1.0 + this->pow(std::abs(xn[i]), k)), 1.0 / k);
-            xn[i] += 0.2f * lowShelf.processSample(ch, xn[i]);
-            xn[i] += 0.2f * hiShelf.processSample(ch, xn[i]);
+            smoothCurve[ch].setTargetValue(*curve * *curve);
+            for (int i = 0; i < numSamples; ++i)
+            {
+                k = smoothCurve[ch].getNextValue();
+                xn[i] = xn[i] / this->pow((1.0 + this->pow(std::abs(xn[i]), k)), 1.0 / k);
+                xn[i] += 0.2f * lowShelf.processSample(ch, xn[i]);
+                xn[i] += 0.2f * hiShelf.processSample(ch, xn[i]);
+                if (k < 1.0)
+                    xn[i] *= 1.0 / k;
+            }
         }
-
-        if (k < 1.0)
-            FloatVectorOperations::multiply(xn, 1.0 / k, numSamples);
+        else
+        {
+            k = *curve * *curve;
+            for (int i = 0; i < numSamples; ++i)
+            {
+                xn[i] = xn[i] / this->pow((1.0 + this->pow(std::abs(xn[i]), k)), 1.0 / k);
+                xn[i] += 0.2f * lowShelf.processSample(ch, xn[i]);
+                xn[i] += 0.2f * hiShelf.processSample(ch, xn[i]);
+            }
+            if (k < 1.0)
+                FloatVectorOperations::multiply(xn, 1.0 / k, numSamples);
+        }
     }
 
     template <typename T>
@@ -188,12 +211,12 @@ public:
     {
         FloatVectorOperations::multiply(xn, halfPi, numSamples);
 
-        auto lfGain = *curve >= 1.f ? *curve * *curve - 1.f : 0.f;
+        smoothCurve[ch].setTargetValue(*curve >= 1.f ? *curve * *curve - 1.f : 0.f);
 
         for (int i = 0; i < numSamples; ++i)
         {
             auto hf = 0.3f * hiShelf.processSample(ch, xn[i]);
-            auto lf = lfGain * lowShelf.processSample(ch, xn[i]);
+            auto lf = smoothCurve[ch].getNextValue() * lowShelf.processSample(ch, xn[i]);
             xn[i] -= hf;
             xn[i] += lf;
             xn[i] = (-1.0 / (1.0 + std::exp(xn[i])) + 0.5);

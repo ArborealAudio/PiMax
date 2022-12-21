@@ -10,9 +10,9 @@
 
 #pragma once
 
-struct PresetComp : Component, private Timer
+struct PresetComp : Component, Timer
 {
-    PresetComp(AudioProcessorValueTreeState& vts) : manager(vts)
+    PresetComp(AudioProcessorValueTreeState &vts) : manager(vts)
     {
         addAndMakeVisible(box);
         box.setJustificationType(Justification::centredLeft);
@@ -26,25 +26,27 @@ struct PresetComp : Component, private Timer
         startTimerHz(2);
     }
 
-    ~PresetComp()
+    ~PresetComp() override
     {
         stopTimer();
     }
 
     void loadPresets()
     {
-        PopupMenu::Item save{ "save" }, saveAs{ "save as" }, copy{ "copy state" }, paste{"paste state"}, presetDir{"open preset folder"};
+        PopupMenu::Item save{"save"}, saveAs{"save as"}, copy{"copy state"}, paste{"paste state"}, presetDir{"open preset folder"};
 
         auto menu = box.getRootMenu();
         menu->clear();
         save.setID(1001);
         save.setTicked(false);
-        save.action = [&] { savePreset(); };
+        save.action = [&]
+        { savePreset(); };
         menu->addItem(save);
 
         saveAs.setID(1002);
         saveAs.setTicked(false);
-        saveAs.action = [&] { savePresetAs(); };
+        saveAs.action = [&]
+        { savePresetAs(); };
         menu->addItem(saveAs);
 
         copy.setID(1003);
@@ -85,7 +87,6 @@ struct PresetComp : Component, private Timer
 
         menu->addSeparator();
         menu->addSubMenu("User Presets", userPresets);
-
     }
 
     String getCurrentPreset() noexcept
@@ -99,7 +100,7 @@ struct PresetComp : Component, private Timer
         box.setText(currentPreset, NotificationType::dontSendNotification);
     }
 
-    void setPresetWithChange(const String& newPreset) noexcept
+    void setPresetWithChange(const String &newPreset) noexcept
     {
         currentPreset = newPreset;
         box.setText(currentPreset, NotificationType::sendNotificationAsync);
@@ -119,7 +120,7 @@ struct PresetComp : Component, private Timer
         editor.toFront(true);
         editor.setText("Preset Name", false);
         editor.grabKeyboardFocus();
-        editor.setHighlightedRegion({ 0, 12 });
+        editor.setHighlightedRegion({0, 12});
 
         editor.onFocusLost = [&]
         {
@@ -127,7 +128,8 @@ struct PresetComp : Component, private Timer
             editor.setVisible(false);
         };
 
-        editor.onEscapeKey = [&] { editor.clear(); editor.setVisible(false); };
+        editor.onEscapeKey = [&]
+        { editor.clear(); editor.setVisible(false); };
 
         editor.onReturnKey = [&]
         {
@@ -140,7 +142,8 @@ struct PresetComp : Component, private Timer
             editor.clear();
             editor.setVisible(false);
 
-            if (manager.savePreset(name, manager.userDir)) {
+            if (manager.savePreset(name, manager.userDir))
+            {
                 loadPresets();
                 setPresetWithChange(name);
             }
@@ -155,15 +158,19 @@ struct PresetComp : Component, private Timer
         auto idx = box.getSelectedItemIndex();
         auto preset = box.getItemText(idx);
 
-        if (id < 1000 && id > 0) {
-
-            if (id <= factoryPresetSize) {
+        if (id < 1000 && id > 0)
+        {
+            /* factory presets */
+            if (id <= factoryPresetSize)
+            {
                 if (manager.loadPreset(preset, true))
                     box.setText(preset, NotificationType::sendNotificationSync);
                 else
                     box.setText("preset not found", NotificationType::dontSendNotification);
             }
-            else {
+            /* user presets */
+            else
+            {
                 if (manager.loadPreset(preset, false))
                     box.setText(preset, NotificationType::sendNotificationSync);
                 else
@@ -191,7 +198,6 @@ struct PresetComp : Component, private Timer
     ComboBox box;
 
 private:
-
     PopupMenu userPresets;
 
     int factoryPresetSize = 0;

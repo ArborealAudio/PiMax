@@ -19,6 +19,36 @@
 
 #pragma once
 
+static void writeConfigFile(const String &property, int value)
+{
+    File config{File::getSpecialLocation(File::userApplicationDataDirectory).getFullPathName() + "/Arboreal Audio/PiMax/config.xml"};
+    if (!config.existsAsFile())
+        config.create();
+
+    auto xml = parseXML(config);
+    if (xml == nullptr)
+    {
+        xml.reset(new XmlElement("Config"));
+    }
+
+    xml->setAttribute(property, value);
+    xml->writeTo(config);
+}
+
+/*returns integer value of read property, incl. 0 if it doesn't exist*/
+static int readConfigFile(const String &property)
+{
+    File config{File::getSpecialLocation(File::userApplicationDataDirectory).getFullPathName() + "/Arboreal Audio/PiMax/config.xml"};
+    if (!config.existsAsFile())
+        return 0;
+
+    auto xml = parseXML(config);
+    if (xml != nullptr && (xml->hasTagName("Config") || xml->hasTagName("UISize")))
+        return xml->getIntAttribute(property, 0);
+
+    return 0;
+}
+
 //[Headers]     -- You can add your own extra header files here --
 #include <JuceHeader.h>
 /*some global includes for all UI*/
@@ -26,16 +56,16 @@
 #include "WaveshaperComponent.h"
 #include "ResponseCurveComponent.h"
 #include "Splash.h"
+#include "Menu.h"
 #include "../Presets/PresetComp.h"
 //[/Headers]
 
-
 //==============================================================================
-class UI  : public juce::Component
+class UI : public juce::Component
 {
 public:
     //==============================================================================
-    UI (MaximizerAudioProcessor&);
+    UI(MaximizerAudioProcessor &);
     ~UI() override;
 
     //==============================================================================
@@ -45,9 +75,10 @@ public:
 
         std::function<void()> onAltClick;
 
-        void mouseDown(const MouseEvent& event) override
+        void mouseDown(const MouseEvent &event) override
         {
-            if (ModifierKeys::currentModifiers.isAltDown()) {
+            if (ModifierKeys::currentModifiers.isAltDown())
+            {
                 if (!altDown)
                     altDown = true;
                 else
@@ -59,7 +90,7 @@ public:
                 Slider::mouseDown(event);
         }
 
-        void mouseDrag(const MouseEvent& event) override
+        void mouseDrag(const MouseEvent &event) override
         {
             event.source.enableUnboundedMouseMovement(true);
             Slider::mouseDrag(event);
@@ -80,17 +111,17 @@ public:
                 sliderBounds = sliderBounds.removeFromRight(40);
 
             Rectangle<float> textBox((textOnLeft ? 10 : 40),
-                float(getPositionOfValue(getValue())), 46, 10);
+                                     float(getPositionOfValue(getValue())), 46, 10);
 
             return sliderBounds.contains(x, y) || textBox.contains(x, y);
         }
 
-        void mouseDrag(const MouseEvent& event) override
+        void mouseDrag(const MouseEvent &event) override
         {
             event.source.enableUnboundedMouseMovement(true);
             Slider::mouseDrag(event);
         }
-        
+
     private:
         bool textOnLeft = false;
     };
@@ -100,11 +131,11 @@ public:
         return presetComp.getCurrentPreset();
     }
 
-    void paint (juce::Graphics& g) override;
+    void paint(juce::Graphics &g) override;
     void resized() override;
 
     GainSlider gain__slider, outVol__slider;
-    
+
     WidthSlider widthSlider, mixSlider;
     TextButton distButton, bandSplit__textButton, linearPhaseButton, hq, renderHQ, autoGain, bypass, boost;
     ComboBox clipBox;
@@ -114,13 +145,13 @@ public:
     ComboBoxLNF hqBoxLNF, clipBoxLNF;
     BottomButtonLNF bottomButtonLNF;
     TopButtonLNF distLNF, bandSplitLNF, autoGainLNF, bypassLNF, boostLNF;
-    
+
     KnobLNF widthLNF, mixLNF;
     strix::VolumeMeterComponent inputMeter, outputMeter;
 
 private:
-    MaximizerAudioProcessor& audioProcessor;
+    MaximizerAudioProcessor &audioProcessor;
 
     //==============================================================================
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (UI)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(UI)
 };

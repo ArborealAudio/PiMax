@@ -19,7 +19,7 @@ struct PresetManager : private AudioProcessorValueTreeState::Listener
 
         for (auto* param : apvts.processor.getParameters())
         {
-            if (const auto p = dynamic_cast<RangedAudioParameter*>(param))
+            if (const auto p = static_cast<RangedAudioParameter*>(param))
                 if (p->paramID != "hq" && p->paramID != "renderHQ" && p->paramID != "bypass")
                     apvts.addParameterListener(p->paramID, this);
         }
@@ -29,7 +29,7 @@ struct PresetManager : private AudioProcessorValueTreeState::Listener
     {
         for (auto* param : apvts.processor.getParameters())
         {
-            if (const auto p = dynamic_cast<RangedAudioParameter*>(param))
+            if (const auto p = static_cast<RangedAudioParameter*>(param))
                 if (p->paramID != "hq" && p->paramID != "renderHQ" && p->paramID != "bypass")
                     apvts.removeParameterListener(p->paramID, this);
         }

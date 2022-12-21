@@ -46,7 +46,7 @@ MaximizerAudioProcessor::MaximizerAudioProcessor()
     boost = apvts.getRawParameterValue("boost");
 
     for (int i = 0; i < 3; ++i)
-        apvts.addParameterListener("crossover" + std::to_string(i), this);
+        apvts.addParameterListener("crossover" + String(i), this);
 
     for (auto& b : m_Proc.bandBuffer)
         b.setSize(getTotalNumOutputChannels(), 16384);
@@ -57,7 +57,7 @@ MaximizerAudioProcessor::MaximizerAudioProcessor()
 
     checkActivation();
 
-    startTimer(200);
+    startTimerHz(20);
 }
 
 MaximizerAudioProcessor::~MaximizerAudioProcessor()
@@ -67,7 +67,7 @@ MaximizerAudioProcessor::~MaximizerAudioProcessor()
     apvts.removeParameterListener("bandSplit", this);
     apvts.removeParameterListener("linearPhase", this);
     for (int i = 0; i < 3; ++i)
-        apvts.removeParameterListener("crossover" + std::to_string(i), this);
+        apvts.removeParameterListener("crossover" + String(i), this);
 
     apvts.state.removeListener(this);
 
@@ -161,7 +161,6 @@ void MaximizerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
     mPi.prepare(spec);
 
     m_Proc.prepare(spec);
-    m_Proc.initCrossovers();
     m_Proc.setOversamplingFactor(oversample[osIndex].getOversamplingFactor());
     
     filterLength = m_Proc.linBand[0].size;
@@ -248,7 +247,7 @@ void MaximizerAudioProcessor::valueTreeRedirected(ValueTree& treeWhichHasBeenCha
     }
 }
 
-void MaximizerAudioProcessor::updateNumBands(int newNumBands) noexcept
+void MaximizerAudioProcessor::updateNumBands(int newNumBands)
 {
     numBands = newNumBands;
 
@@ -260,7 +259,7 @@ void MaximizerAudioProcessor::updateNumBands(int newNumBands) noexcept
     auto val = apvts.state.getChildWithProperty("id", "numBands");
     val.setProperty("value", numBands, nullptr);
 
-    if (onPresetChange != nullptr && hasEditor())
+    if (onPresetChange && getActiveEditor())
         onPresetChange();
 }
 
@@ -316,7 +315,7 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
             buffer.applyGainRamp(0, numSamples, 3.98f, 1.f);
     lastBoost = (bool)*boost;
 
-    inputMeter.measureBlock(buffer);
+    inputMeter.copyBuffer(buffer);
 
     dsp::AudioBlock<float> osBlock;
     if (totalNumOutputChannels > 1)
@@ -446,7 +445,7 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     else
         buffer.applyGain(output_raw);
 
-    outputMeter.measureBlock(buffer);
+    outputMeter.copyBuffer(buffer);
 
     mixer.setWetMixProportion(*mix);
     mixer.mixWetSamples(dsp::AudioBlock<float> (buffer));
@@ -735,6 +734,7 @@ void MaximizerAudioProcessor::checkActivation()
     uint64 gbuuid;
     
     auto uuid = String(OnlineUnlockStatus::MachineIDUtilities::getLocalMachineIDs().strings[0].hashCode64());
+    auto newID = String(SystemStats::getUniqueDeviceID().hashCode64());
 
 #if JUCE_WINDOWS
     String timeFile = "HKEY_CURRENT_USER\\SOFTWARE\\Arboreal Audio\\PiMax\\TrialKey";
@@ -747,12 +747,16 @@ void MaximizerAudioProcessor::checkActivation()
 #elif JUCE_LINUX
     File timeFile = File(File::getSpecialLocation(File::userApplicationDataDirectory).getFullPathName() + "/Arboreal Audio/PiMax/License/trialkey.aal");
 #endif
-    if (!host.isGarageBand()) {
-        if (dir.exists() && !checkUnlock()) {
+    if (!host.isGarageBand())
+    {
+        if (dir.exists() && !checkUnlock())
+        {
             auto xml = parseXML(dir);
-            isUnlocked = (uuid == xml->getStringAttribute("uuid"));
+            isUnlocked = (newID == xml->getStringAttribute("uuid") && xml->getStringAttribute("uuid") != "" && xml->getStringAttribute("uuid") != " ");
+            if (!isUnlocked) // try old ID second
+                isUnlocked = (uuid == xml->getStringAttribute("uuid"));
             if (xml->hasAttribute("key"))
-                isUnlocked = xml->getStringAttribute("key") != " ";
+                isUnlocked = (xml->getStringAttribute("key") != "" && xml->getStringAttribute("key") != " ");
         }
     }
     /*Garageband requires a special directory*/

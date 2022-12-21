@@ -15,22 +15,22 @@
 
 //==============================================================================
 /**
-*/
+ */
 
-class MaximizerAudioProcessorEditor  : public juce::AudioProcessorEditor
+class MaximizerAudioProcessorEditor : public juce::AudioProcessorEditor
 {
 public:
-    MaximizerAudioProcessorEditor (MaximizerAudioProcessor&);
+    MaximizerAudioProcessorEditor(MaximizerAudioProcessor &);
     ~MaximizerAudioProcessorEditor() override;
 
     //==============================================================================
-    void paint (juce::Graphics&) override;
+    void paint(juce::Graphics &) override;
     void resized() override;
     bool hitTest(int x, int y) override
     {
         if (activationComp.isFormVisible())
         {
-            if (activationComp.getBounds().contains(x, y))
+            if (activationComp.getBounds().transformedBy(activationComp.getTransform()).contains(x, y))
                 return true;
             else
                 return false;
@@ -44,7 +44,14 @@ public:
         responseCurveComponent.update(newNumBands);
     }
 
+    void resetWindowSize()
+    {
+        setSize(720, 480);
+        writeUISize(720, 480);
+    }
+
 private:
+    MaximizerAudioProcessor &audioProcessor;
 #if JUCE_WINDOWS || JUCE_LINUX
     OpenGLContext opengl;
 #endif
@@ -65,36 +72,40 @@ private:
     std::vector<std::unique_ptr<AudioProcessorValueTreeState::SliderAttachment>> sliderAttachment, bandInGainAttach, bandOutGainAttach, bandWidthAttach;
     std::unique_ptr<AudioProcessorValueTreeState::ComboBoxAttachment> clipAttachment;
 
-    std::vector<Component*> getComps();
+    std::vector<Component *> getComps();
 
     TopButtonLNF unlockLNF;
-    TextButton unlockButton{ "Unlock" };
+    TextButton unlockButton{"Unlock"};
 
-    TooltipWindow tooltip;
+    std::unique_ptr<TooltipWindow> tooltip = nullptr;
+
+    std::unique_ptr<MenuComponent> menu = nullptr;
 
     void writeUISize(int width, int height)
     {
         auto uiSizeFile = File(File::getSpecialLocation(File::userApplicationDataDirectory).getFullPathName() + "/Arboreal Audio/PiMax/config.xml");
-        if(!uiSizeFile.existsAsFile())
+        if (!uiSizeFile.existsAsFile())
             uiSizeFile.create();
 
         width = jmin(width, 1440);
         height = jmin(height, 960);
-    
-        XmlElement uiXml{"UISize"};
-        uiXml.setAttribute("uiWidth", width);
-        uiXml.setAttribute("uiHeight", height);
-        uiXml.writeTo(uiSizeFile);
 
+        auto uiXml = parseXML(uiSizeFile);
+        if (!uiXml)
+            uiXml.reset(new XmlElement{"Config"});
+
+        uiXml->setAttribute("uiWidth", width);
+        uiXml->setAttribute("uiHeight", height);
+        uiXml->writeTo(uiSizeFile);
 #if JUCE_MAC
         auto gbFile = File("~/Music/Audio Music Apps/Arboreal Audio/PiMax/config.xml");
         if (!gbFile.existsAsFile())
             gbFile.create();
-        uiXml.writeTo(gbFile);
+        uiXml->writeTo(gbFile);
 #endif
     }
 
-    void readUISize(int& width, int& height)
+    void readUISize(int &width, int &height)
     {
         File uiSizeFile;
         PluginHostType host;
@@ -103,18 +114,16 @@ private:
         else
             uiSizeFile = File("~/Music/Audio Music Apps/Arboreal Audio/PiMax/config.xml");
 
-        if (uiSizeFile.existsAsFile()) {
+        if (uiSizeFile.existsAsFile())
+        {
             auto xml = parseXML(uiSizeFile);
-            if (xml->hasTagName("UISize")) {
+            if (xml->hasTagName("Config") || xml->hasTagName("UISize"))
+            {
                 width = xml->getIntAttribute("uiWidth", width);
                 height = xml->getIntAttribute("uiHeight", height);
             }
         }
     }
-    
-    // This reference is provided as a quick way for your editor to
-    // access the processor object that created it.
-    MaximizerAudioProcessor& audioProcessor;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MaximizerAudioProcessorEditor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MaximizerAudioProcessorEditor)
 };

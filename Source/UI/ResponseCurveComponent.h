@@ -5,7 +5,6 @@
 #include "LookAndFeel.h"
 #include "../PluginProcessor.h"
 
-
 struct CrossoverSlider : Slider
 {
     CrossoverSlider()
@@ -24,10 +23,10 @@ struct CrossoverSlider : Slider
     {
         auto sliderBounds = getLocalBounds();
 
-        Rectangle<float> sliderThumb{ float(getPositionOfValue(getValue())),
-            float(sliderBounds.getBottom() - 125),
-            3.0, float(sliderBounds.getHeight()) };
-        Rectangle<float> textBox{ float(getPositionOfValue(getValue()) - 30), 35, 65, 20 };
+        Rectangle<float> sliderThumb{float(getPositionOfValue(getValue())),
+                                     float(sliderBounds.getBottom() - 125),
+                                     3.0, float(sliderBounds.getHeight())};
+        Rectangle<float> textBox{float(getPositionOfValue(getValue()) - 30), 35, 65, 20};
         return sliderThumb.expanded(5).contains(x, y) || textBox.contains(x, y);
     }
 
@@ -41,16 +40,17 @@ struct CrossoverSlider : Slider
         return mapFromLog10(value, 25.0, 24000.0);
     }
 
-    void mouseDown(const MouseEvent& e) override
+    void mouseDown(const MouseEvent &e) override
     {
-        if (ModifierKeys::currentModifiers.isRightButtonDown()) {
+        if (ModifierKeys::currentModifiers.isRightButtonDown())
+        {
             wasRightClicked = true;
         }
         else
             Slider::mouseDown(e);
     }
 
-    void mouseDrag(const MouseEvent& e) override
+    void mouseDrag(const MouseEvent &e) override
     {
         e.source.enableUnboundedMouseMovement(true);
         mouseDragging = true;
@@ -63,7 +63,7 @@ struct CrossoverSlider : Slider
         mouseDragging = false;
     }
 
-    void mouseDoubleClick(const MouseEvent& event) override
+    void mouseDoubleClick(const MouseEvent &event) override
     {
         if (ModifierKeys::currentModifiers.isRightButtonDown())
             return;
@@ -75,7 +75,6 @@ struct CrossoverSlider : Slider
     bool mouseDragging = false;
 
 private:
-
     CrossoverSliderLNF sliderLNF;
 };
 
@@ -99,29 +98,30 @@ struct BandParamSlider : Slider
         knobLNF.setLabelType(type);
     }
 
-    inline void setLNFImage(const Image& newImage)
+    inline void setLNFImage(const Image &newImage)
     {
         knobLNF.setImage(newImage);
     }
 
     std::function<void()> onMouseOver;
 
-    void mouseEnter(const MouseEvent& event) override
+    void mouseEnter(const MouseEvent &event) override
     {
-        if (onMouseOver != nullptr && !painted) {
+        if (onMouseOver != nullptr && !painted)
+        {
             painted = true;
             onMouseOver();
             Slider::mouseEnter(event);
         }
     }
 
-    void mouseDrag(const MouseEvent& e) override
+    void mouseDrag(const MouseEvent &e) override
     {
         e.source.enableUnboundedMouseMovement(true);
         Slider::mouseDrag(e);
     }
 
-    void mouseExit(const MouseEvent& event) override
+    void mouseExit(const MouseEvent &event) override
     {
         painted = false;
         knobLNF.painted = false;
@@ -138,17 +138,17 @@ struct ResponseCurveComponent : Component,
                                 AudioProcessorValueTreeState::Listener,
                                 Timer
 {
-    ResponseCurveComponent(MaximizerAudioProcessor&);
+    ResponseCurveComponent(MaximizerAudioProcessor &);
     ~ResponseCurveComponent() override;
 
-    void parameterChanged(const String& parameterID, float newValue) override;
+    void parameterChanged(const String &parameterID, float newValue) override;
     void timerCallback() override;
-    void paint(Graphics& g) override;
+    void paint(Graphics &g) override;
     inline void setSliderLimits(float slider0Pos, float slider1Pos, float slider2Pos);
-    inline void drawResponseCurve(Graphics& g, const Rectangle<float>& responseArea, float w);
-    inline void drawBandArea(Graphics& g, float slider0Pos, float slider1Pos, float slider2Pos, const Rectangle<float>& responseArea);
-    inline void drawBandParams(Graphics& g, float slider0Pos, float slider1Pos, float slider2Pos, float width);
-    inline void drawAddButton(Graphics& g, const Rectangle<float>& responseArea) noexcept;
+    inline void drawResponseCurve(Graphics &g, const Rectangle<float> &responseArea, float w);
+    inline void drawBandArea(Graphics &g, float slider0Pos, float slider1Pos, float slider2Pos, const Rectangle<float> &responseArea);
+    inline void drawBandParams(Graphics &g, float slider0Pos, float slider1Pos, float slider2Pos, float width);
+    inline void drawAddButton(Graphics &g, const Rectangle<float> &responseArea) noexcept;
     inline void setBand() noexcept;
     inline void removeBand(int index) noexcept;
     inline void update(int newNumBands) noexcept
@@ -162,22 +162,30 @@ struct ResponseCurveComponent : Component,
     std::vector<std::unique_ptr<BandParamSlider>> bandInGain, bandOutGain, bandWidth;
 
 private:
-    MaximizerAudioProcessor& audioProcessor;
+    MaximizerAudioProcessor &audioProcessor;
 
     TextButton addButton;
-    
+
     bool sliderValueChanged = false, paintAddButton = true;
 
     std::vector<dsp::IIR::Filter<float>> lowPass, highPass;
     std::vector<dsp::IIR::Coefficients<float>> lowPassCoeffs, highPassCoeffs;
     std::array<strix::FloatParameter *, 3> crossovers;
     std::vector<double> magLVec, magM1Vec, magM2Vec, magHVec;
-    std::atomic<bool> paramChanged = false;
-    String paramChangedID = "";
-    std::atomic<float> paramChangedValue = 0.f;
+
+    std::mutex mutex;
+
+    std::atomic<bool> newMessages = false;
+
+    struct message
+    {
+        String id;
+        float value;
+    };
+    std::queue<message> msgs;
 
     int numBands = 2;
-    double sampleRate = 0.0;
+    double sampleRate = 44100.0;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ResponseCurveComponent)
 };

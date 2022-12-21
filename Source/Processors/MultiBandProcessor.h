@@ -44,8 +44,10 @@ struct MultibandProcessor
         for (auto& band : bands)
             band.prepare(spec);
 
-        for (int i = 0; i < 3; ++i)
-            linBand[i].prepare(spec);
+        for (auto& lBand : linBand)
+            lBand.prepare(spec);
+
+        initCrossovers();
 
         for (auto& w : bandWidener)
             w.prepare(spec);
@@ -76,7 +78,7 @@ struct MultibandProcessor
 
         for (int b = 0; b < bandBuffer.size(); ++b)
         {
-            bandBuffer[b].setSize(newSpec.numChannels, newSpec.maximumBlockSize);
+            bandBuffer[b].setSize(newSpec.numChannels, newSpec.maximumBlockSize, false, true, true);
             bandBlock[b] = dsp::AudioBlock<float>(bandBuffer[b]);
         }
 
@@ -85,7 +87,7 @@ struct MultibandProcessor
 
         for (auto& band : linBand)
             band.prepare(newSpec);
-
+        
         initCrossovers();
         
         for (auto& w: bandWidener)
@@ -98,7 +100,7 @@ struct MultibandProcessor
     /*passes crossover points to filter objects*/
     inline void initCrossovers() noexcept
     {
-        for (size_t i = 0; i < 3; ++i) {
+        for (size_t i = 0; i < bands.size(); ++i) {
             if (*crossovers[i] > (lastSampleRate * 0.5))
                 bands[i].updateFilter(lastSampleRate * 0.5 - 1.0);
             else
@@ -115,7 +117,7 @@ struct MultibandProcessor
     {
         numBands = newNumBands;
 
-        for (int i = 0; i < 3; ++i) {
+        for (size_t i = 0; i < bands.size(); ++i) {
             if (!*linearPhase) {
                 bands[i].updateFilter(*crossovers[i]);
                 bands[i].reset();
@@ -154,7 +156,8 @@ struct MultibandProcessor
 
         if (*linearPhase)
         {
-            if (n != numBands) {
+            if (n != numBands)
+            {
                 linBand[n].loadBuffers();
 
                 if (n == 0)
@@ -174,16 +177,20 @@ struct MultibandProcessor
         {
             if (n != numBands)
             {
-                for (size_t ch = 0; ch < lowBand.getNumChannels(); ++ch)
-                {
-                    auto low = lowBand.getChannelPointer(ch);
-                    auto high = highBand.getChannelPointer(ch);
+                // for (size_t ch = 0; ch < lowBand.getNumChannels(); ++ch)
+                // {
+                //     auto low = lowBand.getChannelPointer(ch);
+                //     auto high = highBand.getChannelPointer(ch);
 
-                    if (n == 0)
-                        bands[n].process(low, low, high, numSamples, ch);
-                    else
-                        bands[n].process(low, high, numSamples, ch);
-                }
+                //     if (n == 0)
+                //         bands[n].process(low, low, high, numSamples, ch);
+                //     else
+                //         bands[n].process(low, high, numSamples, ch);
+                // }
+                if (n == 0)
+                    bands[n].process<false>(lowBand, highBand);
+                else
+                    bands[n].process<false>(lowBand, highBand);
             }
         }
     }

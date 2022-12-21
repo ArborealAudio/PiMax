@@ -1,4 +1,4 @@
-<img title="" src="file:///C:/Users/alexb/source/repos/PiMax/Source/Resources/arboreal%20tree.svg" alt="arboreal tree.svg" width="68" data-align="center">
+<img title="" src="../Source/Resources/arboreal%20tree.svg" alt="arboreal tree.svg" width="68" data-align="center">
 
 Arboreal Audio presents:
 
@@ -6,7 +6,7 @@ Arboreal Audio presents:
 
 ## Loudness Maximizer & Multiband Enhancer
 
-<img title="" src="file:///C:/Users/alexb/source/repos/PiMax/manual/UI_full.png" alt="UI_full.png" data-align="inline">
+<img title="" src="UI_full.png" alt="UI_full.png" data-align="inline">
 
 ## What is PiMax?
 
@@ -18,11 +18,11 @@ This happens by distorting or clipping the sound source when it reaches a certai
 
 ### Hard Clipping:
 
-<img title="" src="file:///C:/Users/alexb/source/repos/PiMax/manual/hardclip.png" alt="hardclip.png" data-align="inline" width="327">A graph of a hard-clipping waveshaper
+<img title="" src="hardclip.png" alt="hardclip.png" data-align="inline" width="327">A graph of a hard-clipping waveshaper
 
 ### Soft Clipping:
 
-<img title="" src="file:///C:/Users/alexb/source/repos/PiMax/manual/softclip.png" alt="softclip.png" data-align="inline" width="330">Graph of a soft-clipping waveshaper
+<img title="" src="softclip.png" alt="softclip.png" data-align="inline" width="330">Graph of a soft-clipping waveshaper
 
 These graphs illustrate what happens to the sound as it is amplified into the clipper, where the X-axis is the input signal's amplitude (positive or negative), and the Y-axis is the output signal's amplitude. You can envision the purple and green lines as showing the gain applied to the signal as it increases.
 
@@ -100,13 +100,13 @@ In Warm mode, this controls the frequency response of the saturation. Going posi
 
 ## Waveshaper Display
 
-<img src="file:///C:/Users/alexb/source/repos/PiMax/manual/waveshaper.png" title="" alt="waveshaper.png" data-align="center">
+<img src="waveshaper.png" title="" alt="waveshaper.png" data-align="center">
 
 For the visually-inclined, the display in the center of the UI shows you how PiMax is clipping the signal. It's also affected by the output gain, but remember that the output gain does not affect the saturation curve, only the outgoing volume.
 
 ## The Controls | Band Split
 
-<img src="file:///C:/Users/alexb/source/repos/PiMax/manual/bandsplit.png" title="" alt="bandsplit.png" data-align="center">
+<img src="bandsplit.png" title="" alt="bandsplit.png" data-align="center">
 
 By enabling Band Split, you can open up the versatility of PiMax even more, taking advantage of its modular multiband mode.
 
@@ -158,7 +158,7 @@ Additionally, if this is being used in a mono->stereo context, the master Width 
 
 ## Extra Controls
 
-<img src="file:///C:/Users/alexb/source/repos/PiMax/manual/xtra_controls.png" title="" alt="xtra_controls.png" data-align="center">
+<img src="xtra_controls.png" title="" alt="xtra_controls.png" data-align="center">
 
 It's the Current Year, and all your digital audio effects should have the following options:
 

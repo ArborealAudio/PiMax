@@ -1,10 +1,18 @@
 cmake_minimum_required(VERSION 3.15)
 
-project(PiMax VERSION 1.1.0)
-
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_OSX_DEPLOYMENT_TARGET 10.9)
+set(CMAKE_OSX_DEPLOYMENT_TARGET 10.9 CACHE INTERNAL "")
+if (PRODUCTION_BUILD)
+    if (WIN32)
+        set(CMAKE_SYSTEM_VERSION 7 CACHE INTERNAL "")
+    elseif(APPLE)
+        set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE INTERNAL "")
+    endif()
+    set(CMAKE_BUILD_TYPE Release CACHE INTERNAL "")
+endif()
+
+project(PiMax VERSION 1.1.1)
 
 add_subdirectory(Source/modules/juce)
 add_subdirectory(Source/modules/clap-juce-extensions)
@@ -70,9 +78,9 @@ add_subdirectory(Source/Presets)
     
 target_include_directories(PiMax PRIVATE "Source/modules/farbot/include")
 juce_add_modules(
-    "$ENV{HOME}/modules/Gin/modules/gin"
-    "$ENV{HOME}/modules/Gin/modules/gin_gui"
-    "$ENV{HOME}/modules/Arbor_modules")
+    "Source/modules/Gin/modules/gin"
+    "Source/modules/Gin/modules/gin_gui"
+    "Source/modules/Arbor_modules")
 
 target_compile_definitions(PiMax
 PUBLIC
@@ -80,11 +88,11 @@ PUBLIC
     JUCE_USE_CURL=0
     JUCE_VST3_CAN_REPLACE_VST2=0
     JUCE_DISPLAY_SPLASH_SCREEN=0
-    JUCE_REPORT_APP_USAGE=0
     JUCE_COREGRAPHICS_RENDER_WITH_MULTIPLE_PAINT_CALLS=0)
 
 juce_add_binary_data(BinaryData SOURCES
     "Source/Resources/arboreal tree.svg"
+    "Source/Resources/Hamburger_icon.svg"
     "Source/Resources/fonts/Sora-Regular.ttf"
     "Source/Resources/fonts/Sora-Thin.ttf"
     "Source/Resources/fonts/Sora-SemiBold.ttf"
