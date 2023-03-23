@@ -16,14 +16,24 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(MaximizerAudioProce
       ui(p),
       waveshaperComponent(p),
       activationComp(p.isUnlocked, p.trialRemaining_ms),
-      downloadManager(p.hasUpdated)
+      downloadManager(ProjectInfo::versionString,
+                      SITE_URL
+                      "/versions/"
+#if !PRODUCTION_BUILD
+                      "test/"
+#endif
+                      "PiMax-latest.json",
+                      "https://arborealaudioinstallers.s3.amazonaws.com/pimax/"
+                      DL_BIN,
+                      "~/Downloads/"
+                      DL_BIN)
 {
     auto &globalLNF = LookAndFeel::getDefaultLookAndFeel();
     globalLNF.setDefaultSansSerifTypeface(getCustomFont(FontStyle::Regular).getTypeface());
     globalLNF.setColour(PopupMenu::backgroundColourId, Colour(0xff30414d).darker(0.5f));
     globalLNF.setColour(PopupMenu::highlightedBackgroundColourId, Colours::grey);
 
-    if ((bool)readConfigFile("tooltip"))
+    if ((bool)strix::readConfigFile(CONFIG_PATH, "tooltip"))
         tooltip = std::make_unique<TooltipWindow>(this, 2000);
 
     menu = std::make_unique<MenuComponent>();
@@ -57,7 +67,7 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(MaximizerAudioProce
             tooltip = nullptr;
         else
             tooltip.reset(new TooltipWindow(this, 2000));
-        writeConfigFile("tooltip", tooltip != nullptr);
+        strix::writeConfigFile(CONFIG_PATH, "tooltip", tooltip != nullptr);
     };
 
     for (auto *comp : getComps())
@@ -179,14 +189,16 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(MaximizerAudioProce
         activationComp.setVisible(true);
     }
 
-    addChildComponent(downloadManager);
-    downloadManager.centreWithSize(250, 200);
-    if (p.hasUpdated)
-        downloadManager.setVisible(false);
-    downloadManager.onUpdateChange = [&](bool updated)
+    addAndMakeVisible(downloadManager);
+    downloadManager.centreWithSize(300, 200);
+    if (!p.hasUpdated)
     {
-        p.hasUpdated = updated;
-    };
+        lThread = std::make_unique<strix::LiteThread>(1);
+        lThread->addJob([this, &p]
+                        { downloadManager.checkForUpdate();
+                        p.hasUpdated = true;
+                        strix::writeConfigFileString(CONFIG_PATH, "updateCheck", String(Time::currentTimeMillis())); });
+    }
 }
 
 MaximizerAudioProcessorEditor::~MaximizerAudioProcessorEditor()

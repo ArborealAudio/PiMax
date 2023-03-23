@@ -23,11 +23,11 @@ public:
             PopupMenu m;
             m.setLookAndFeel(new PopupLNF());
 #if !JUCE_MAC
-            openGL = (bool)readConfigFile("openGL");
+            openGL = (bool)strix::readConfigFile(configPath, "openGL");
             m.addItem(1, "OpenGL", true, openGL);
 #endif
             m.addItem(2, "Default UI Size");
-            bool displayingTooltip = (bool)readConfigFile("tooltip");
+            bool displayingTooltip = (bool)strix::readConfigFile(CONFIG_PATH, "tooltip");
             m.addItem(3, "Show Tooltips", true, displayingTooltip);
 
             m.showMenuAsync(PopupMenu::Options().withMinimumWidth(175).withStandardItemHeight(35),

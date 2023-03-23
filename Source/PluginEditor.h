@@ -11,7 +11,15 @@
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
 #include "UI/UI.h"
-#include "DownloadManager.h"
+
+#define SITE_URL "https://arborealaudio.com"
+#if JUCE_WINDOWS
+#define DL_BIN "PiMax-windows.exe"
+#elif JUCE_MAC
+#define DL_BIN "PiMax-mac.dmg"
+#elif JUCE_LINUX
+#define DL_BIN "PiMax-linux.tar.gz"
+#endif
 
 //==============================================================================
 /**
@@ -60,8 +68,11 @@ private:
     UI ui;
     WaveshaperComponent waveshaperComponent;
     Splash splash;
+
+    std::unique_ptr<strix::LiteThread> lThread;
+
     ActivationComponent activationComp;
-    DownloadManager downloadManager;
+    strix::DownloadManager downloadManager;
 
     Slider curve__slider;
     CurveSliderLNF curveLNF;
@@ -81,9 +92,10 @@ private:
 
     std::unique_ptr<MenuComponent> menu = nullptr;
 
+
     void writeUISize(int width, int height)
     {
-        auto uiSizeFile = File(File::getSpecialLocation(File::userApplicationDataDirectory).getFullPathName() + "/Arboreal Audio/PiMax/config.xml");
+        auto uiSizeFile = File(File::getSpecialLocation(File::userApplicationDataDirectory).getFullPathName() + CONFIG_PATH);
         if (!uiSizeFile.existsAsFile())
             uiSizeFile.create();
 
@@ -98,7 +110,8 @@ private:
         uiXml->setAttribute("uiHeight", height);
         uiXml->writeTo(uiSizeFile);
 #if JUCE_MAC
-        auto gbFile = File("~/Music/Audio Music Apps/Arboreal Audio/PiMax/config.xml");
+        auto gbFile = File("~/Music/Audio Music Apps"
+        CONFIG_PATH);
         if (!gbFile.existsAsFile())
             gbFile.create();
         uiXml->writeTo(gbFile);
@@ -110,9 +123,10 @@ private:
         File uiSizeFile;
         PluginHostType host;
         if (!host.isGarageBand())
-            uiSizeFile = File(File::getSpecialLocation(File::userApplicationDataDirectory).getFullPathName() + "/Arboreal Audio/PiMax/config.xml");
+            uiSizeFile = File(File::getSpecialLocation(File::userApplicationDataDirectory).getFullPathName() + CONFIG_PATH);
         else
-            uiSizeFile = File("~/Music/Audio Music Apps/Arboreal Audio/PiMax/config.xml");
+            uiSizeFile = File("~/Music/Audio Music Apps"
+            CONFIG_PATH);
 
         if (uiSizeFile.existsAsFile())
         {

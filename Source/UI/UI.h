@@ -19,39 +19,40 @@
 
 #pragma once
 
-static void writeConfigFile(const String &property, int value)
-{
-    File config{File::getSpecialLocation(File::userApplicationDataDirectory).getFullPathName() + "/Arboreal Audio/PiMax/config.xml"};
-    if (!config.existsAsFile())
-        config.create();
+// static void writeConfigFile(const String &property, int value)
+// {
+//     File config{File::getSpecialLocation(File::userApplicationDataDirectory).getFullPathName() + "/Arboreal Audio/PiMax/config.xml"};
+//     if (!config.existsAsFile())
+//         config.create();
 
-    auto xml = parseXML(config);
-    if (xml == nullptr)
-    {
-        xml.reset(new XmlElement("Config"));
-    }
+//     auto xml = parseXML(config);
+//     if (xml == nullptr)
+//     {
+//         xml.reset(new XmlElement("Config"));
+//     }
 
-    xml->setAttribute(property, value);
-    xml->writeTo(config);
-}
+//     xml->setAttribute(property, value);
+//     xml->writeTo(config);
+// }
 
-/*returns integer value of read property, incl. 0 if it doesn't exist*/
-static int readConfigFile(const String &property)
-{
-    File config{File::getSpecialLocation(File::userApplicationDataDirectory).getFullPathName() + "/Arboreal Audio/PiMax/config.xml"};
-    if (!config.existsAsFile())
-        return 0;
+// /*returns integer value of read property, incl. 0 if it doesn't exist*/
+// static int readConfigFile(const String &property)
+// {
+//     File config{File::getSpecialLocation(File::userApplicationDataDirectory).getFullPathName() + "/Arboreal Audio/PiMax/config.xml"};
+//     if (!config.existsAsFile())
+//         return 0;
 
-    auto xml = parseXML(config);
-    if (xml != nullptr && (xml->hasTagName("Config") || xml->hasTagName("UISize")))
-        return xml->getIntAttribute(property, 0);
+//     auto xml = parseXML(config);
+//     if (xml != nullptr && (xml->hasTagName("Config") || xml->hasTagName("UISize")))
+//         return xml->getIntAttribute(property, 0);
 
-    return 0;
-}
+//     return 0;
+// }
 
 //[Headers]     -- You can add your own extra header files here --
 #include <JuceHeader.h>
 /*some global includes for all UI*/
+#define CONFIG_PATH "/Arboreal Audio/PiMax/config.xml"
 #include "LookAndFeel.h"
 #include "WaveshaperComponent.h"
 #include "ResponseCurveComponent.h"

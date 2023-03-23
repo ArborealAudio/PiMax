@@ -31,21 +31,21 @@
 //==============================================================================
 UI::UI (MaximizerAudioProcessor& p) : audioProcessor(p), gain__slider(false), outVol__slider(true),
                                       presetComp(p.apvts),
-                                      inputMeter(p.getInputMeterSource()),
-                                      outputMeter(p.getOutputMeterSource())
+                                      inputMeter(p.getInputMeterSource(), 0),
+                                      outputMeter(p.getOutputMeterSource(), strix::VolumeMeterComponent::ClipIndicator)
 {
     addAndMakeVisible(inputMeter);
     addAndMakeVisible(outputMeter);
 
-    inputMeter.setMeterType(strix::VolumeMeterComponent::Volume);
-    inputMeter.setMeterColor(Colours::lightgreen.withAlpha(0.5f));
+    // inputMeter.setMeterType(strix::VolumeMeterComponent::Volume);
+    inputMeter.meterColor = (Colours::lightgreen.withAlpha(0.5f));
     inputMeter.setInterceptsMouseClicks(false, false);
-    inputMeter.clipIndicator = false;
+    // inputMeter.clipIndicator = false;
 
-    outputMeter.setMeterType(strix::VolumeMeterComponent::Volume);
-    outputMeter.setMeterColor(Colours::lightgreen.withAlpha(0.5f));
+    // outputMeter.setMeterType(strix::VolumeMeterComponent::Volume);
+    outputMeter.meterColor = (Colours::lightgreen.withAlpha(0.5f));
     outputMeter.setInterceptsMouseClicks(true, false);
-    outputMeter.clipIndicator = true;
+    // outputMeter.clipIndicator = true;
 
     inputMeter.setBounds(33, 91, 40, 218);
     outputMeter.setBounds(538, 91, 40, 216);

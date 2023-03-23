@@ -12,7 +12,7 @@ if (PRODUCTION_BUILD)
     set(CMAKE_BUILD_TYPE Release CACHE INTERNAL "")
 endif()
 
-project(PiMax VERSION 1.1.1)
+project(PiMax VERSION 1.1.2)
 
 add_subdirectory(Source/modules/juce)
 add_subdirectory(Source/modules/clap-juce-extensions)
@@ -31,7 +31,7 @@ endif()
 
 juce_add_plugin(PiMax
     COMPANY_NAME "Arboreal Audio"
-    COMPANY_COPYRIGHT "(c) 2022 Arboreal Audio, LLC"
+    COMPANY_COPYRIGHT "(c) 2023 Arboreal Audio, LLC"
     COPY_PLUGIN_AFTER_BUILD TRUE
     PLUGIN_MANUFACTURER_CODE Arau
     PLUGIN_CODE Hmsj
@@ -69,7 +69,6 @@ target_sources(PiMax
 PRIVATE
     Source/PluginProcessor.cpp
     Source/PluginEditor.cpp
-    Source/DownloadManager.h
     Source/OnlineActivation.h)
     
 add_subdirectory(Source/UI)
