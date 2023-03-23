@@ -12,79 +12,15 @@
 #include <JuceHeader.h>
 #include "UI/LookAndFeel.h"
 
-namespace strix
-{
-    const Identifier rootId = "root";
-    const Identifier propertyId = "property";
-
-    inline void setProperty(ValueTree &source, const Identifier &id, const var &v)
-    {
-        jassert(id.isValid() && !v.isVoid());
-        source.setProperty(id, v, nullptr);
-    }
-
-    inline void appendValueTree(ValueTree &parent, const Identifier &id, const var &v)
-    {
-        if (!parent.isValid() || id.isNull() || v.isVoid())
-            return;
-
-        if (auto *ar = v.getArray())
-        {
-            for (const auto &item : *ar)
-            {
-                ValueTree child(rootId);
-                parent.appendChild(child, nullptr);
-                appendValueTree(child, propertyId, item);
-            }
-
-            return;
-        }
-
-        if (auto *object = v.getDynamicObject())
-        {
-            ValueTree child(id);
-            parent.appendChild(child, nullptr);
-
-            for (const auto &prop : object->getProperties())
-                appendValueTree(parent, prop.name, prop.value);
-
-            return;
-        }
-
-        ValueTree child(id);
-        parent.appendChild(child, nullptr);
-        setProperty(child, Identifier(String("property") + String(parent.getNumProperties())), v);
-    }
-
-    inline ValueTree createValueTreeFromJSON(const var &json)
-    {
-        if (json.isVoid())
-            return {};
-
-        ValueTree root(rootId);
-        appendValueTree(root, rootId, json);
-        return root;
-    }
-
-    inline ValueTree createValueTreeFromJSON(const String &data)
-    {
-        return createValueTreeFromJSON(JSON::parse(data));
-    }
-}
-
 struct UnlockStatus
 {
     UnlockStatus() = default;
 
-    juce::URL getURL()
-    {
-        return URL("https://3pvj52nx17.execute-api.us-east-1.amazonaws.com");
-    }
+    const URL apiURL = URL("https://3pvj52nx17.execute-api.us-east-1.amazonaws.com");
 
-    String readReplyForKey(const juce::String &key, bool activate)
+    inline String readReplyForKey(const juce::String &key, bool activate)
     {
-        URL url(getURL()
-                    .withNewSubPath("/default/licenses/" + key));
+        URL url(apiURL.withNewSubPath("/default/licenses/" + key));
 
         if (activate)
             url = url.withNewSubPath("/default/licenses/activate/" + key);
@@ -93,24 +29,6 @@ struct UnlockStatus
         if (auto stream = URL(url).createInputStream(URL::InputStreamOptions(URL::ParameterHandling::inAddress)
                                                          .withExtraHeaders("x-api-key: Fb5mXNfHiNaSKABQEl0PiFmYBthvv457bOCA1ou2")
                                                          .withConnectionTimeoutMs(10000)))
-        {
-            return stream->readEntireStreamAsString();
-        }
-
-        return {};
-    }
-
-    /*check for valid order no*/
-    String readReplyForOrderNo(const juce::String &orderNo)
-    {
-        juce::URL url(getURL()
-                          .withNewSubPath("wp-json/wc/v3/orders/" + orderNo)
-                          .withParameter("consumer_key", "ck_afdaee27c41b45d26e864d0b2dad05d7d6bc9ee6")
-                          .withParameter("consumer_secret", "cs_0160660cf7a03dfab1e016a6922bf1b7a942e16f"));
-
-        DBG("Trying to unlock via URL: " << url.toString(true));
-
-        if (auto stream = URL(url).createInputStream(URL::InputStreamOptions(URL::ParameterHandling::inAddress)))
         {
             return stream->readEntireStreamAsString();
         }
@@ -132,31 +50,25 @@ struct UnlockStatus
         auto keyResponse = readReplyForKey(key, false);
         DBG("keyResponse: " << keyResponse);
 
-        auto keyTree = strix::createValueTreeFromJSON(keyResponse);
+        auto keyTree = JSON::parse(keyResponse);
 
-        auto success = keyTree.getChildWithName("success").getProperty("property0");
+        auto success = keyTree.getProperty("success", var(false));
         if (!success)
             return 0;
 
-        // auto orderId = keyTree.getChildWithName("orderId").getProperty("property0");
+        auto item = keyTree.getProperty("Item", var());
 
-        // auto orderResponse = readReplyForOrderNo(orderId);
-
-        // auto orderTree = strix::createValueTreeFromJSON(orderResponse);
-
-        // auto orderEmail = orderTree.getChildWithName("email").getProperty("property0").toString();
-        // owner = orderTree.getChildWithName("first_name").getProperty("property0").toString();
-        //
-        // owner.append(" ", 1);
-        // owner += orderTree.getChildWithName("last_name").getProperty("property0").toString();
-
-        auto activationResponse = strix::createValueTreeFromJSON(readReplyForKey(key, true));
-        auto activationCount = activationResponse.getChildWithName("timesActivated").getProperty("property0");
-        auto activationLim = activationResponse.getChildWithName("timesActivatedMax").getProperty("property0");
+        auto activationCount = item.getProperty("activationCount", var());
+        auto activationLim = item.getProperty("maxActivations", var());
         if (activationCount >= activationLim)
             return 2;
+        
+        // activate license
+        auto activationResponse = JSON::parse(readReplyForKey(key, true));
+        if (! activationResponse.getProperty("success", var(false)))
+            return 0;
 
-        state.setProperty("value", success, nullptr);
+        state.setProperty("value", true, nullptr);
 
         m_key = key;
 
