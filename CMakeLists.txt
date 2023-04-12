@@ -42,6 +42,7 @@ juce_add_plugin(PiMax
     VST3_CATEGORIES Fx Distortion Mastering
     AU_MAIN_TYPE kAudioUnitType_Effect
     PRODUCT_NAME "PiMax"
+    NEEDS_CURL TRUE
     HARDENED_RUNTIME_ENABLED TRUE)
 
 target_compile_definitions(PiMax PUBLIC PRODUCTION_BUILD=${PRODUCTION_BUILD})
@@ -89,7 +90,7 @@ juce_add_modules(
 target_compile_definitions(PiMax
 PUBLIC
     JUCE_WEB_BROWSER=0
-    JUCE_USE_CURL=0
+    JUCE_USE_CURL=1
     JUCE_VST3_CAN_REPLACE_VST2=0
     JUCE_DISPLAY_SPLASH_SCREEN=0
     JUCE_COREGRAPHICS_RENDER_WITH_MULTIPLE_PAINT_CALLS=0)
