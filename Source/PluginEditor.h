@@ -63,7 +63,8 @@ public:
 
     void timerCallback() override
     {
-        downloadManager.setVisible(dlResult.updateAvailable);
+        if (!downloadManager.shouldBeHidden)
+            downloadManager.setVisible(dlResult.updateAvailable);
         if (lThread && !lThread->working)
             lThread.reset();
     }
