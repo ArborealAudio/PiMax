@@ -31,8 +31,8 @@
 //==============================================================================
 UI::UI (MaximizerAudioProcessor& p) : audioProcessor(p), gain__slider(false), outVol__slider(true),
                                       presetComp(p.apvts),
-                                      inputMeter(p.getInputMeterSource(), 0),
-                                      outputMeter(p.getOutputMeterSource(), strix::VolumeMeterComponent::ClipIndicator)
+                                      inputMeter(p.getInputMeterSource(), 0, 30),
+                                      outputMeter(p.getOutputMeterSource(), strix::VolumeMeterComponent::ClipIndicator, 30)
 {
     addAndMakeVisible(inputMeter);
     addAndMakeVisible(outputMeter);
