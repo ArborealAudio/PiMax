@@ -168,8 +168,8 @@ void MaximizerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
     mixer.prepare(spec);
     mixer.setMixingRule(dsp::DryWetMixingRule::linear);
 
-    inputMeter.prepare(spec);
-    outputMeter.prepare(spec);
+    inputMeter.prepare(spec, 0.01f);
+    outputMeter.prepare(spec, 0.01f);
 
     widener.prepare(spec);
 }
@@ -733,8 +733,8 @@ void MaximizerAudioProcessor::checkActivation()
     File dirGB;
     uint64 gbuuid;
     
-    auto uuid = String(OnlineUnlockStatus::MachineIDUtilities::getLocalMachineIDs().strings[0].hashCode64());
-    auto newID = String(SystemStats::getUniqueDeviceID().hashCode64());
+    // auto uuid = String(OnlineUnlockStatus::MachineIDUtilities::getLocalMachineIDs().strings[0].hashCode64());
+    // auto newID = String(SystemStats::getUniqueDeviceID().hashCode64());
 
 #if JUCE_WINDOWS
     String timeFile = "HKEY_CURRENT_USER\\SOFTWARE\\Arboreal Audio\\PiMax\\TrialKey";
@@ -752,9 +752,7 @@ void MaximizerAudioProcessor::checkActivation()
         if (dir.exists() && !checkUnlock())
         {
             auto xml = parseXML(dir);
-            isUnlocked = (newID == xml->getStringAttribute("uuid") && xml->getStringAttribute("uuid") != "" && xml->getStringAttribute("uuid") != " ");
-            if (!isUnlocked) // try old ID second
-                isUnlocked = (uuid == xml->getStringAttribute("uuid"));
+            isUnlocked = (xml->hasAttribute("uuid") && xml->getStringAttribute("uuid").isNotEmpty());
             if (xml->hasAttribute("key"))
                 isUnlocked = (xml->getStringAttribute("key") != "" && xml->getStringAttribute("key") != " ");
         }

@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.15)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_OSX_DEPLOYMENT_TARGET 10.9 CACHE INTERNAL "")
@@ -42,6 +44,9 @@ juce_add_plugin(PiMax
     PRODUCT_NAME "PiMax"
     HARDENED_RUNTIME_ENABLED TRUE)
 
+target_compile_definitions(PiMax PUBLIC PRODUCTION_BUILD=${PRODUCTION_BUILD})
+message("PRODUCTION_BUILD: ${PRODUCTION_BUILD}")
+
 clap_juce_extensions_plugin(TARGET PiMax
     CLAP_ID "com.ArborealAudio.PiMax"
     CLAP_PROCESS_EVENTS_RESOLUTION_SAMPLES 64
@@ -57,7 +62,7 @@ if ((UNIX AND NOT APPLE) OR WIN32)
         add_compile_definitions(_IPP_SEQUENTIAL_STATIC=1)
         target_include_directories(PiMax PUBLIC
         "${ipp_cmake_package_dir}/${IPP_INC_REL_PATH}")
-        target_link_libraries(PiMax ${IPP_LIBRARIES})
+        target_link_libraries(PiMax PRIVATE ${IPP_LIBRARIES})
     else()
         message("NOT FOUND: IPP Libs")
     endif()
@@ -121,11 +126,10 @@ PRIVATE
     juce::juce_cryptography
     gin
     gin_gui
-    Arbor_modules
-PUBLIC
-    juce::juce_recommended_config_flags
-    juce::juce_recommended_lto_flags
-    juce::juce_recommended_warning_flags)
+    Arbor_modules)
+    # juce::juce_recommended_config_flags
+    # juce::juce_recommended_lto_flags
+    # juce::juce_recommended_warning_flags)
 
 if (NOT APPLE)
     target_link_libraries(PiMax PRIVATE

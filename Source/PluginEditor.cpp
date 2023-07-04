@@ -7,6 +7,8 @@
 */
 
 #include "PluginEditor.h"
+#include "JuceHeader.h"
+#include "UI/UI.h"
 
 //==============================================================================
 MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(MaximizerAudioProcessor &p)
@@ -16,20 +18,10 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(MaximizerAudioProce
       ui(p),
       waveshaperComponent(p),
       activationComp(p.isUnlocked, p.trialRemaining_ms),
-      downloadManager(ProjectInfo::versionString,
-                      SITE_URL
-                      "/versions/"
-#if !PRODUCTION_BUILD
-                      "test/"
-#endif
-                      "PiMax-latest.json",
-                      "https://arborealaudioinstallers.s3.amazonaws.com/pimax/"
-                      DL_BIN,
-                      "~/Downloads/"
-                      DL_BIN)
+      downloadManager(DL_BIN)
 {
     auto &globalLNF = LookAndFeel::getDefaultLookAndFeel();
-    globalLNF.setDefaultSansSerifTypeface(getCustomFont(FontStyle::Regular).getTypeface());
+    globalLNF.setDefaultSansSerifTypeface(getCustomFont(FontStyle::Regular).getTypefacePtr());
     globalLNF.setColour(PopupMenu::backgroundColourId, Colour(0xff30414d).darker(0.5f));
     globalLNF.setColour(PopupMenu::highlightedBackgroundColourId, Colours::grey);
 
@@ -40,7 +32,7 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(MaximizerAudioProce
 
 #if JUCE_WINDOWS || JUCE_LINUX
     opengl.setImageCacheSize((size_t)64 * 1024000);
-    if (readConfigFile("openGL"))
+    if (strix::readConfigFile(CONFIG_PATH, "openGL"))
     {
         opengl.detach();
         opengl.attachTo(*this);
@@ -58,7 +50,7 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(MaximizerAudioProce
         else
             opengl.detach();
         DBG("OpenGL: " << (int)opengl.isAttached() << ", w/ cache size: " << opengl.getImageCacheSize());
-        writeConfigFile("openGL", state);
+        strix::writeConfigFile(CONFIG_PATH, "openGL", state);
     };
 #endif
     menu->tooltipCallback = [&]()
@@ -182,21 +174,24 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(MaximizerAudioProce
     };
     activationComp.centreWithSize(240, 360);
 
-    if (!p.checkUnlock())
-    {
-        downloadManager.setVisible(false);
-        activationComp.setImage(createComponentSnapshot(getLocalBounds()));
-        activationComp.setVisible(true);
-    }
+    startTimerHz(1);
 
-    addAndMakeVisible(downloadManager);
+    addChildComponent(downloadManager);
+    downloadManager.changes = dlResult.changes;
     downloadManager.centreWithSize(300, 200);
+    
     if (!p.hasUpdated)
     {
         lThread = std::make_unique<strix::LiteThread>(1);
         lThread->addJob([this, &p]
-                        { downloadManager.checkForUpdate();
+                        { dlResult = downloadManager.checkForUpdate(ProjectInfo::projectName, ProjectInfo::versionString,
+                        SITE_URL
+                        "/versions/index.json",
+                        false, false,
+                        strix::readConfigFile(CONFIG_PATH, "updateCheck"));
                         p.hasUpdated = true;
+                        downloadManager.changes = dlResult.changes;
+                        downloadManager.shouldBeHidden = !dlResult.updateAvailable;
                         strix::writeConfigFileString(CONFIG_PATH, "updateCheck", String(Time::currentTimeMillis())); });
     }
 }
@@ -209,6 +204,7 @@ MaximizerAudioProcessorEditor::~MaximizerAudioProcessorEditor()
     curve__slider.setLookAndFeel(nullptr);
     unlockButton.setLookAndFeel(nullptr);
     menu->setLookAndFeel(nullptr);
+    stopTimer();
 }
 
 void MaximizerAudioProcessorEditor::paint(Graphics &g)

@@ -21,11 +21,14 @@
 #define DL_BIN "PiMax-linux.tar.gz"
 #endif
 
+static strix::UpdateResult dlResult;
+
 //==============================================================================
 /**
  */
 
-class MaximizerAudioProcessorEditor : public juce::AudioProcessorEditor
+class MaximizerAudioProcessorEditor : public juce::AudioProcessorEditor,
+private Timer
 {
 public:
     MaximizerAudioProcessorEditor(MaximizerAudioProcessor &);
@@ -56,6 +59,13 @@ public:
     {
         setSize(720, 480);
         writeUISize(720, 480);
+    }
+
+    void timerCallback() override
+    {
+        downloadManager.setVisible(dlResult.updateAvailable);
+        if (lThread && !lThread->working)
+            lThread.reset();
     }
 
 private:

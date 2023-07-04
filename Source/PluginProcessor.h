@@ -9,9 +9,6 @@
 #pragma once
 
 #define USE_CONVOLUTION 1
-#if NDEBUG
-    #define PRODUCTION_BUILD 1
-#endif
 
 enum class ClipType
 {
@@ -32,21 +29,21 @@ enum class ClipType
 #include "Presets/PresetManager.h"
 #include "OnlineActivation.h"
 
-#ifndef NDEBUG
-#define X(textToWrite)                                                         \
-  JUCE_BLOCK_WITH_FORCED_SEMICOLON(juce::String tempDbgBuf;                    \
-                                   tempDbgBuf << textToWrite;                  \
-                                   juce::Logger::writeToLog(tempDbgBuf);)
+// #ifndef NDEBUG
+// #define X(textToWrite)                                                         \
+//   JUCE_BLOCK_WITH_FORCED_SEMICOLON(juce::String tempDbgBuf;                    \
+//                                    tempDbgBuf << textToWrite;                  \
+//                                    juce::Logger::writeToLog(tempDbgBuf);)
 
-#define X_EVERY(n, textToWrite)                                                \
-  {                                                                            \
-    static int j = 0;                                                          \
-    if ((j % static_cast<int>(n)) == 0) {                                      \
-      X(textToWrite);                                                          \
-    }                                                                          \
-    ++j;                                                                       \
-  }
-#endif
+// #define X_EVERY(n, textToWrite)                                                \
+//   {                                                                            \
+//     static int j = 0;                                                          \
+//     if ((j % static_cast<int>(n)) == 0) {                                      \
+//       X(textToWrite);                                                          \
+//     }                                                                          \
+//     ++j;                                                                       \
+//   }
+// #endif
 
 //==============================================================================
 /**

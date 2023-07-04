@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include "UI.h"
 class MenuComponent : public Component
 {
     DrawableButton menuButton;
@@ -23,7 +24,7 @@ public:
             PopupMenu m;
             m.setLookAndFeel(new PopupLNF());
 #if !JUCE_MAC
-            openGL = (bool)strix::readConfigFile(configPath, "openGL");
+            openGL = (bool)strix::readConfigFile(CONFIG_PATH, "openGL");
             m.addItem(1, "OpenGL", true, openGL);
 #endif
             m.addItem(2, "Default UI Size");
