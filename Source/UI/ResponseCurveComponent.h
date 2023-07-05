@@ -157,19 +157,24 @@ struct ResponseCurveComponent : Component,
     }
     void resized() override;
 
-    std::vector<std::unique_ptr<CrossoverSlider>> sliders;
-    std::vector<std::unique_ptr<TextButton>> solo, mute, bypass;
-    std::vector<std::unique_ptr<BandParamSlider>> bandInGain, bandOutGain, bandWidth;
+    std::array<CrossoverSlider, 3> sliders {CrossoverSlider()};
+    std::array<TextButton, 4> solo{TextButton()},
+    mute{TextButton()},
+    bypass{TextButton()};
+    std::array<BandParamSlider, 4> bandInGain {BandParamSlider()},
+    bandOutGain{BandParamSlider()},
+    bandWidth{BandParamSlider()};
 
-private:
+  private:
     MaximizerAudioProcessor &audioProcessor;
 
     TextButton addButton;
 
     bool sliderValueChanged = false, paintAddButton = true;
 
-    std::vector<dsp::IIR::Filter<float>> lowPass, highPass;
-    std::vector<dsp::IIR::Coefficients<float>> lowPassCoeffs, highPassCoeffs;
+    std::array<dsp::IIR::Filter<float>, 3> lowPass{dsp::IIR::Filter<float>()},
+    highPass{dsp::IIR::Filter<float>()};
+    std::array<dsp::IIR::Coefficients<float>, 3> lowPassCoeffs, highPassCoeffs;
     std::array<strix::FloatParameter *, 3> crossovers;
     std::vector<double> magLVec, magM1Vec, magM2Vec, magHVec;
 

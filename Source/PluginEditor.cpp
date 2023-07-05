@@ -90,22 +90,22 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(MaximizerAudioProce
     for (int i = 0; i < 3; ++i)
     {
         sliderAttachment.emplace_back(std::make_unique<AudioProcessorValueTreeState::SliderAttachment>(p.apvts,
-                                                                                                       "crossover" + std::to_string(i), *responseCurveComponent.sliders[i]));
+                                                                                                       "crossover" + std::to_string(i), responseCurveComponent.sliders[i]));
     }
     for (int i = 0; i < 4; ++i)
     {
         bandInGainAttach.emplace_back(std::make_unique<AudioProcessorValueTreeState::SliderAttachment>(p.apvts,
-                                                                                                       "bandInGain" + std::to_string(i), *responseCurveComponent.bandInGain[i]));
+                                                                                                       "bandInGain" + std::to_string(i), responseCurveComponent.bandInGain[i]));
         bandOutGainAttach.emplace_back(std::make_unique<AudioProcessorValueTreeState::SliderAttachment>(p.apvts,
-                                                                                                        "bandOutGain" + std::to_string(i), *responseCurveComponent.bandOutGain[i]));
+                                                                                                        "bandOutGain" + std::to_string(i), responseCurveComponent.bandOutGain[i]));
         bandWidthAttach.emplace_back(std::make_unique<AudioProcessorValueTreeState::SliderAttachment>(p.apvts,
-                                                                                                      "bandWidth" + std::to_string(i), *responseCurveComponent.bandWidth[i]));
+                                                                                                      "bandWidth" + std::to_string(i), responseCurveComponent.bandWidth[i]));
         soloBandAttach.emplace_back(std::make_unique<AudioProcessorValueTreeState::ButtonAttachment>(p.apvts,
-                                                                                                     "soloBand" + std::to_string(i), *responseCurveComponent.solo[i]));
+                                                                                                     "soloBand" + std::to_string(i), responseCurveComponent.solo[i]));
         muteBandAttach.emplace_back(std::make_unique<AudioProcessorValueTreeState::ButtonAttachment>(p.apvts,
-                                                                                                     "muteBand" + std::to_string(i), *responseCurveComponent.mute[i]));
+                                                                                                     "muteBand" + std::to_string(i), responseCurveComponent.mute[i]));
         bypassBandAttach.emplace_back(std::make_unique<AudioProcessorValueTreeState::ButtonAttachment>(p.apvts,
-                                                                                                       "bypassBand" + std::to_string(i), *responseCurveComponent.bypass[i]));
+                                                                                                       "bypassBand" + std::to_string(i), responseCurveComponent.bypass[i]));
     }
     hqAttachment = std::make_unique<AudioProcessorValueTreeState::ButtonAttachment>(p.apvts, "hq", ui.hq);
     renderButtonAttach = std::make_unique<AudioProcessorValueTreeState::ButtonAttachment>(p.apvts,

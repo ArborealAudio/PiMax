@@ -123,8 +123,6 @@ PRIVATE
     BinaryData
     juce::juce_audio_utils
     juce::juce_dsp
-    juce::juce_product_unlocking
-    juce::juce_cryptography
     gin
     gin_gui
     Arbor_modules)

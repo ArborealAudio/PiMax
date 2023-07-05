@@ -4,18 +4,6 @@
 
 ResponseCurveComponent::ResponseCurveComponent(MaximizerAudioProcessor &p) : audioProcessor(p)
 {
-    sliders.reserve(3);
-    lowPass.reserve(3);
-    lowPassCoeffs.reserve(3);
-    highPass.reserve(3);
-    highPassCoeffs.reserve(3);
-    solo.reserve(4);
-    mute.reserve(4);
-    bypass.reserve(4);
-    bandInGain.reserve(4);
-    bandOutGain.reserve(4);
-    bandWidth.reserve(4);
-
     if (p.lastDownSampleRate > !0.0)
         sampleRate = 88200.0;
     else
@@ -23,14 +11,11 @@ ResponseCurveComponent::ResponseCurveComponent(MaximizerAudioProcessor &p) : aud
 
     for (size_t i = 0; i < 3; ++i)
     {
-        sliders.emplace_back(std::make_unique<CrossoverSlider>());
-        addChildComponent(*sliders[i]);
-        sliders[i]->setMouseDragSensitivity(400);
-        sliders[i]->setTooltip("Adjusts crossover frequency of the adjacent bands. Right-click to remove a crossover.");
-        sliders[i]->onValueChange = [this]
+        addChildComponent(sliders[i]);
+        sliders[i].setMouseDragSensitivity(400);
+        sliders[i].setTooltip("Adjusts crossover frequency of the adjacent bands. Right-click to remove a crossover.");
+        sliders[i].onValueChange = [this]
         { sliderValueChanged = true; };
-        lowPass.emplace_back();
-        highPass.emplace_back();
         crossovers[i] = dynamic_cast<strix::FloatParameter *>(p.apvts.getParameter("crossover" + String(i)));
         *lowPass[i].coefficients = *dsp::IIR::Coefficients<float>::makeLowPass(sampleRate, crossovers[i]->get());
         *highPass[i].coefficients = *dsp::IIR::Coefficients<float>::makeHighPass(sampleRate, crossovers[i]->get());
@@ -39,63 +24,57 @@ ResponseCurveComponent::ResponseCurveComponent(MaximizerAudioProcessor &p) : aud
 
     for (size_t i = 0; i < 4; ++i)
     {
-        solo.emplace_back(std::make_unique<TextButton>());
-        solo[i]->setClickingTogglesState(true);
-        solo[i]->setButtonText("S");
-        solo[i]->setColour(TextButton::buttonColourId, Colour(0xff30414d));
-        solo[i]->setColour(TextButton::buttonOnColourId, Colours::lightgreen);
-        solo[i]->setTooltip("Solos the current band.");
-        solo[i]->setAlwaysOnTop(true);
-        solo[i]->onClick = [this]()
+        solo[i].setClickingTogglesState(true);
+        solo[i].setButtonText("S");
+        solo[i].setColour(TextButton::buttonColourId, Colour(0xff30414d));
+        solo[i].setColour(TextButton::buttonOnColourId, Colours::lightgreen);
+        solo[i].setTooltip("Solos the current band.");
+        solo[i].setAlwaysOnTop(true);
+        solo[i].onClick = [this]()
         { repaint(); };
-        addChildComponent(*solo[i]);
-        mute.emplace_back(std::make_unique<TextButton>());
-        mute[i]->setClickingTogglesState(true);
-        mute[i]->setButtonText("M");
-        mute[i]->setColour(TextButton::buttonColourId, Colour(0xff30414d));
-        mute[i]->setColour(TextButton::buttonOnColourId, Colours::red);
-        mute[i]->setTooltip("Mutes the current band.");
-        mute[i]->onClick = [this]()
+        addChildComponent(solo[i]);
+        mute[i].setClickingTogglesState(true);
+        mute[i].setButtonText("M");
+        mute[i].setColour(TextButton::buttonColourId, Colour(0xff30414d));
+        mute[i].setColour(TextButton::buttonOnColourId, Colours::red);
+        mute[i].setTooltip("Mutes the current band.");
+        mute[i].onClick = [this]()
         { repaint(); };
-        addChildComponent(*mute[i]);
-        bypass.emplace_back(std::make_unique<TextButton>());
-        bypass[i]->setClickingTogglesState(true);
-        bypass[i]->setButtonText("B");
-        bypass[i]->setColour(TextButton::buttonColourId, Colour(0xff30414d));
-        bypass[i]->setColour(TextButton::buttonOnColourId, Colours::mediumpurple);
-        bypass[i]->setTooltip("Bypasses saturation for the current band.");
-        bypass[i]->onClick = [this]()
+        addChildComponent(mute[i]);
+        bypass[i].setClickingTogglesState(true);
+        bypass[i].setButtonText("B");
+        bypass[i].setColour(TextButton::buttonColourId, Colour(0xff30414d));
+        bypass[i].setColour(TextButton::buttonOnColourId, Colours::mediumpurple);
+        bypass[i].setTooltip("Bypasses saturation for the current band.");
+        bypass[i].onClick = [this]()
         { repaint(); };
-        addChildComponent(*bypass[i]);
+        addChildComponent(bypass[i]);
 
-        bandInGain.emplace_back(std::make_unique<BandParamSlider>());
-        bandInGain[i]->setLabelType(KnobLNF::LabelType::InGain);
-        bandInGain[i]->setPopupDisplayEnabled(true, true, this);
-        bandInGain[i]->setTooltip("Controls input gain for the current band.");
-        bandInGain[i]->onMouseOver = [this, i]()
+        bandInGain[i].setLabelType(KnobLNF::LabelType::InGain);
+        bandInGain[i].setPopupDisplayEnabled(true, true, this);
+        bandInGain[i].setTooltip("Controls input gain for the current band.");
+        bandInGain[i].onMouseOver = [this, i]()
         {
-            bandInGain[i]->setLNFImage(createComponentSnapshot(getLocalBounds()));
+            bandInGain[i].setLNFImage(createComponentSnapshot(getLocalBounds()));
         };
-        addChildComponent(*bandInGain[i]);
-        bandOutGain.emplace_back(std::make_unique<BandParamSlider>());
-        bandOutGain[i]->setLabelType(KnobLNF::LabelType::OutGain);
-        bandOutGain[i]->setPopupDisplayEnabled(true, true, this);
-        bandOutGain[i]->setTooltip("Controls output gain for the current band.");
-        bandOutGain[i]->onMouseOver = [this, i]()
+        addChildComponent(bandInGain[i]);
+        bandOutGain[i].setLabelType(KnobLNF::LabelType::OutGain);
+        bandOutGain[i].setPopupDisplayEnabled(true, true, this);
+        bandOutGain[i].setTooltip("Controls output gain for the current band.");
+        bandOutGain[i].onMouseOver = [this, i]()
         {
-            bandOutGain[i]->setLNFImage(createComponentSnapshot(getLocalBounds()));
+            bandOutGain[i].setLNFImage(createComponentSnapshot(getLocalBounds()));
         };
-        addChildComponent(*bandOutGain[i]);
-        bandWidth.emplace_back(std::make_unique<BandParamSlider>());
-        bandWidth[i]->setLabelType(KnobLNF::LabelType::Width);
-        bandWidth[i]->setPopupDisplayEnabled(true, true, this);
-        bandWidth[i]->setTooltip("Controls stereo width for the current band. Follows the toggle state of "
+        addChildComponent(bandOutGain[i]);
+        bandWidth[i].setLabelType(KnobLNF::LabelType::Width);
+        bandWidth[i].setPopupDisplayEnabled(true, true, this);
+        bandWidth[i].setTooltip("Controls stereo width for the current band. Follows the toggle state of "
                                  "the main Width knob for widening a mono source.");
-        bandWidth[i]->onMouseOver = [this, i]()
+        bandWidth[i].onMouseOver = [this, i]()
         {
-            bandWidth[i]->setLNFImage(createComponentSnapshot(getLocalBounds()));
+            bandWidth[i].setLNFImage(createComponentSnapshot(getLocalBounds()));
         };
-        addChildComponent(*bandWidth[i]);
+        addChildComponent(bandWidth[i]);
     }
 
     p.apvts.addParameterListener("bandSplit", this);
@@ -139,15 +118,15 @@ void ResponseCurveComponent::paint(Graphics &g)
 
     for (size_t i = 0; i < numBands; ++i)
     {
-        sliders[i]->setVisible(true);
+        sliders[i].setVisible(true);
         if (i == 0 && numBands == 1)
         {
-            sliders[1]->setVisible(false);
-            sliders[2]->setVisible(false);
+            sliders[1].setVisible(false);
+            sliders[2].setVisible(false);
         }
         else if (i == 1 && numBands == 2)
         {
-            sliders[2]->setVisible(false);
+            sliders[2].setVisible(false);
         }
     }
 
@@ -155,9 +134,9 @@ void ResponseCurveComponent::paint(Graphics &g)
 
     auto w = responseArea.getWidth();
 
-    auto slider0Pos = sliders[0]->getPositionOfValue(sliders[0]->getValue());
-    auto slider1Pos = sliders[1]->getPositionOfValue(sliders[1]->getValue());
-    auto slider2Pos = sliders[2]->getPositionOfValue(sliders[2]->getValue());
+    auto slider0Pos = sliders[0].getPositionOfValue(sliders[0].getValue());
+    auto slider1Pos = sliders[1].getPositionOfValue(sliders[1].getValue());
+    auto slider2Pos = sliders[2].getPositionOfValue(sliders[2].getValue());
 
     if (sliderValueChanged)
         setSliderLimits(slider0Pos, slider1Pos, slider2Pos);
@@ -185,17 +164,17 @@ inline void ResponseCurveComponent::setSliderLimits(const float slider0Pos, cons
 
     if (numBands > 1 && (slider1Pos <= slider1Lim))
     {
-        sliders[0]->setValue(mapToLog10(double(slider1Pos - 50.0) / double(w), 25.0, 24000.0),
+        sliders[0].setValue(mapToLog10(double(slider1Pos - 50.0) / double(w), 25.0, 24000.0),
                              sendNotificationAsync);
-        sliders[1]->setValue(mapToLog10(double(slider1Lim) / double(w), 25.0, 24000.0),
+        sliders[1].setValue(mapToLog10(double(slider1Lim) / double(w), 25.0, 24000.0),
                              sendNotificationAsync);
     }
 
     if (numBands > 2 && (slider2Pos <= slider2Lim))
     {
-        sliders[1]->setValue(mapToLog10(double(slider2Pos - 50.0) / double(w), 25.0, 24000.0),
+        sliders[1].setValue(mapToLog10(double(slider2Pos - 50.0) / double(w), 25.0, 24000.0),
                              sendNotificationAsync);
-        sliders[2]->setValue(mapToLog10(double(slider2Lim) / double(w), 25.0, 24000.0),
+        sliders[2].setValue(mapToLog10(double(slider2Lim) / double(w), 25.0, 24000.0),
                              sendNotificationAsync);
     }
 }
@@ -300,17 +279,17 @@ inline void ResponseCurveComponent::drawBandArea(Graphics &g, const float slider
     {
         const Rectangle<float> area{0, 0, slider0Pos, h};
 
-        if (solo[0]->getToggleState())
+        if (solo[0].getToggleState())
         {
             g.setColour(Colours::lightgreen.withAlpha(0.1f));
             g.fillRect(area);
         }
-        if (mute[0]->getToggleState())
+        if (mute[0].getToggleState())
         {
             g.setColour(Colours::red.withAlpha(0.1f));
             g.fillRect(area);
         }
-        if (bypass[0]->getToggleState())
+        if (bypass[0].getToggleState())
         {
             g.setColour(Colours::mediumpurple.withAlpha(0.1f));
             g.fillRect(area);
@@ -321,17 +300,17 @@ inline void ResponseCurveComponent::drawBandArea(Graphics &g, const float slider
         Rectangle<float> area;
         numBands > 1 ? area.setBounds(slider0Pos, 0, slider1Pos - slider0Pos, h) : area.setBounds(slider0Pos, 0, w - slider0Pos, h);
 
-        if (solo[1]->getToggleState())
+        if (solo[1].getToggleState())
         {
             g.setColour(Colours::lightgreen.withAlpha(0.1f));
             g.fillRect(area);
         }
-        if (mute[1]->getToggleState())
+        if (mute[1].getToggleState())
         {
             g.setColour(Colours::red.withAlpha(0.1f));
             g.fillRect(area);
         }
-        if (bypass[1]->getToggleState())
+        if (bypass[1].getToggleState())
         {
             g.setColour(Colours::mediumpurple.withAlpha(0.1f));
             g.fillRect(area);
@@ -343,17 +322,17 @@ inline void ResponseCurveComponent::drawBandArea(Graphics &g, const float slider
         Rectangle<float> area;
         numBands > 2 ? area.setBounds(slider1Pos, 0, slider2Pos - slider1Pos, h) : area.setBounds(slider1Pos, 0, w - slider1Pos, h);
 
-        if (solo[2]->getToggleState())
+        if (solo[2].getToggleState())
         {
             g.setColour(Colours::lightgreen.withAlpha(0.1f));
             g.fillRect(area);
         }
-        if (mute[2]->getToggleState())
+        if (mute[2].getToggleState())
         {
             g.setColour(Colours::red.withAlpha(0.1f));
             g.fillRect(area);
         }
-        if (bypass[2]->getToggleState())
+        if (bypass[2].getToggleState())
         {
             g.setColour(Colours::mediumpurple.withAlpha(0.1f));
             g.fillRect(area);
@@ -364,17 +343,17 @@ inline void ResponseCurveComponent::drawBandArea(Graphics &g, const float slider
     {
         const Rectangle<float> area{slider2Pos, 0, w - slider2Pos, h};
 
-        if (solo[3]->getToggleState())
+        if (solo[3].getToggleState())
         {
             g.setColour(Colours::lightgreen.withAlpha(0.1f));
             g.fillRect(area);
         }
-        if (mute[3]->getToggleState())
+        if (mute[3].getToggleState())
         {
             g.setColour(Colours::red.withAlpha(0.1f));
             g.fillRect(area);
         }
-        if (bypass[3]->getToggleState())
+        if (bypass[3].getToggleState())
         {
             g.setColour(Colours::mediumpurple.withAlpha(0.1f));
             g.fillRect(area);
@@ -385,7 +364,7 @@ inline void ResponseCurveComponent::drawBandArea(Graphics &g, const float slider
 inline void ResponseCurveComponent::drawBandParams(Graphics &g, const float slider0Pos, const float slider1Pos,
                                                    const float slider2Pos, const float width)
 {
-    if (isMouseOverOrDragging(true) && !sliders[0]->isMouseOverOrDragging() && !sliders[1]->isMouseOverOrDragging() && !sliders[2]->isMouseOverOrDragging())
+    if (isMouseOverOrDragging(true) && !sliders[0].isMouseOverOrDragging() && !sliders[1].isMouseOverOrDragging() && !sliders[2].isMouseOverOrDragging())
     {
 
 #ifndef FLEX_ARGS
@@ -398,17 +377,17 @@ inline void ResponseCurveComponent::drawBandParams(Graphics &g, const float slid
         FlexBox knobsFlexBox(FLEX_ARGS);
 
         for (auto &b : solo)
-            b->setVisible(false);
+            b.setVisible(false);
         for (auto &b : mute)
-            b->setVisible(false);
+            b.setVisible(false);
         for (auto &b : bypass)
-            b->setVisible(false);
+            b.setVisible(false);
         for (auto &s : bandInGain)
-            s->setVisible(false);
+            s.setVisible(false);
         for (auto &s : bandOutGain)
-            s->setVisible(false);
+            s.setVisible(false);
         for (auto &s : bandWidth)
-            s->setVisible(false);
+            s.setVisible(false);
 
         paintAddButton = true;
         auto mousePos = getMouseXYRelative();
@@ -416,23 +395,23 @@ inline void ResponseCurveComponent::drawBandParams(Graphics &g, const float slid
 
         if (mouseX <= slider0Pos)
         {
-            solo[0]->setVisible(true);
-            mute[0]->setVisible(true);
-            bypass[0]->setVisible(true);
+            solo[0].setVisible(true);
+            mute[0].setVisible(true);
+            bypass[0].setVisible(true);
 
-            bandInGain[0]->setVisible(true);
-            bandOutGain[0]->setVisible(true);
-            bandWidth[0]->setVisible(true);
+            bandInGain[0].setVisible(true);
+            bandOutGain[0].setVisible(true);
+            bandWidth[0].setVisible(true);
 
             Array<FlexItem> buttons;
             Array<FlexItem> knobs;
 
-            buttons.add(FlexItem(20, 20, *solo[0]));
-            buttons.add(FlexItem(20, 20, *mute[0]));
-            buttons.add(FlexItem(20, 20, *bypass[0]));
-            knobs.add(FlexItem(32, 32, *bandInGain[0]));
-            knobs.add(FlexItem(32, 32, *bandOutGain[0]));
-            knobs.add(FlexItem(32, 32, *bandWidth[0]));
+            buttons.add(FlexItem(20, 20, solo[0]));
+            buttons.add(FlexItem(20, 20, mute[0]));
+            buttons.add(FlexItem(20, 20, bypass[0]));
+            knobs.add(FlexItem(32, 32, bandInGain[0]));
+            knobs.add(FlexItem(32, 32, bandOutGain[0]));
+            knobs.add(FlexItem(32, 32, bandWidth[0]));
 
             buttonsFlexBox.items = buttons;
             knobsFlexBox.items = knobs;
@@ -448,23 +427,23 @@ inline void ResponseCurveComponent::drawBandParams(Graphics &g, const float slid
         }
         else if ((mouseX > slider0Pos && mouseX < slider1Pos && numBands > 1) || (mouseX > slider0Pos && numBands < 2))
         {
-            solo[1]->setVisible(true);
-            mute[1]->setVisible(true);
-            bypass[1]->setVisible(true);
+            solo[1].setVisible(true);
+            mute[1].setVisible(true);
+            bypass[1].setVisible(true);
 
-            bandInGain[1]->setVisible(true);
-            bandOutGain[1]->setVisible(true);
-            bandWidth[1]->setVisible(true);
+            bandInGain[1].setVisible(true);
+            bandOutGain[1].setVisible(true);
+            bandWidth[1].setVisible(true);
 
             Array<FlexItem> buttons;
             Array<FlexItem> knobs;
 
-            buttons.add(FlexItem(20, 20, *solo[1]));
-            buttons.add(FlexItem(20, 20, *mute[1]));
-            buttons.add(FlexItem(20, 20, *bypass[1]));
-            knobs.add(FlexItem(32, 32, *bandInGain[1]));
-            knobs.add(FlexItem(32, 32, *bandOutGain[1]));
-            knobs.add(FlexItem(32, 32, *bandWidth[1]));
+            buttons.add(FlexItem(20, 20, solo[1]));
+            buttons.add(FlexItem(20, 20, mute[1]));
+            buttons.add(FlexItem(20, 20, bypass[1]));
+            knobs.add(FlexItem(32, 32, bandInGain[1]));
+            knobs.add(FlexItem(32, 32, bandOutGain[1]));
+            knobs.add(FlexItem(32, 32, bandWidth[1]));
 
             buttonsFlexBox.items = buttons;
             knobsFlexBox.items = knobs;
@@ -486,23 +465,23 @@ inline void ResponseCurveComponent::drawBandParams(Graphics &g, const float slid
                  (mouseX > slider1Pos && mouseX < slider2Pos && numBands > 2))
         {
 
-            solo[2]->setVisible(true);
-            mute[2]->setVisible(true);
-            bypass[2]->setVisible(true);
+            solo[2].setVisible(true);
+            mute[2].setVisible(true);
+            bypass[2].setVisible(true);
 
-            bandInGain[2]->setVisible(true);
-            bandOutGain[2]->setVisible(true);
-            bandWidth[2]->setVisible(true);
+            bandInGain[2].setVisible(true);
+            bandOutGain[2].setVisible(true);
+            bandWidth[2].setVisible(true);
 
             Array<FlexItem> buttons;
             Array<FlexItem> knobs;
 
-            buttons.add(FlexItem(20, 20, *solo[2]));
-            buttons.add(FlexItem(20, 20, *mute[2]));
-            buttons.add(FlexItem(20, 20, *bypass[2]));
-            knobs.add(FlexItem(32, 32, *bandInGain[2]));
-            knobs.add(FlexItem(32, 32, *bandOutGain[2]));
-            knobs.add(FlexItem(32, 32, *bandWidth[2]));
+            buttons.add(FlexItem(20, 20, solo[2]));
+            buttons.add(FlexItem(20, 20, mute[2]));
+            buttons.add(FlexItem(20, 20, bypass[2]));
+            knobs.add(FlexItem(32, 32, bandInGain[2]));
+            knobs.add(FlexItem(32, 32, bandOutGain[2]));
+            knobs.add(FlexItem(32, 32, bandWidth[2]));
 
             buttonsFlexBox.items = buttons;
             knobsFlexBox.items = knobs;
@@ -522,23 +501,23 @@ inline void ResponseCurveComponent::drawBandParams(Graphics &g, const float slid
         }
         else if (mouseX > slider2Pos && numBands > 2)
         {
-            solo[3]->setVisible(true);
-            mute[3]->setVisible(true);
-            bypass[3]->setVisible(true);
+            solo[3].setVisible(true);
+            mute[3].setVisible(true);
+            bypass[3].setVisible(true);
 
-            bandInGain[3]->setVisible(true);
-            bandOutGain[3]->setVisible(true);
-            bandWidth[3]->setVisible(true);
+            bandInGain[3].setVisible(true);
+            bandOutGain[3].setVisible(true);
+            bandWidth[3].setVisible(true);
 
             Array<FlexItem> buttons;
             Array<FlexItem> knobs;
 
-            buttons.add(FlexItem(20, 20, *solo[3]));
-            buttons.add(FlexItem(20, 20, *mute[3]));
-            buttons.add(FlexItem(20, 20, *bypass[3]));
-            knobs.add(FlexItem(32, 32, *bandInGain[3]));
-            knobs.add(FlexItem(32, 32, *bandOutGain[3]));
-            knobs.add(FlexItem(32, 32, *bandWidth[3]));
+            buttons.add(FlexItem(20, 20, solo[3]));
+            buttons.add(FlexItem(20, 20, mute[3]));
+            buttons.add(FlexItem(20, 20, bypass[3]));
+            knobs.add(FlexItem(32, 32, bandInGain[3]));
+            knobs.add(FlexItem(32, 32, bandOutGain[3]));
+            knobs.add(FlexItem(32, 32, bandWidth[3]));
 
             buttonsFlexBox.items = buttons;
             knobsFlexBox.items = knobs;
@@ -556,17 +535,17 @@ inline void ResponseCurveComponent::drawBandParams(Graphics &g, const float slid
     else
     {
         for (auto &b : solo)
-            b->setVisible(false);
+            b.setVisible(false);
         for (auto &b : mute)
-            b->setVisible(false);
+            b.setVisible(false);
         for (auto &b : bypass)
-            b->setVisible(false);
+            b.setVisible(false);
         for (auto &s : bandInGain)
-            s->setVisible(false);
+            s.setVisible(false);
         for (auto &s : bandOutGain)
-            s->setVisible(false);
+            s.setVisible(false);
         for (auto &s : bandWidth)
-            s->setVisible(false);
+            s.setVisible(false);
     }
 }
 
@@ -657,14 +636,14 @@ void ResponseCurveComponent::timerCallback()
 
     for (size_t n = 0; n < sliders.size(); ++n)
     {
-        if (sliders[n]->wasRightClicked && numBands > 1)
+        if (sliders[n].wasRightClicked && numBands > 1)
         {
             removeBand(n);
             audioProcessor.updateNumBands(numBands);
         }
         else if (n == 0 && numBands == 1)
         {
-            sliders[0]->wasRightClicked = false;
+            sliders[0].wasRightClicked = false;
         }
     }
 }
@@ -688,7 +667,7 @@ inline void ResponseCurveComponent::setBand() noexcept
     std::array<Value, 4> bandBypass;
     for (int i = 0; i < 3; ++i)
     {
-        value[i] = sliders[i]->getValue();
+        value[i] = sliders[i].getValue();
         slider[i] = audioProcessor.apvts.getParameterAsValue("crossover" + String(i));
     }
     for (int i = 0; i < 4; ++i)
@@ -702,7 +681,7 @@ inline void ResponseCurveComponent::setBand() noexcept
     }
 
     if (numBands > 1)
-        sliders[numBands - 1]->setVisible(true);
+        sliders[numBands - 1].setVisible(true);
 
     if (freq < value[0])
     {
@@ -781,7 +760,7 @@ inline void ResponseCurveComponent::setBand() noexcept
         }
     }
 
-    sliders[numBands - 1]->setBounds(getLocalBounds());
+    sliders[numBands - 1].setBounds(getLocalBounds());
 
     {
         std::unique_lock<std::mutex> lock(mutex);
@@ -804,7 +783,7 @@ inline void ResponseCurveComponent::removeBand(int index) noexcept
     for (int i = 0; i < 3; ++i)
     {
         slider[i] = audioProcessor.apvts.getParameterAsValue("crossover" + String(i));
-        value[i] = sliders[i]->getValue();
+        value[i] = sliders[i].getValue();
     }
     for (int i = 0; i < 4; ++i)
     {
@@ -816,7 +795,7 @@ inline void ResponseCurveComponent::removeBand(int index) noexcept
         bandBypass[i] = audioProcessor.apvts.getParameterAsValue("bypassBand" + String(i));
     }
 
-    sliders[index]->wasRightClicked = false;
+    sliders[index].wasRightClicked = false;
 
     if (index > 0)
     {
@@ -838,7 +817,7 @@ inline void ResponseCurveComponent::removeBand(int index) noexcept
                 bandSolo[3] = false;
                 bandMute[3] = false;
                 bandBypass[3] = false;
-                sliders[2]->setVisible(false);
+                sliders[2].setVisible(false);
                 numBands -= 1;
             }
             else
@@ -850,7 +829,7 @@ inline void ResponseCurveComponent::removeBand(int index) noexcept
                 bandSolo[2] = false;
                 bandMute[2] = false;
                 bandBypass[2] = false;
-                sliders[1]->setVisible(false);
+                sliders[1].setVisible(false);
                 numBands -= 1;
             }
         }
@@ -863,7 +842,7 @@ inline void ResponseCurveComponent::removeBand(int index) noexcept
             bandSolo[3] = false;
             bandMute[3] = false;
             bandBypass[3] = false;
-            sliders[2]->setVisible(false);
+            sliders[2].setVisible(false);
             numBands -= 1;
         }
     }
@@ -893,7 +872,7 @@ inline void ResponseCurveComponent::removeBand(int index) noexcept
             bandSolo[3] = false;
             bandMute[3] = false;
             bandBypass[3] = false;
-            sliders[2]->setVisible(false);
+            sliders[2].setVisible(false);
             numBands -= 1;
         }
         else
@@ -911,7 +890,7 @@ inline void ResponseCurveComponent::removeBand(int index) noexcept
             bandSolo[2] = false;
             bandMute[2] = false;
             bandBypass[2] = false;
-            sliders[1]->setVisible(false);
+            sliders[1].setVisible(false);
             numBands -= 1;
         }
     }
@@ -928,5 +907,5 @@ void ResponseCurveComponent::resized()
     magHVec.resize(w);
 
     for (int i = 0; i < 3; ++i)
-        sliders[i]->setBounds(getLocalBounds());
+        sliders[i].setBounds(getLocalBounds());
 }
