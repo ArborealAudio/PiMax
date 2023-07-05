@@ -94,21 +94,6 @@ struct UnlockStatus
 
             xml.writeTo(dir);
             dir.setReadOnly(true);
-
-#if JUCE_MAC
-            auto dirGB = File("~/Music/Audio Music Apps/Arboreal Audio/PiMax/License/license.aal");
-            auto gbuuid = File("~/Music/Audio Music Apps").getFileIdentifier();
-
-            if (!dirGB.exists())
-                dirGB.create();
-
-            XmlElement xmlGB{"Key"};
-            xmlGB.setAttribute("uuid", String(id.hashCode64()));
-            xmlGB.setAttribute("GBuuid", String(gbuuid));
-
-            xmlGB.writeTo(dirGB);
-            dirGB.setReadOnly(true);
-#endif
         }
     }
 

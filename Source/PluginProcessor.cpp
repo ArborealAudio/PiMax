@@ -730,39 +730,24 @@ void MaximizerAudioProcessor::checkActivation()
     PluginHostType host;
     File dir = File(File::getSpecialLocation(File::userApplicationDataDirectory)
                     .getFullPathName() + "/Arboreal Audio/PiMax/License/license.aal");
-    File dirGB;
-    uint64 gbuuid;
-    
+   
     // auto uuid = String(OnlineUnlockStatus::MachineIDUtilities::getLocalMachineIDs().strings[0].hashCode64());
     // auto newID = String(SystemStats::getUniqueDeviceID().hashCode64());
 
 #if JUCE_WINDOWS
     String timeFile = "HKEY_CURRENT_USER\\SOFTWARE\\Arboreal Audio\\PiMax\\TrialKey";
 #elif JUCE_MAC
-    dirGB = File("~/Music/Audio Music Apps/Arboreal Audio/PiMax/License/license.aal");
     File timeFile = File(File::getSpecialLocation(File::userApplicationDataDirectory)
                         .getFullPathName() + "/Arboreal Audio/PiMax/License/trialkey.aal");
-    File timeFileGB = File("~/Music/Audio Music Apps/Arboreal Audio/PiMax/License/trialkey.aal");
-    gbuuid = File("~/Music/Audio Music Apps").getFileIdentifier();
 #elif JUCE_LINUX
     File timeFile = File(File::getSpecialLocation(File::userApplicationDataDirectory).getFullPathName() + "/Arboreal Audio/PiMax/License/trialkey.aal");
 #endif
-    if (!host.isGarageBand())
+    if (dir.exists() && !checkUnlock())
     {
-        if (dir.exists() && !checkUnlock())
-        {
-            auto xml = parseXML(dir);
-            isUnlocked = (xml->hasAttribute("uuid") && xml->getStringAttribute("uuid").isNotEmpty());
-            if (xml->hasAttribute("key"))
-                isUnlocked = (xml->getStringAttribute("key") != "" && xml->getStringAttribute("key") != " ");
-        }
-    }
-    /*Garageband requires a special directory*/
-    else {
-        if (dirGB.exists() && !checkUnlock()) {
-            auto xml = parseXML(dirGB);
-            isUnlocked = String(gbuuid) == xml->getStringAttribute("GBuuid");
-        }
+        auto xml = parseXML(dir);
+        isUnlocked = (xml->hasAttribute("uuid") && xml->getStringAttribute("uuid").isNotEmpty());
+        if (xml->hasAttribute("key"))
+            isUnlocked = (xml->getStringAttribute("key") != "" && xml->getStringAttribute("key") != " ");
     }
 #if JUCE_WINDOWS
     /*set trial key if non-existant*/
@@ -781,39 +766,17 @@ void MaximizerAudioProcessor::checkActivation()
             trialRemaining_ms = trialEnd.toMilliseconds() - Time::getCurrentTime().toMilliseconds();
     }
 #elif JUCE_MAC || JUCE_LINUX
-    if (!host.isGarageBand()) {
-        if (!timeFile.exists()) {
-            timeFile.create();
-            auto trialStart = Time::getCurrentTime();
-            XmlElement xml{ "TrialKey" };
-            xml.setAttribute("key", String(trialStart.toMilliseconds()));
-            xml.writeTo(timeFile);
-            timeFile.setReadOnly(true);
-            trialRemaining_ms = RelativeTime::days(7).inMilliseconds();
-        }
-        else {
-            auto xml = parseXML(timeFile);
-
-            auto trialEnd = Time(xml->getStringAttribute("key").getLargeIntValue());
-            trialEnd += RelativeTime::days(7);
-            trialEnded = (trialEnd <= Time::getCurrentTime());
-            if (!trialEnded)
-                trialRemaining_ms = trialEnd.toMilliseconds() - Time::getCurrentTime().toMilliseconds();
-        }
-    }
-#endif
-#if JUCE_MAC
-    if (!timeFileGB.exists()) {
-        timeFileGB.create();
+    if (!timeFile.exists()) {
+        timeFile.create();
         auto trialStart = Time::getCurrentTime();
         XmlElement xml{ "TrialKey" };
         xml.setAttribute("key", String(trialStart.toMilliseconds()));
-        xml.writeTo(timeFileGB);
-        timeFileGB.setReadOnly(true);
+        xml.writeTo(timeFile);
+        timeFile.setReadOnly(true);
         trialRemaining_ms = RelativeTime::days(7).inMilliseconds();
     }
     else {
-        auto xml = parseXML(timeFileGB);
+        auto xml = parseXML(timeFile);
 
         auto trialEnd = Time(xml->getStringAttribute("key").getLargeIntValue());
         trialEnd += RelativeTime::days(7);
