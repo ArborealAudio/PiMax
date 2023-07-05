@@ -42,7 +42,6 @@ juce_add_plugin(PiMax
     VST3_CATEGORIES Fx Distortion Mastering
     AU_MAIN_TYPE kAudioUnitType_Effect
     PRODUCT_NAME "PiMax"
-    NEEDS_CURL TRUE
     HARDENED_RUNTIME_ENABLED TRUE)
 
 target_compile_definitions(PiMax PUBLIC PRODUCTION_BUILD=${PRODUCTION_BUILD})
@@ -125,10 +124,11 @@ PRIVATE
     juce::juce_dsp
     gin
     gin_gui
-    Arbor_modules)
-    # juce::juce_recommended_config_flags
-    # juce::juce_recommended_lto_flags
-    # juce::juce_recommended_warning_flags)
+    Arbor_modules
+PUBLIC
+    juce::juce_recommended_config_flags
+    juce::juce_recommended_lto_flags
+    juce::juce_recommended_warning_flags)
 
 if (NOT APPLE)
     target_link_libraries(PiMax PRIVATE
