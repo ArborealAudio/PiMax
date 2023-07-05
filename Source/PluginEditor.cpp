@@ -173,6 +173,11 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(MaximizerAudioProce
         unlockButton.setVisible(false);
     };
     activationComp.centreWithSize(240, 360);
+    if (!p.checkUnlock())
+    {
+        activationComp.setImage(createComponentSnapshot(getLocalBounds()));
+        activationComp.setVisible(true);
+    }
 
     startTimerHz(1);
 
