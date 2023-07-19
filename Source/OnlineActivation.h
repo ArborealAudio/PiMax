@@ -58,7 +58,7 @@ struct UnlockStatus
 
         auto item = keyTree.getProperty("Item", var());
 
-        auto activationCount = item.getProperty("activationCount", var());
+        auto activationCount = item.getProperty("activationCount", var(0));
         auto activationLim = item.getProperty("maxActivations", var());
         if (activationCount >= activationLim)
             return 2;
@@ -120,9 +120,7 @@ struct UnlockForm : Component
 
         reg.onClick = [&]
         {
-            future = std::async(std::launch::async, [&]
-                                { runAuth(); });
-            waiting = true;
+            runAuth();
             repaint();
         };
         close.onClick = [&]

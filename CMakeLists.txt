@@ -14,7 +14,7 @@ if (PRODUCTION_BUILD)
     set(CMAKE_BUILD_TYPE Release CACHE INTERNAL "")
 endif()
 
-project(PiMax VERSION 1.1.2)
+project(PiMax VERSION 1.1.3)
 
 add_subdirectory(Source/modules/juce)
 add_subdirectory(Source/modules/clap-juce-extensions)
@@ -80,7 +80,10 @@ add_subdirectory(Source/UI)
 add_subdirectory(Source/Processors)
 add_subdirectory(Source/Presets)
     
-target_include_directories(PiMax PRIVATE "Source/modules/farbot/include")
+target_include_directories(PiMax PRIVATE
+    "Source/modules/farbot/include"
+    "Source/modules/clap-juce-extensions/include"
+)
 juce_add_modules(
     "Source/modules/Gin/modules/gin"
     "Source/modules/Gin/modules/gin_gui"
@@ -128,7 +131,7 @@ PRIVATE
 PUBLIC
     juce::juce_recommended_config_flags
     juce::juce_recommended_lto_flags
-    juce::juce_recommended_warning_flags)
+)
 
 if (NOT APPLE)
     target_link_libraries(PiMax PRIVATE
