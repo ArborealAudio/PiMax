@@ -14,14 +14,14 @@ if (PRODUCTION_BUILD)
     set(CMAKE_BUILD_TYPE Release CACHE INTERNAL "")
 endif()
 
-set(PRODUCTION_BUILD OFF)
-
 message("PRODUCTION_BUILD: ${PRODUCTION_BUILD}")
 
 project(PiMax VERSION 1.1.3)
 
 add_subdirectory(Source/modules/juce)
 add_subdirectory(Source/modules/clap-juce-extensions)
+
+set(PFFFT_USE_SIMD_NEON ON)
 add_subdirectory(Source/modules/pffft)
 
 juce_set_vst2_sdk_path("$ENV{HOME}/vst2_sdk")
