@@ -54,7 +54,7 @@ clap_juce_extensions_plugin(TARGET PiMax
     CLAP_PROCESS_EVENTS_RESOLUTION_SAMPLES 64
     CLAP_FEATURES audio-effect distortion mastering)
 
-if ((UNIX AND NOT APPLE) OR WIN32)
+if (WIN32)
     if (UNIX AND NOT APPLE)
         list(APPEND CMAKE_MODULE_PATH "/opt/intel/oneapi/ipp/latest/lib/cmake/ipp")
     endif()
