@@ -14,6 +14,10 @@ if (PRODUCTION_BUILD)
     set(CMAKE_BUILD_TYPE Release CACHE INTERNAL "")
 endif()
 
+if(NOT PRODUCTION_BUILD)
+    set(PRODUCTION_BUILD OFF)
+endif()
+
 message("PRODUCTION_BUILD: ${PRODUCTION_BUILD}")
 
 project(PiMax VERSION 1.1.3)
@@ -47,6 +51,7 @@ juce_add_plugin(PiMax
     VST3_CATEGORIES Fx Distortion Mastering
     AU_MAIN_TYPE kAudioUnitType_Effect
     PRODUCT_NAME "PiMax"
+    NEEDS_CURL TRUE
     HARDENED_RUNTIME_ENABLED TRUE)
 
 clap_juce_extensions_plugin(TARGET PiMax
@@ -138,6 +143,8 @@ PUBLIC
     juce::juce_recommended_config_flags
     juce::juce_recommended_lto_flags
 )
+
+set_target_properties(PFFFT PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 
 if (NOT APPLE)
     target_link_libraries(PiMax PRIVATE
