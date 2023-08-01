@@ -13,3 +13,6 @@
 [submodule "Source/modules/Gin"]
 	path = Source/modules/Gin
 	url = https://github.com/FigBug/Gin
+[submodule "Source/modules/pffft"]
+	path = Source/modules/pffft
+	url = https://github.com/marton78/pffft

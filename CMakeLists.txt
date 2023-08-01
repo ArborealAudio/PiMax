@@ -14,10 +14,15 @@ if (PRODUCTION_BUILD)
     set(CMAKE_BUILD_TYPE Release CACHE INTERNAL "")
 endif()
 
+set(PRODUCTION_BUILD OFF)
+
+message("PRODUCTION_BUILD: ${PRODUCTION_BUILD}")
+
 project(PiMax VERSION 1.1.3)
 
 add_subdirectory(Source/modules/juce)
 add_subdirectory(Source/modules/clap-juce-extensions)
+add_subdirectory(Source/modules/pffft)
 
 juce_set_vst2_sdk_path("$ENV{HOME}/vst2_sdk")
 
@@ -43,9 +48,6 @@ juce_add_plugin(PiMax
     AU_MAIN_TYPE kAudioUnitType_Effect
     PRODUCT_NAME "PiMax"
     HARDENED_RUNTIME_ENABLED TRUE)
-
-target_compile_definitions(PiMax PUBLIC PRODUCTION_BUILD=${PRODUCTION_BUILD})
-message("PRODUCTION_BUILD: ${PRODUCTION_BUILD}")
 
 clap_juce_extensions_plugin(TARGET PiMax
     CLAP_ID "com.ArborealAudio.PiMax"
@@ -83,6 +85,7 @@ add_subdirectory(Source/Presets)
 target_include_directories(PiMax PRIVATE
     "Source/modules/farbot/include"
     "Source/modules/clap-juce-extensions/include"
+    "Source/modules/pffft"
 )
 juce_add_modules(
     "Source/modules/Gin/modules/gin"
@@ -91,6 +94,8 @@ juce_add_modules(
 
 target_compile_definitions(PiMax
 PUBLIC
+    PRODUCTION_BUILD=${PRODUCTION_BUILD}
+    JUCE_USE_PFFFT=1
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=1
     JUCE_VST3_CAN_REPLACE_VST2=0
@@ -128,6 +133,7 @@ PRIVATE
     gin
     gin_gui
     Arbor_modules
+    PFFFT
 PUBLIC
     juce::juce_recommended_config_flags
     juce::juce_recommended_lto_flags
