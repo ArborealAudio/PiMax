@@ -22,36 +22,22 @@ enum class ClipType
 #include <JuceHeader.h>
 #include <farbot/AsyncCaller.hpp>
 #include <farbot/RealtimeObject.hpp>
+#include <clap-juce-extensions/clap-juce-extensions.h>
 #include "Processors/MaximPizer.h"
 #include "Processors/Waveshapers.h"
 #include "Processors/StereoWidener.h"
 #include "Processors/MultiBandProcessor.h"
 #include "Presets/PresetManager.h"
-#include "OnlineActivation.h"
-
-// #ifndef NDEBUG
-// #define X(textToWrite)                                                         \
-//   JUCE_BLOCK_WITH_FORCED_SEMICOLON(juce::String tempDbgBuf;                    \
-//                                    tempDbgBuf << textToWrite;                  \
-//                                    juce::Logger::writeToLog(tempDbgBuf);)
-
-// #define X_EVERY(n, textToWrite)                                                \
-//   {                                                                            \
-//     static int j = 0;                                                          \
-//     if ((j % static_cast<int>(n)) == 0) {                                      \
-//       X(textToWrite);                                                          \
-//     }                                                                          \
-//     ++j;                                                                       \
-//   }
-// #endif
 
 //==============================================================================
 /**
 */
 class MaximizerAudioProcessor : public AudioProcessor,
                                 public AudioProcessorValueTreeState::Listener,
-                                public ValueTree::Listener,
-                                public Timer
+                                public clap_juce_extensions::clap_properties,
+                                public clap_juce_extensions::clap_juce_audio_processor_capabilities,
+                                private ValueTree::Listener,
+                                private Timer
 {
 public:
     //==============================================================================
@@ -110,7 +96,7 @@ public:
 
     AudioProcessorValueTreeState apvts;
 
-    std::atomic<float>* bandSplit, *monoWidth, *delta, *clip, *distIndex, *autoGain, *linearPhase;
+    std::atomic<float>* bandSplit, *monoWidth, *delta, *clip, *distType, *autoGain, *linearPhase;
     strix::FloatParameter *gain_dB, *curve, *output_dB;
 
     int numBands = 2, lastNumBands = 2;
@@ -131,7 +117,7 @@ public:
         {dsp::Oversampling<float>(1, 2, dsp::Oversampling<float>::FilterType::filterHalfBandFIREquiripple, true, true)}
     } };
 
-    int osIndex = 0;
+    size_t osIndex = 0;
 
     int numSamples = 0, maxNumSamples = 0;
 
@@ -147,6 +133,21 @@ private:
 
     void checkActivation();
 
+    SmoothedValue<float> smoothOffset[2];
+    void processDCOffset(dsp::AudioBlock<float> &);
+    void processDCBlock(dsp::AudioBlock<float> &);
+    // DC block coeffs
+    double xm1[2]{ 0.0 };
+    double ym1[2]{ 0.0 };
+    enum DistState
+    {
+        SymToAsym,
+        AsymToSym,
+        Sym,
+        Asym
+    };
+    DistState distState;
+
     void processDelta(AudioBuffer<float>& buffer, float inGain, float outGain);
 
     void updateBandSpecs();
@@ -159,16 +160,14 @@ private:
 
     ValueTree numBandsTree
     { "PARAM", {{"id", "numBands"}, {"value", numBands}} };
-    
+
     std::unique_ptr<PresetManager> manager = std::make_unique<PresetManager>(apvts);
 
     MaximPizer mPi;
-    double xm1[2]{ 0.1, 0.1 };
-    double ym1[2]{ 0.1, 0.1 };
 
     StereoWidener<float> widener;
 
-    MultibandProcessor m_Proc;
+    MultibandProcessor mbProc;
 
     int filterLength = 0;
     dsp::DryWetMixer<float> mixer;
@@ -191,7 +190,7 @@ private:
     AudioBuffer<float> bypassBuffer;
     bool lastBypass = false;
     bool bufferCopied = false;
-    
+
     std::atomic<bool> needs_resize = false, crossover_changed = false, needs_update = false, isProcMB = false;
     int crossover_changedID = 0;
 
@@ -200,7 +199,7 @@ private:
         if (needs_update && !isProcMB)
             async.process();
     }
-    
+
     dsp::DelayLine<float> bypassDelay {44100};
 
     //==============================================================================

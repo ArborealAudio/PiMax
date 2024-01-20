@@ -9,6 +9,7 @@
 */
 
 #pragma once
+#include <JuceHeader.h>
 
 struct PresetManager : private AudioProcessorValueTreeState::Listener
 {

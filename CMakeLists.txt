@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.15)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+project(PiMax VERSION 1.1.3)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_OSX_DEPLOYMENT_TARGET 10.9 CACHE INTERNAL "")
@@ -18,21 +20,24 @@ if(NOT PRODUCTION_BUILD)
     set(PRODUCTION_BUILD OFF)
 endif()
 
+if (NOT INSTALL)
+    set(INSTALL OFF)
+endif()
+
 message("PRODUCTION_BUILD: ${PRODUCTION_BUILD}")
 
-project(PiMax VERSION 1.1.3)
-
-add_subdirectory(Source/modules/juce)
-add_subdirectory(Source/modules/clap-juce-extensions)
-
-set(PFFFT_USE_SIMD_NEON ON)
-add_subdirectory(Source/modules/pffft)
+add_subdirectory(modules/juce)
+add_subdirectory(modules/clap-juce-extensions)
 
 set(JUCE_FORMATS VST3 AU)
 
 if(UNIX AND NOT APPLE)
     set(USE_PFFFT 1)
 endif()
+
+add_subdirectory(modules/pffft)
+
+set(JUCE_FORMATS VST3 AU)
 
 if(BUILD_VST2)
     juce_set_vst2_sdk_path("./vst2_sdk")
@@ -42,7 +47,7 @@ endif()
 juce_add_plugin(PiMax
     COMPANY_NAME "Arboreal Audio"
     COMPANY_COPYRIGHT "(c) 2024 Arboreal Audio, LLC"
-    COPY_PLUGIN_AFTER_BUILD TRUE
+    COPY_PLUGIN_AFTER_BUILD ${INSTALL}
     PLUGIN_MANUFACTURER_CODE Arau
     PLUGIN_CODE Hmsj
     FORMATS ${JUCE_FORMATS}
@@ -59,9 +64,6 @@ clap_juce_extensions_plugin(TARGET PiMax
     CLAP_FEATURES audio-effect distortion mastering)
 
 if (WIN32)
-    if (UNIX AND NOT APPLE)
-        list(APPEND CMAKE_MODULE_PATH "/opt/intel/oneapi/ipp/latest/lib/cmake/ipp")
-    endif()
     find_package(IPP REQUIRED)
     if(${IPP_FOUND})
         message("FOUND: IPP Libs")
@@ -76,25 +78,32 @@ endif()
 
 juce_generate_juce_header(PiMax)
 
-target_sources(PiMax
-PRIVATE
-    Source/PluginProcessor.cpp
-    Source/PluginEditor.cpp
-    Source/OnlineActivation.h)
-    
-add_subdirectory(Source/UI)
-add_subdirectory(Source/Processors)
-add_subdirectory(Source/Presets)
-    
+file(GLOB_RECURSE SourceFiles CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp"
+)
+target_sources(PiMax PRIVATE ${SourceFiles})
+
+# add_subdirectory(src/UI)
+# add_subdirectory(src/Processors)
+# add_subdirectory(src/Presets)
+
 target_include_directories(PiMax PRIVATE
-    "Source/modules/farbot/include"
-    "Source/modules/clap-juce-extensions/include"
-    "Source/modules/pffft"
+    "modules/farbot/include"
+    "modules/clap-juce-extensions/include"
+    "modules/pffft"
 )
 juce_add_modules(
-    "Source/modules/Gin/modules/gin"
-    "Source/modules/Gin/modules/gin_gui"
-    "Source/modules/Arbor_modules")
+    "modules/Gin/modules/gin"
+    "modules/Gin/modules/gin_gui"
+    "modules/Arbor_modules")
+
+if (NOT APPLE)
+    set(USE_PFFFT 1)
+else()
+    set(USE_PFFFT 0)
+endif()
 
 target_compile_definitions(PiMax
 PUBLIC
@@ -108,23 +117,24 @@ PUBLIC
 )
 
 juce_add_binary_data(BinaryData SOURCES
-    "Source/Resources/arboreal tree.svg"
-    "Source/Resources/Hamburger_icon.svg"
-    "Source/Resources/fonts/Sora-Regular.ttf"
-    "Source/Resources/fonts/Sora-Thin.ttf"
-    "Source/Resources/fonts/Sora-SemiBold.ttf"
-    "Source/Presets/Factory Presets/Bass Fattener.aap"
-    "Source/Presets/Factory Presets/Bass Quack.aap"
-    "Source/Presets/Factory Presets/Broken Gear.aap"
-    "Source/Presets/Factory Presets/Default.aap"
-    "Source/Presets/Factory Presets/Drum Crusher.aap"
-    "Source/Presets/Factory Presets/Drum Expander.aap"
-    "Source/Presets/Factory Presets/Guitar Stompbox.aap"
-    "Source/Presets/Factory Presets/Kick Enhancer.aap"
-    "Source/Presets/Factory Presets/Loudness Curve.aap"
-    "Source/Presets/Factory Presets/Snare Enhancer.aap"
-    "Source/Presets/Factory Presets/Subtle Warmth.aap"
-    "Source/Presets/Factory Presets/Vocal Polisher.aap")
+    "src/Resources/arboreal tree.svg"
+    "src/Resources/Hamburger_icon.svg"
+    "src/Resources/fonts/Sora-Regular.ttf"
+    "src/Resources/fonts/Sora-Thin.ttf"
+    "src/Resources/fonts/Sora-SemiBold.ttf"
+    "src/Presets/Factory Presets/Bass Fattener.aap"
+    "src/Presets/Factory Presets/Bass Quack.aap"
+    "src/Presets/Factory Presets/Broken Gear.aap"
+    "src/Presets/Factory Presets/Default.aap"
+    "src/Presets/Factory Presets/Drum Crusher.aap"
+    "src/Presets/Factory Presets/Drum Expander.aap"
+    "src/Presets/Factory Presets/Guitar Stompbox.aap"
+    "src/Presets/Factory Presets/Kick Enhancer.aap"
+    "src/Presets/Factory Presets/Loudness Curve.aap"
+    "src/Presets/Factory Presets/Snare Enhancer.aap"
+    "src/Presets/Factory Presets/Subtle Warmth.aap"
+    "src/Presets/Factory Presets/Vocal Polisher.aap"
+)
 
 #-fPIC and static linker flags, & PFFFT for Linux
 if (UNIX AND NOT APPLE)

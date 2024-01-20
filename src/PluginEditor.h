@@ -11,6 +11,7 @@
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
 #include "UI/UI.h"
+#include "OnlineActivation.h"
 
 #define SITE_URL "https://arborealaudio.com"
 #if JUCE_WINDOWS

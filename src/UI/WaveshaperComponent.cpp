@@ -56,7 +56,7 @@ void WaveshaperComponent::paint(Graphics& g)
     g.fillAll();
 
     ClipType clip = (ClipType)audioProcessor.clip->load();
-    auto distIndex = audioProcessor.distIndex->load();
+    auto distIndex = audioProcessor.distType->load();
     auto outGain = pow(10.f, audioProcessor.output_dB->get() * 0.05f);
 
     for (int n = 0; n < w; ++n)
