@@ -28,21 +28,20 @@ add_subdirectory(Source/modules/clap-juce-extensions)
 set(PFFFT_USE_SIMD_NEON ON)
 add_subdirectory(Source/modules/pffft)
 
-juce_set_vst2_sdk_path("$ENV{HOME}/vst2_sdk")
-
 set(JUCE_FORMATS VST3 AU)
 
 if(UNIX AND NOT APPLE)
-    list(APPEND JUCE_FORMATS LV2)
+    set(USE_PFFFT 1)
 endif()
 
-if(TARGET juce_vst2_sdk)
+if(BUILD_VST2)
+    juce_set_vst2_sdk_path("./vst2_sdk")
     list(APPEND JUCE_FORMATS VST)
 endif()
 
 juce_add_plugin(PiMax
     COMPANY_NAME "Arboreal Audio"
-    COMPANY_COPYRIGHT "(c) 2023 Arboreal Audio, LLC"
+    COMPANY_COPYRIGHT "(c) 2024 Arboreal Audio, LLC"
     COPY_PLUGIN_AFTER_BUILD TRUE
     PLUGIN_MANUFACTURER_CODE Arau
     PLUGIN_CODE Hmsj
@@ -100,12 +99,13 @@ juce_add_modules(
 target_compile_definitions(PiMax
 PUBLIC
     PRODUCTION_BUILD=${PRODUCTION_BUILD}
-    JUCE_USE_PFFFT=1
+    JUCE_USE_PFFFT=${USE_PFFFT}
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=1
     JUCE_VST3_CAN_REPLACE_VST2=0
     JUCE_DISPLAY_SPLASH_SCREEN=0
-    JUCE_COREGRAPHICS_RENDER_WITH_MULTIPLE_PAINT_CALLS=0)
+    JUCE_COREGRAPHICS_RENDER_WITH_MULTIPLE_PAINT_CALLS=0
+)
 
 juce_add_binary_data(BinaryData SOURCES
     "Source/Resources/arboreal tree.svg"
@@ -126,9 +126,12 @@ juce_add_binary_data(BinaryData SOURCES
     "Source/Presets/Factory Presets/Subtle Warmth.aap"
     "Source/Presets/Factory Presets/Vocal Polisher.aap")
 
-#-fPIC flag for proper Linux compile
+#-fPIC and static linker flags, & PFFFT for Linux
+if (UNIX AND NOT APPLE)
 set_target_properties(BinaryData PROPERTIES
     POSITION_INDEPENDENT_CODE TRUE)
+    target_link_libraries(PiMax PRIVATE "-static-libgcc" "-static-libstdc++" PFFFT)
+endif()
 
 target_link_libraries(PiMax
 PRIVATE
@@ -138,7 +141,6 @@ PRIVATE
     gin
     gin_gui
     Arbor_modules
-    PFFFT
 PUBLIC
     juce::juce_recommended_config_flags
     juce::juce_recommended_lto_flags
