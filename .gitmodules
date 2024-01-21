@@ -16,4 +16,4 @@
 [submodule "Source/modules/pffft"]
 	path = modules/pffft
 	url = https://github.com/marton78/pffft
-    shallow = true
+	shallow = true
