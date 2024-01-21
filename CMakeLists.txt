@@ -19,23 +19,22 @@ endif()
 if(NOT PRODUCTION_BUILD)
     set(PRODUCTION_BUILD OFF)
 endif()
+message("PRODUCTION_BUILD: ${PRODUCTION_BUILD}")
 
 if (NOT INSTALL)
     set(INSTALL OFF)
 endif()
 
-message("PRODUCTION_BUILD: ${PRODUCTION_BUILD}")
 
 add_subdirectory(modules/juce)
 add_subdirectory(modules/clap-juce-extensions)
 
-set(JUCE_FORMATS VST3 AU)
-
-if(UNIX AND NOT APPLE)
+if(NOT APPLE)
     set(USE_PFFFT 1)
+    add_subdirectory(modules/pffft)
+else()
+    set(USE_PFFFT 0)
 endif()
-
-add_subdirectory(modules/pffft)
 
 set(JUCE_FORMATS VST3 AU)
 
@@ -63,19 +62,6 @@ clap_juce_extensions_plugin(TARGET PiMax
     CLAP_PROCESS_EVENTS_RESOLUTION_SAMPLES 64
     CLAP_FEATURES audio-effect distortion mastering)
 
-if (WIN32)
-    find_package(IPP REQUIRED)
-    if(${IPP_FOUND})
-        message("FOUND: IPP Libs")
-        add_compile_definitions(_IPP_SEQUENTIAL_STATIC=1)
-        target_include_directories(PiMax PUBLIC
-        "${ipp_cmake_package_dir}/${IPP_INC_REL_PATH}")
-        target_link_libraries(PiMax PRIVATE ${IPP_LIBRARIES})
-    else()
-        message("NOT FOUND: IPP Libs")
-    endif()
-endif()
-
 juce_generate_juce_header(PiMax)
 
 file(GLOB_RECURSE SourceFiles CONFIGURE_DEPENDS
@@ -85,25 +71,15 @@ file(GLOB_RECURSE SourceFiles CONFIGURE_DEPENDS
 )
 target_sources(PiMax PRIVATE ${SourceFiles})
 
-# add_subdirectory(src/UI)
-# add_subdirectory(src/Processors)
-# add_subdirectory(src/Presets)
-
 target_include_directories(PiMax PRIVATE
     "modules/farbot/include"
     "modules/clap-juce-extensions/include"
-    "modules/pffft"
-)
+    $<${USE_PFFFT}:modules/pffft>)
+
 juce_add_modules(
     "modules/Gin/modules/gin"
     "modules/Gin/modules/gin_gui"
     "modules/Arbor_modules")
-
-if (NOT APPLE)
-    set(USE_PFFFT 1)
-else()
-    set(USE_PFFFT 0)
-endif()
 
 target_compile_definitions(PiMax
 PUBLIC
@@ -114,6 +90,7 @@ PUBLIC
     JUCE_VST3_CAN_REPLACE_VST2=0
     JUCE_DISPLAY_SPLASH_SCREEN=0
     JUCE_COREGRAPHICS_RENDER_WITH_MULTIPLE_PAINT_CALLS=0
+    JUCE_SILENCE_XCODE_15_LINKER_WARNING=1
 )
 
 juce_add_binary_data(BinaryData SOURCES
@@ -138,9 +115,9 @@ juce_add_binary_data(BinaryData SOURCES
 
 #-fPIC and static linker flags, & PFFFT for Linux
 if (UNIX AND NOT APPLE)
-set_target_properties(BinaryData PROPERTIES
-    POSITION_INDEPENDENT_CODE TRUE)
+    set_target_properties(BinaryData PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
     target_link_libraries(PiMax PRIVATE "-static-libgcc" "-static-libstdc++" PFFFT)
+    set_target_properties(PFFFT PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 endif()
 
 target_link_libraries(PiMax
@@ -155,8 +132,6 @@ PUBLIC
     juce::juce_recommended_config_flags
     juce::juce_recommended_lto_flags
 )
-
-set_target_properties(PFFFT PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 
 if (NOT APPLE)
     target_link_libraries(PiMax PRIVATE
