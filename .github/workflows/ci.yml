@@ -49,7 +49,7 @@ jobs:
       uses: seanmiddleditch/gha-setup-ninja@master
       
     - name: Configure
-      run: cmake -Bbuild -GNinja -DPRODUCTION_BUILD=1 -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
+      run: cmake -Bbuild -DPRODUCTION_BUILD=1
 
     - name: Build
       run: cmake --build build --config Release
