@@ -60,8 +60,6 @@ MaximizerAudioProcessor::MaximizerAudioProcessor()
     apvts.state.addListener(this);
 
     checkActivation();
-
-    startTimerHz(20);
 }
 
 MaximizerAudioProcessor::~MaximizerAudioProcessor()
@@ -74,8 +72,6 @@ MaximizerAudioProcessor::~MaximizerAudioProcessor()
         apvts.removeParameterListener("crossover" + String(i), this);
 
     apvts.state.removeListener(this);
-
-    stopTimer();
 }
 
 //==============================================================================
@@ -141,9 +137,6 @@ void MaximizerAudioProcessor::prepareToPlay(double sampleRate,
     maxNumSamples = samplesPerBlock;
     lastDownSampleRate = sampleRate;
 
-    muteRemaining = 0;
-    lastFadeGain = 0.f;
-
     updateOversample();
 
     dsp::ProcessSpec spec{lastSampleRate,
@@ -191,7 +184,6 @@ void MaximizerAudioProcessor::releaseResources()
     lastOutGain = 1.f;
     m_lastGain = 1.f;
     lastAsym = false;
-    lastFadeGain = 0.f;
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
@@ -230,9 +222,11 @@ void MaximizerAudioProcessor::parameterChanged(const String &parameterID, float)
         parameterID == "linearPhase") {
         updateOversample();
 
-        if (parameterID != "renderHQ") /*if renderHQ is turned on in realtime
-                                          processing, don't resize*/
-            needs_resize = true;
+        // CHANGE: We probably don't need to worry about resizing at any point
+        // in the plugin's runtime other than init. We can just update the specs
+        // here.
+        // if (parameterID != "renderHQ")
+        //     mbProc.need_resize = true;
 
         dsp::ProcessSpec newSpec{
             lastSampleRate,
@@ -240,19 +234,20 @@ void MaximizerAudioProcessor::parameterChanged(const String &parameterID, float)
             uint32(getTotalNumInputChannels())};
 
         mPi.prepare(newSpec);
+        updateBandSpecs();
     }
 
     /* flag crossover changes in linear-phase mode */
     if (parameterID.contains("crossover") && (bool)*linearPhase) {
-        crossover_changedID = parameterID.getTrailingIntValue();
-        crossover_changed = true;
+        mbProc.crossover_changed_ID = parameterID.getTrailingIntValue();
+        mbProc.updateCrossovers = true;
+        updateBandCrossovers(mbProc.crossover_changed_ID);
     }
 }
 
-void MaximizerAudioProcessor::valueTreeRedirected(
-    ValueTree &treeWhichHasBeenChanged)
+void MaximizerAudioProcessor::valueTreeRedirected(ValueTree &changed)
 {
-    auto child = treeWhichHasBeenChanged.getChildWithProperty("id", "numBands");
+    auto child = changed.getChildWithProperty("id", "numBands");
     if (child.isValid()) {
         int num = child.getProperty("value");
         if (num != numBands)
@@ -336,46 +331,12 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float> &buffer,
         osBlock = oversampleMono[osIndex].processSamplesUp(
             dsp::AudioBlock<float>(buffer));
 
-    if (*bandSplit) {
-        /* if oversample state has changed, update band specs on message thread
-         */
-        if (needs_resize) {
-            if (async.callAsync([&] { updateBandSpecs(); })) {
-                needs_resize = false;
-                needs_update = true;
-            }
-        }
-
-        if (crossover_changed) {
-            if (async.callAsync([&] { updateBandCrossovers(); })) {
-                crossover_changed = false;
-                needs_update = true;
-            }
-        }
-
-        /* if the band specs have been updated, (shouldn't have to care about
-         * crossovers) copy input buffer into band buffers */
-        if (!needs_resize && !needs_update) {
-            for (auto &b : mbProc.bandBuffer) {
-                b.copyFrom(0, 0,
-                           const_cast<float *>(osBlock.getChannelPointer(0)),
-                           osBlock.getNumSamples());
-                if (totalNumOutputChannels > 1)
-                    b.copyFrom(
-                        1, 0, const_cast<float *>(osBlock.getChannelPointer(1)),
-                        osBlock.getNumSamples());
-            }
-        }
-    }
-
     processDCOffset(osBlock);
 
     if (!*bandSplit)
         mPi.process(osBlock);
-    else if (*bandSplit && !needs_update) {
-        isProcMB = true;
+    else if (*bandSplit) {
         mbProc.processBands(osBlock);
-        isProcMB = false;
     }
 
     if (totalNumOutputChannels > 1)
@@ -478,8 +439,8 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float> &buffer,
         if (*width <= 1.0 &&
             (*mbProc.bandWidth[0] <= 1.0 && *mbProc.bandWidth[1] <= 1.0 &&
              *mbProc.bandWidth[2] <= 1.0 && *mbProc.bandWidth[3] <= 1.0))
+            // copy left->right if no wideners are active & mono->stereo
             buffer.copyFrom(1, 0, buffer.getReadPointer(0), numSamples);
-        // copy left->right if no wideners are active & mono->stereo
     }
 
     if (*delta)
@@ -487,8 +448,8 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float> &buffer,
     if (*bypass || lastBypass)
         processBlockBypassed(buffer, midiMessages);
 
-    if (buffer.getMagnitude(0, numSamples) >=
-        6.f) /*mute buffer if it's over ~15dB*/
+    /*mute buffer if it's over ~15dB*/
+    if (buffer.getMagnitude(0, numSamples) >= 6.f)
         buffer.clear();
 }
 
@@ -659,16 +620,14 @@ void MaximizerAudioProcessor::updateBandSpecs()
     mbProc.reset();
     mbProc.updateSpecs(newSpec);
 
-    needs_update = false;
+    // needs_update = false;
 }
 
 /*only needed for when linear-phase crossovers are the priority*/
-void MaximizerAudioProcessor::updateBandCrossovers()
+void MaximizerAudioProcessor::updateBandCrossovers(int crossover_changed_id)
 {
-    mbProc.updateCrossoverLin(crossover_changedID);
-    mbProc.updateCrossoverNonLin(crossover_changedID);
-
-    needs_update = false;
+    mbProc.updateCrossoverLin(crossover_changed_id);
+    mbProc.updateCrossoverNonLin(crossover_changed_id);
 }
 
 //==============================================================================

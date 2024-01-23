@@ -36,8 +36,7 @@ class MaximizerAudioProcessor : public AudioProcessor,
                                 public AudioProcessorValueTreeState::Listener,
                                 public clap_juce_extensions::clap_properties,
                                 public clap_juce_extensions::clap_juce_audio_processor_capabilities,
-                                private ValueTree::Listener,
-                                private Timer
+                                private ValueTree::Listener
 {
 public:
     //==============================================================================
@@ -148,13 +147,11 @@ private:
     };
     DistState distState;
 
-    void processDelta(AudioBuffer<float>& buffer, float inGain, float outGain);
+    void processDelta(AudioBuffer<float>&, float, float);
 
     void updateBandSpecs();
 
-    void updateBandCrossovers();
-
-    farbot::AsyncCaller<farbot::fifo_options::concurrency::single> async;
+    void updateBandCrossovers(int);
 
     AudioProcessorValueTreeState::ParameterLayout createParams();
 
@@ -182,23 +179,12 @@ private:
     float lastInputGain = 1.0, lastOutGain = 1.0;
 
     bool lastBoost = false, lastAsym = false;
-    int muteRemaining = 0;
-    float lastFadeGain = 0.f;
 
     strix::VolumeMeterSource inputMeter, outputMeter;
 
     AudioBuffer<float> bypassBuffer;
     bool lastBypass = false;
     bool bufferCopied = false;
-
-    std::atomic<bool> needs_resize = false, crossover_changed = false, needs_update = false, isProcMB = false;
-    int crossover_changedID = 0;
-
-    void timerCallback() override
-    {
-        if (needs_update && !isProcMB)
-            async.process();
-    }
 
     dsp::DelayLine<float> bypassDelay {44100};
 

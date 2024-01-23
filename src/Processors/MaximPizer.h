@@ -1,6 +1,6 @@
 #pragma once
-#include "../PluginProcessor.h"
 #include <JuceHeader.h>
+#include "../PluginProcessor.h"
 
 static constexpr auto halfPi = MathConstants<double>::halfPi;
 static constexpr double sqrtHalfPi = 1.25331413731550025;
@@ -150,6 +150,7 @@ class MaximPizer
                     /*full sine for infinite type*/
                     yn = std::sin(halfPi * xn);
                     break;
+                default: break;
                 }
             }
 

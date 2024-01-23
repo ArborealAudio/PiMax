@@ -1,5 +1,7 @@
 #pragma once
 
+#include <JuceHeader.h>
+
 /*custom Linkwitz-Riley filter object which contains two independent filter
 objects for the purpose of properly cascading band-passed outputs*/
 template <typename T> class LRFilter
@@ -80,7 +82,7 @@ template <typename T> class LRFilter
         }
     }
 
-    /*process one channel and return low and high outputs*/
+    /* process one channel and return low and high outputs */
     void process(const T *input, T *outputLow, T *outputHigh, size_t numSamples,
                  int ch)
     {
@@ -98,7 +100,7 @@ template <typename T> class LRFilter
         }
     }
 
-    /*process low and high channels independently*/
+    /* process low and high channels independently */
     void process(T *low, T *high, size_t numSamples, int ch)
     {
         if (crossover.isSmoothing()) {
