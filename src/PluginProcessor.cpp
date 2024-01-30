@@ -52,9 +52,6 @@ MaximizerAudioProcessor::MaximizerAudioProcessor()
     for (int i = 0; i < 3; ++i)
         apvts.addParameterListener("crossover" + String(i), this);
 
-    for (auto &b : mbProc.bandBuffer)
-        b.setSize(getTotalNumOutputChannels(), 16384);
-
     apvts.state.appendChild(numBandsTree, nullptr);
 
     apvts.state.addListener(this);
@@ -164,7 +161,7 @@ void MaximizerAudioProcessor::prepareToPlay(double sampleRate,
     mbProc.setOversamplingFactor(
         (int)oversample[osIndex].getOversamplingFactor());
 
-    filterLength = mbProc.linBand[0].size;
+    filterLength = mbProc.linBand[0].mSize;
 
     mixer.prepare(spec);
     mixer.setMixingRule(dsp::DryWetMixingRule::linear);
@@ -231,16 +228,22 @@ void MaximizerAudioProcessor::parameterChanged(const String &parameterID, float)
         dsp::ProcessSpec newSpec{
             lastSampleRate,
             uint32(maxNumSamples * oversample[osIndex].getOversamplingFactor()),
-            uint32(getTotalNumInputChannels())};
+            uint32(getTotalNumInputChannels())
+        };
 
         mPi.prepare(newSpec);
-        updateBandSpecs();
+        mbProc.setOversamplingFactor(oversample[osIndex].getOversamplingFactor());
+        mbProc.reset();
+        mbProc.updateSpecs(newSpec);
     }
 
     /* flag crossover changes in linear-phase mode */
     if (parameterID.contains("crossover") && (bool)*linearPhase) {
         mbProc.crossover_changed_ID = parameterID.getTrailingIntValue();
         mbProc.updateCrossovers = true;
+        // CHANGE: So if we want to manage a smooth changeover btw filter coeffs,
+        // we have to just use the above flag and manage the filter change w/in
+        // mbProc, where it'll swap some pointers
         updateBandCrossovers(mbProc.crossover_changed_ID);
     }
 }
@@ -345,35 +348,6 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float> &buffer,
         oversampleMono[osIndex].processSamplesDown(outBlock);
 
     processDCBlock(block);
-
-    // if (*distIndex)
-    // {
-    //     const double r = 1.0 - (1.0 / 1000.0);
-
-    //     for (int channel = 0; channel < totalNumInputChannels; ++channel)
-    //     {
-    //         auto in = buffer.getWritePointer(channel);
-
-    //         for (int i = 0; i < numSamples; ++i)
-    //         {
-    //             /*DC blocker*/
-    //             const auto yn = in[i];
-    //             in[i] = yn - xm1[channel] + r * ym1[channel];
-    //             xm1[channel] = yn;
-    //             ym1[channel] = in[i];
-    //         }
-    //     }
-
-    //     if (lastAsym != *distIndex) { /*fade in initial 1/8 sec until DC
-    //     offset has elapsed*/
-    //         float fadeEnd = (float)muteRemaining / lastDownSampleRate;
-    //         buffer.applyGainRamp(0, numSamples, lastFadeGain, fadeEnd);
-    //         lastFadeGain = fadeEnd;
-    //         muteRemaining += numSamples;
-    //         if (muteRemaining >= (int)lastDownSampleRate / 8)
-    //             lastAsym = *distIndex;
-    //     }
-    // }
 
     if (*width != 1.0 && totalNumOutputChannels > 1) {
         if (*monoWidth && *bandSplit &&
@@ -608,19 +582,6 @@ void MaximizerAudioProcessor::processDelta(AudioBuffer<float> &buffer,
             }
         }
     }
-}
-
-void MaximizerAudioProcessor::updateBandSpecs()
-{
-    dsp::ProcessSpec newSpec{
-        lastSampleRate,
-        uint32(maxNumSamples * oversample[osIndex].getOversamplingFactor()),
-        (uint32)getTotalNumOutputChannels()};
-    mbProc.setOversamplingFactor(oversample[osIndex].getOversamplingFactor());
-    mbProc.reset();
-    mbProc.updateSpecs(newSpec);
-
-    // needs_update = false;
 }
 
 /*only needed for when linear-phase crossovers are the priority*/

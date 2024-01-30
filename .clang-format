@@ -5,3 +5,4 @@ BreakBeforeBraces: Mozilla
 AlignAfterOpenBracket: Align
 PPIndentWidth: -1
 PackConstructorInitializers: BinPack
+AlwaysBreakTemplateDeclarations: Yes

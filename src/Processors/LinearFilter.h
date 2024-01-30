@@ -40,9 +40,8 @@ struct BufferTransfer
 class FIR
 {
   public:
-    FIR(bool twoFilters, size_t firOrder, dsp::ConvolutionMessageQueue &queue)
-        : doubleFilter(twoFilters), size(firOrder), convLow(queue),
-          convHigh(queue)
+    FIR(bool twoFilters, size_t firOrder)
+        : doubleFilter(twoFilters), size(firOrder)
     {
         if (doubleFilter) {
             linCoeffLow.resize(size, 0);
@@ -105,15 +104,15 @@ class FIR
             //     ScopedAccess<farbot::ThreadType::nonRealtime>
             //         lowCoeffs(iirLowCoeffs);
 
-            iirLowCoeffs = *dsp::FilterDesign<float>::
+            auto coeff = *dsp::FilterDesign<float>::
                                 designIIRLowpassHighOrderButterworthMethod(
                                     freq, sampleRate, 2)
                                     .getFirst();
             /*it'll always be one set of coeffs*/
 
-            iirLow[0].coefficients = iirLowCoeffs;
-            iirLow[1].coefficients = iirLowCoeffs;
-            iirLowPulse.coefficients = iirLowCoeffs;
+            *iirLow[0].coefficients = coeff;
+            *iirLow[1].coefficients = coeff;
+            *iirLowPulse.coefficients = coeff;
         }
 
         // iirHigh[0].clear();
@@ -125,16 +124,16 @@ class FIR
         //     ScopedAccess<farbot::ThreadType::nonRealtime>
         //         hiCoeffs(iirHighCoeffs);
 
-        iirHighCoeffs =
+        auto coeff =
             *dsp::FilterDesign<
                  float>::designIIRHighpassHighOrderButterworthMethod(freq,
                                                                      sampleRate,
                                                                      2)
                  .getFirst();
 
-        iirHigh[0].coefficients = iirHighCoeffs;
-        iirHigh[1].coefficients = iirHighCoeffs;
-        iirHighPulse.coefficients = iirHighCoeffs;
+        *iirHigh[0].coefficients = coeff;
+        *iirHigh[1].coefficients = coeff;
+        *iirHighPulse.coefficients = coeff;
     }
 
     inline void changeIIRCoeffs(double freq, double sampleRate) noexcept
@@ -193,8 +192,8 @@ class FIR
             auto input = i == 0 ? 1.0f : 0.0f;
             // iir.coefficients = iirHighCoeffs;
             linCoeffHigh[i] = iirHighPulse.processSample(input);
-            std::reverse(linCoeffHigh.begin(), linCoeffHigh.end());
         }
+        std::reverse(linCoeffHigh.begin(), linCoeffHigh.end());
 
         AudioBuffer<float> highImpulse{2, size};
         for (int ch = 0; ch < highImpulse.getNumChannels(); ++ch) {
@@ -321,10 +320,12 @@ class FIR
 };
 
 /*not actually a thread (or FIR) lmao*/
+// TODO: Nuke this class and replace it with a single class that is correctly
+// named and manages everything it needs to
 struct FIRThread : FIR
 {
-    FIRThread(bool twoFilters, size_t order, dsp::ConvolutionMessageQueue &q)
-        : FIR(twoFilters, order, q)
+    FIRThread(bool twoFilters, size_t order)
+        : FIR(twoFilters, order)
     {
     }
 

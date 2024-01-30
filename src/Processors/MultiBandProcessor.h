@@ -1,21 +1,24 @@
 #pragma once
-#include <JuceHeader.h>
 #include "LRFilter.h"
-#include "LinearFilter.h"
+#include "LinearFilter.hpp"
 #include "MaximPizer.h"
 #include "StereoWidener.h"
+#include <JuceHeader.h>
 
 struct MultibandProcessor
 {
+    static constexpr int TOTAL_BANDS = 4;
+    static constexpr int TOTAL_XOVER = 3;
+    
     MultibandProcessor(AudioProcessorValueTreeState &vts) : apvts(vts)
     {
-        for (size_t i = 0; i < 3; ++i) {
+        for (size_t i = 0; i < TOTAL_XOVER; ++i) {
             bands[i] = (LRFilter<float>());
             crossovers[i] = dynamic_cast<strix::FloatParameter *>(
                 apvts.getParameter("crossover" + std::to_string(i)));
         }
 
-        for (int i = 0; i < 4; ++i) {
+        for (int i = 0; i < TOTAL_BANDS; ++i) {
             bandInGain[i] = dynamic_cast<strix::FloatParameter *>(
                 apvts.getParameter("bandInGain" + std::to_string(i)));
             bandOutGain[i] = dynamic_cast<strix::FloatParameter *>(
@@ -30,6 +33,10 @@ struct MultibandProcessor
                 (apvts.getRawParameterValue("bypassBand" + std::to_string(i)));
         }
 
+        // init band buffers to their logical maximum (4096 * 4x oversample)
+        for (auto &b : bandBuffer)
+            b.setSize(2, 4096 * 4);
+
         linearPhase = apvts.getRawParameterValue("linearPhase");
         curve = apvts.getRawParameterValue("curve");
         clip = apvts.getRawParameterValue("clipType");
@@ -42,9 +49,9 @@ struct MultibandProcessor
     {
         lastSampleRate = spec.sampleRate;
 
-        for (int b = 0; b < bandBuffer.size(); ++b) {
-            bandBuffer[b].setSize(spec.numChannels, spec.maximumBlockSize,
-                                  false, true, true);
+        for (auto &buffer : bandBuffer) {
+            buffer.setSize(spec.numChannels, spec.maximumBlockSize, false, true,
+                           true);
         }
 
         for (auto &band : bands)
@@ -58,7 +65,7 @@ struct MultibandProcessor
         for (auto &w : bandWidener)
             w.prepare(spec);
 
-        for (int i = 0; i < 4; ++i) {
+        for (int i = 0; i < TOTAL_BANDS; ++i) {
             lastInGain[i] = 1.0;
             lastOutGain[i] = 1.0;
             lastBandWidth[i] = 1.0;
@@ -78,14 +85,10 @@ struct MultibandProcessor
         xm1[0] = 0.0, xm1[1] = 0.0, ym1[0] = 0.0, ym1[1] = 0.0;
     }
 
+    // like prepare(), but does not resize the audio buffers
     void updateSpecs(const dsp::ProcessSpec &newSpec)
     {
         lastSampleRate = newSpec.sampleRate;
-
-        for (int b = 0; b < bandBuffer.size(); ++b) {
-            bandBuffer[b].setSize(newSpec.numChannels, newSpec.maximumBlockSize,
-                                  false, true, true);
-        }
 
         for (auto &band : bands)
             band.prepare(newSpec);
@@ -102,35 +105,31 @@ struct MultibandProcessor
             m.prepare(newSpec);
     }
 
-    /*passes crossover points to filter objects*/
-    inline void initCrossovers() noexcept
+    /*init filters from current param values*/
+    void initCrossovers()
     {
-        for (size_t i = 0; i < bands.size(); ++i) {
-            if (*crossovers[i] > (lastSampleRate * 0.5))
-                bands[i].updateFilter(lastSampleRate * 0.5 - 1.0);
-            else
-                bands[i].updateFilter(*crossovers[i]);
-
-            if (*crossovers[i] > (lastSampleRate * 0.5))
-                linBand[i].initFilters(lastSampleRate * 0.5 - 1.0,
-                                       lastSampleRate, 2);
-            else
-                linBand[i].initFilters(*crossovers[i], lastSampleRate, 2);
+        for (size_t i = 0; i < TOTAL_XOVER; ++i) {
+            auto crossover = *crossovers[i] > (lastSampleRate * 0.5)
+                                 ? lastSampleRate * 0.5 - 1.0
+                                 : *crossovers[i];
+            bands[i].updateFilter(crossover);
+            linBand[i].initFilters(crossover, lastSampleRate);
         }
     }
 
-    inline void updateAllCrossovers(int newNumBands) noexcept
+    // update filters & update num bands
+    void updateAllCrossovers(int newNumBands)
     {
         numBands = newNumBands;
 
-        for (size_t i = 0; i < bands.size(); ++i) {
+        for (size_t i = 0; i < TOTAL_XOVER; ++i) {
             if (!*linearPhase) {
                 bands[i].updateFilter(*crossovers[i]);
                 bands[i].reset();
             }
 
             else {
-                linBand[i].setParams(*crossovers[i], lastSampleRate, 2);
+                linBand[i].initFilters(*crossovers[i], lastSampleRate);
             }
         }
     }
@@ -142,7 +141,7 @@ struct MultibandProcessor
 
     void updateCrossoverLin(int crossover) noexcept
     {
-        linBand[crossover].setParams(*crossovers[crossover], lastSampleRate, 2);
+        linBand[crossover].initFilters(*crossovers[crossover], lastSampleRate);
     }
 
     void setOversamplingFactor(int newFactor)
@@ -152,25 +151,24 @@ struct MultibandProcessor
             b.setOversampleFactor(oversampleFactor);
     }
 
-    template <typename T> inline void processFilters(int n, size_t numSamples)
+    inline void processFilters(int n, size_t numSamples)
     {
-        auto lowBand = dsp::AudioBlock<float>(bandBuffer[n]).getSubBlock(0, numSamples);
-        dsp::AudioBlock<T> highBand;
+        auto lowBand =
+            dsp::AudioBlock<float>(bandBuffer[n]).getSubBlock(0, numSamples);
+        dsp::AudioBlock<float> highBand;
         if (n != numBands)
-            highBand = dsp::AudioBlock<float>(bandBuffer[n + 1]).getSubBlock(0, numSamples);
+            highBand = dsp::AudioBlock<float>(bandBuffer[n + 1])
+                           .getSubBlock(0, numSamples);
 
         if (*linearPhase) {
             if (n != numBands) {
                 linBand[n].loadBuffers();
 
                 if (n == 0) {
-                    linBand[n].convolveLow(
-                        dsp::ProcessContextReplacing<T>(lowBand));
-                    linBand[n].convolveHigh(
-                        dsp::ProcessContextReplacing<T>(highBand));
+                    linBand[n].convolveLow(lowBand);
+                    linBand[n].convolveHigh(highBand);
                 } else {
-                    linBand[n].convolveHigh(
-                        dsp::ProcessContextReplacing<T>(highBand));
+                    linBand[n].convolveHigh(highBand);
                 }
             }
 
@@ -190,7 +188,8 @@ struct MultibandProcessor
 
     inline void processBandWidth(size_t n, size_t numSamples)
     {
-        auto block = dsp::AudioBlock<float>(bandBuffer[n]).getSubBlock(0, numSamples);
+        auto block =
+            dsp::AudioBlock<float>(bandBuffer[n]).getSubBlock(0, numSamples);
         // auto block = bandBlock[n].getSubBlock(0, numSamples);
 
         if (*bandWidth[n] != 1.0 && bandBuffer[n].getNumChannels() > 1) {
@@ -221,10 +220,9 @@ struct MultibandProcessor
         } else {
             for (size_t b = 0; b <= numBands; ++b) {
                 for (size_t ch = 0; ch < block.getNumChannels(); ++ch) {
-                    FloatVectorOperations::add(
-                        block.getChannelPointer(ch),
-                        bandBuffer[b].getReadPointer(ch),
-                        block.getNumSamples());
+                    FloatVectorOperations::add(block.getChannelPointer(ch),
+                                               bandBuffer[b].getReadPointer(ch),
+                                               block.getNumSamples());
                 }
             }
         }
@@ -246,7 +244,7 @@ struct MultibandProcessor
             auto gain = pow(10.f, *bandInGain[n] * 0.05f);
             auto outGain = pow(10.f, *bandOutGain[n] * 0.05f);
 
-            processFilters<T>(n, numSamples);
+            processFilters(n, numSamples);
 
             if (*muteBand[n]) {
                 bandBuffer[n].clear();
@@ -290,28 +288,29 @@ struct MultibandProcessor
         sumBands(block);
     }
 
-    std::array<std::atomic<float> *, 4> muteBand, soloBand, bypassBand;
-    std::array<strix::FloatParameter *, 4> bandInGain, bandOutGain, bandWidth;
-    std::array<float, 4> lastInGain, lastOutGain, lastBandWidth;
-    std::array<strix::FloatParameter *, 3> crossovers;
+    std::array<std::atomic<float> *, TOTAL_BANDS> muteBand, soloBand, bypassBand;
+    std::array<strix::FloatParameter *, TOTAL_BANDS> bandInGain, bandOutGain, bandWidth;
+    std::array<float, TOTAL_BANDS> lastInGain, lastOutGain, lastBandWidth;
+    std::array<strix::FloatParameter *, TOTAL_XOVER> crossovers;
 
     std::atomic<bool> updateCrossovers = false;
     int crossover_changed_ID;
 
-    std::array<LRFilter<float>, 3> bands;
+    std::array<LRFilter<float>, TOTAL_XOVER> bands;
 
-    dsp::ConvolutionMessageQueue q{16000};
+    // dsp::ConvolutionMessageQueue q{16000};
 
-    std::array<strix::LinearFilter::FIRThread, 3> linBand{
-        {{strix::LinearFilter::FIRThread(true, 2048, q)},
-         {strix::LinearFilter::FIRThread(false, 2048, q)},
-         {strix::LinearFilter::FIRThread(false, 2048, q)}}};
+    static constexpr int FFT_SIZE = 2048;
+    std::array<LinearFilter::Processor<FFT_SIZE>, TOTAL_XOVER> linBand{
+        {{LinearFilter::Processor<FFT_SIZE>(true)},
+         {LinearFilter::Processor<FFT_SIZE>(false)},
+         {LinearFilter::Processor<FFT_SIZE>(false)}}};
 
-    std::array<StereoWidener<float>, 4> bandWidener;
+    std::array<StereoWidener<float>, TOTAL_BANDS> bandWidener;
 
     // IDEA: Can we set a max size at init, and don't bother resizing on
     // oversample?
-    std::array<AudioBuffer<float>, 4> bandBuffer;
+    std::array<AudioBuffer<float>, TOTAL_BANDS> bandBuffer;
 
   private:
     int numBands = 2;
@@ -327,8 +326,6 @@ struct MultibandProcessor
 
     AudioProcessorValueTreeState &apvts;
 
-    MaximPizer mPi[4] = {MaximPizer(apvts),
-                         MaximPizer(apvts),
-                         MaximPizer(apvts),
-                         MaximPizer(apvts)};
+    MaximPizer mPi[4] = {MaximPizer(apvts), MaximPizer(apvts),
+                         MaximPizer(apvts), MaximPizer(apvts)};
 };

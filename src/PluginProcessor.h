@@ -149,8 +149,6 @@ private:
 
     void processDelta(AudioBuffer<float>&, float, float);
 
-    void updateBandSpecs();
-
     void updateBandCrossovers(int);
 
     AudioProcessorValueTreeState::ParameterLayout createParams();
