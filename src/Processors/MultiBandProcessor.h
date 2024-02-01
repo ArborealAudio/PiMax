@@ -113,7 +113,7 @@ struct MultibandProcessor
                                  ? lastSampleRate * 0.5 - 1.0
                                  : *crossovers[i];
             bands[i].updateFilter(crossover);
-            linBand[i].initFilters(crossover, lastSampleRate);
+            linBand[i].updateFilters(crossover, lastSampleRate);
         }
     }
 
@@ -129,7 +129,7 @@ struct MultibandProcessor
             }
 
             else {
-                linBand[i].initFilters(*crossovers[i], lastSampleRate);
+                linBand[i].updateFilters(*crossovers[i], lastSampleRate);
             }
         }
     }
@@ -141,7 +141,7 @@ struct MultibandProcessor
 
     void updateCrossoverLin(int crossover) noexcept
     {
-        linBand[crossover].initFilters(*crossovers[crossover], lastSampleRate);
+        linBand[crossover].updateFilters(*crossovers[crossover], lastSampleRate);
     }
 
     void setOversamplingFactor(int newFactor)
@@ -162,7 +162,7 @@ struct MultibandProcessor
 
         if (*linearPhase) {
             if (n != numBands) {
-                linBand[n].loadBuffers();
+                linBand[n].loadBuffersIntoConvolution();
 
                 if (n == 0) {
                     linBand[n].convolveLow(lowBand);

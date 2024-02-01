@@ -234,7 +234,7 @@ void MaximizerAudioProcessor::parameterChanged(const String &parameterID, float)
         mPi.prepare(newSpec);
         mbProc.setOversamplingFactor(oversample[osIndex].getOversamplingFactor());
         mbProc.reset();
-        mbProc.updateSpecs(newSpec);
+        mbProc.prepare(newSpec);
     }
 
     /* flag crossover changes in linear-phase mode */

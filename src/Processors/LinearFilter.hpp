@@ -46,9 +46,7 @@ struct BufferTransfer
 template <int size>
 struct Processor
 {
-    Processor(bool twoFilters) : two_filters(twoFilters)
-    {
-    }
+    Processor(bool twoFilters) : two_filters(twoFilters) {}
 
     void prepare(const dsp::ProcessSpec &spec)
     {
@@ -92,24 +90,24 @@ struct Processor
     void createIIRCoeffs(double freq, double sampleRate)
     {
         if (two_filters) {
-            auto coeff = *dsp::FilterDesign<float>::
+            newIIRCoeffLow = *dsp::FilterDesign<float>::
                               designIIRLowpassHighOrderButterworthMethod(
                                   freq, sampleRate, 2)
                                   .getFirst();
-            *iirLow[0].coefficients = coeff;
-            *iirLow[1].coefficients = coeff;
-            *lowPulse.coefficients = coeff;
+            // *iirLow[0].coefficients = coeff;
+            // *iirLow[1].coefficients = coeff;
+            *lowPulse.coefficients = newIIRCoeffLow;
         }
 
-        auto coeff =
+        newIIRCoeffHigh =
             *dsp::FilterDesign<
                  float>::designIIRHighpassHighOrderButterworthMethod(freq,
                                                                      sampleRate,
                                                                      2)
                  .getFirst();
-        *iirHigh[0].coefficients = coeff;
-        *iirHigh[1].coefficients = coeff;
-        *highPulse.coefficients = coeff;
+        // *iirHigh[0].coefficients = coeff;
+        // *iirHigh[1].coefficients = coeff;
+        *highPulse.coefficients = newIIRCoeffHigh;
     }
 
     void createImpulseResponse()
@@ -118,7 +116,6 @@ struct Processor
             auto input = i == 0 ? 1 : 0;
             linCoeffHigh[i] = highPulse.processSample(input);
         }
-        // Bottleneck?
         std::reverse(linCoeffHigh.begin(), linCoeffHigh.end());
 
         AudioBuffer<float> highIR{1, size};
@@ -142,7 +139,16 @@ struct Processor
         }
     }
 
-    void loadBuffers()
+    // This should be called from the main thread to create new coeffs
+    // Need to manage notifying audio thread when this begins and ends
+    void updateFilters(double freq, double SR)
+    {
+        createIIRCoeffs(freq, SR);
+        createImpulseResponse();
+        // TODO: Copy new coeffs to current. Should we lock a mutex?
+    }
+
+    void loadBuffersIntoConvolution()
     {
         highTransfer.get([&](Buffer &buf) {
             convHigh.loadImpulseResponse(std::move(buf.buffer), sampleRate,
@@ -161,17 +167,12 @@ struct Processor
         }
     }
 
-    void initFilters(double freq, double SR)
-    {
-        createIIRCoeffs(freq, SR);
-        createImpulseResponse();
-    }
-
     void convolveLow(dsp::AudioBlock<float> &block)
     {
         for (int ch = 0; ch < block.getNumChannels(); ++ch) {
             auto *in = block.getChannelPointer(ch);
             for (size_t i = 0; i < block.getNumSamples(); ++i) {
+                *iirLow[ch].coefficients = newIIRCoeffLow;
                 in[i] = iirLow[ch].processSample(in[i]);
             }
         }
@@ -183,18 +184,21 @@ struct Processor
         for (int ch = 0; ch < block.getNumChannels(); ++ch) {
             auto *in = block.getChannelPointer(ch);
             for (size_t i = 0; i < block.getNumSamples(); ++i) {
+                *iirHigh[ch].coefficients = newIIRCoeffHigh;
                 in[i] = iirHigh[ch].processSample(in[i]);
             }
         }
-        convHigh.process(dsp::ProcessContextReplacing<float> (block));
+        convHigh.process(dsp::ProcessContextReplacing<float>(block));
     }
 
     const int mSize = size;
+
   private:
     const bool two_filters = false;
-    // std::vector<float> linCoeffLow, linCoeffHigh;
-    std::array<float, size> linCoeffLow, linCoeffHigh;
-    dsp::IIR::Coefficients<float> iirCoeffLow, iirCoeffHigh;
+    std::array<float, size> linCoeffLow, linCoeffHigh, newLinCoeffLow,
+        newLinCoeffHigh;
+    dsp::IIR::Coefficients<float> iirCoeffLow, iirCoeffHigh, newIIRCoeffLow,
+        newIIRCoeffHigh;
     dsp::IIR::Filter<float> iirLow[2], iirHigh[2],
         // filters for generating IR to create linear coeffs
         lowPulse, highPulse;
