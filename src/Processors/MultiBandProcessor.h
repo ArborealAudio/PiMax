@@ -1,15 +1,16 @@
 #pragma once
+#include <JuceHeader.h>
+
 #include "LRFilter.h"
 #include "LinearFilter.hpp"
 #include "MaximPizer.h"
 #include "StereoWidener.h"
-#include <JuceHeader.h>
 
 struct MultibandProcessor
 {
     static constexpr int TOTAL_BANDS = 4;
     static constexpr int TOTAL_XOVER = 3;
-    
+
     MultibandProcessor(AudioProcessorValueTreeState &vts) : apvts(vts)
     {
         for (size_t i = 0; i < TOTAL_XOVER; ++i) {
@@ -105,7 +106,7 @@ struct MultibandProcessor
             m.prepare(newSpec);
     }
 
-    /*init filters from current param values*/
+    /* init filters from current param values */
     void initCrossovers()
     {
         for (size_t i = 0; i < TOTAL_XOVER; ++i) {
@@ -139,16 +140,10 @@ struct MultibandProcessor
         bands[crossoverID].updateFilter(*crossovers[crossoverID]);
     }
 
-    void updateCrossoverLin(int crossover) noexcept
+    void updateCrossoverLin(int crossoverID)
     {
-        linBand[crossover].updateFilters(*crossovers[crossover], lastSampleRate);
-    }
-
-    void setOversamplingFactor(int newFactor)
-    {
-        oversampleFactor = newFactor;
-        for (auto &b : linBand)
-            b.setOversampleFactor(oversampleFactor);
+        linBand[crossoverID].updateFilters(*crossovers[crossoverID],
+                                         lastSampleRate);
     }
 
     inline void processFilters(int n, size_t numSamples)
@@ -202,7 +197,8 @@ struct MultibandProcessor
         }
     }
 
-    template <typename T> inline void sumBands(dsp::AudioBlock<T> &block)
+    template <typename T>
+    inline void sumBands(dsp::AudioBlock<T> &block)
     {
         block.fill(0.0);
 
@@ -228,7 +224,8 @@ struct MultibandProcessor
         }
     }
 
-    template <typename T> void processBands(dsp::AudioBlock<T> &block)
+    template <typename T>
+    void processBands(dsp::AudioBlock<T> &block)
     {
         const auto numSamples = block.getNumSamples();
 
@@ -288,8 +285,10 @@ struct MultibandProcessor
         sumBands(block);
     }
 
-    std::array<std::atomic<float> *, TOTAL_BANDS> muteBand, soloBand, bypassBand;
-    std::array<strix::FloatParameter *, TOTAL_BANDS> bandInGain, bandOutGain, bandWidth;
+    std::array<std::atomic<float> *, TOTAL_BANDS> muteBand, soloBand,
+        bypassBand;
+    std::array<strix::FloatParameter *, TOTAL_BANDS> bandInGain, bandOutGain,
+        bandWidth;
     std::array<float, TOTAL_BANDS> lastInGain, lastOutGain, lastBandWidth;
     std::array<strix::FloatParameter *, TOTAL_XOVER> crossovers;
 
@@ -314,7 +313,6 @@ struct MultibandProcessor
 
   private:
     int numBands = 2;
-    int oversampleFactor = 0;
 
     double lastSampleRate = 44100.0;
 

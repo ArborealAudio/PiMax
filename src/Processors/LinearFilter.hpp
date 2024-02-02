@@ -85,8 +85,6 @@ struct Processor
 
     int getLatency() { return 2 * convHigh.getCurrentIRSize(); }
 
-    void setOversampleFactor(int newOSFactor) { ovsFactor = newOSFactor; }
-
     void createIIRCoeffs(double freq, double sampleRate)
     {
         if (two_filters) {
@@ -209,7 +207,5 @@ struct Processor
 
     double sampleRate;
     uint32 numSamples;
-
-    int ovsFactor;
 };
 } // namespace LinearFilter

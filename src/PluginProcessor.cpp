@@ -158,8 +158,6 @@ void MaximizerAudioProcessor::prepareToPlay(double sampleRate,
     mPi.prepare(spec);
 
     mbProc.prepare(spec);
-    mbProc.setOversamplingFactor(
-        (int)oversample[osIndex].getOversamplingFactor());
 
     filterLength = mbProc.linBand[0].mSize;
 
@@ -232,8 +230,8 @@ void MaximizerAudioProcessor::parameterChanged(const String &parameterID, float)
         };
 
         mPi.prepare(newSpec);
-        mbProc.setOversamplingFactor(oversample[osIndex].getOversamplingFactor());
-        mbProc.reset();
+        // mbProc.reset();
+        const GenericScopedLock<SpinLock> lock(mutex);
         mbProc.prepare(newSpec);
     }
 

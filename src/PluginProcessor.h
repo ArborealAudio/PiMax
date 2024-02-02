@@ -20,8 +20,6 @@ enum class ClipType
 };
 
 #include <JuceHeader.h>
-#include <farbot/AsyncCaller.hpp>
-#include <farbot/RealtimeObject.hpp>
 #include <clap-juce-extensions/clap-juce-extensions.h>
 #include "Processors/MaximPizer.h"
 #include "Processors/Waveshapers.h"
@@ -138,14 +136,14 @@ private:
     // DC block coeffs
     double xm1[2]{ 0.0 };
     double ym1[2]{ 0.0 };
-    enum DistState
+    
+    enum
     {
         SymToAsym,
         AsymToSym,
         Sym,
         Asym
-    };
-    DistState distState;
+    } distState;
 
     void processDelta(AudioBuffer<float>&, float, float);
 
@@ -163,6 +161,7 @@ private:
     StereoWidener<float> widener;
 
     MultibandProcessor mbProc;
+    SpinLock mutex;
 
     int filterLength = 0;
     dsp::DryWetMixer<float> mixer;
