@@ -230,9 +230,17 @@ void MaximizerAudioProcessor::parameterChanged(const String &parameterID, float)
         };
 
         mPi.prepare(newSpec);
-        // mbProc.reset();
-        const GenericScopedLock<SpinLock> lock(mutex);
-        mbProc.prepare(newSpec);
+        mbProc.reset();
+        // NOTE: This mutex doesn't really prevent data races or unsafe
+        // mutation from occuring. That's because we can and do enter
+        // the audio callback concurrently with this.
+        // So suspending is required to prevent this.
+        if (parameterID == "hq") {
+            suspendProcessing(true);
+            const GenericScopedLock<SpinLock> lock(mutex);
+            mbProc.prepare(newSpec);
+            suspendProcessing(false);
+        }
     }
 
     /* flag crossover changes in linear-phase mode */
@@ -336,7 +344,7 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float> &buffer,
 
     if (!*bandSplit)
         mPi.process(osBlock);
-    else if (*bandSplit) {
+    else {
         mbProc.processBands(osBlock);
     }
 
