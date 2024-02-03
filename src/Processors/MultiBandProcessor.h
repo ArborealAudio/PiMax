@@ -232,7 +232,7 @@ struct MultibandProcessor
         // copy into multi-buffers
         for (auto &b : bandBuffer) {
             for (int ch = 0; ch < block.getNumChannels(); ++ch)
-                b.copyFrom(ch, 0, block.getChannelPointer(0), numSamples);
+                b.copyFrom(ch, 0, block.getChannelPointer(ch), numSamples);
         }
 
         for (size_t n = 0; n <= numBands; ++n) {
