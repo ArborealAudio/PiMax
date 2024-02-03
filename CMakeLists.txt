@@ -116,7 +116,7 @@ juce_add_binary_data(BinaryData SOURCES
 #-fPIC and static linker flags, & PFFFT for Linux
 if (UNIX AND NOT APPLE)
     set_target_properties(BinaryData PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
-    target_link_libraries(PiMax PRIVATE "-static-libgcc" "-static-libstdc++" PFFFT)
+    target_link_libraries(PiMax PRIVATE "-static-libgcc" "-static-libstdc++")
     set_target_properties(PFFFT PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 endif()
 
@@ -135,5 +135,6 @@ PUBLIC
 
 if (NOT APPLE)
     target_link_libraries(PiMax PRIVATE
+    PFFFT
     juce::juce_opengl)
 endif()
