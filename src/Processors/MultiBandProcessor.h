@@ -6,6 +6,9 @@
 #include "MaximPizer.h"
 #include "StereoWidener.h"
 
+#include <array>
+#include <atomic>
+
 struct MultibandProcessor
 {
     static constexpr int TOTAL_BANDS = 4;
@@ -185,7 +188,6 @@ struct MultibandProcessor
     {
         auto block =
             dsp::AudioBlock<float>(bandBuffer[n]).getSubBlock(0, numSamples);
-        // auto block = bandBlock[n].getSubBlock(0, numSamples);
 
         if (*bandWidth[n] != 1.0 && bandBuffer[n].getNumChannels() > 1) {
             if (lastBandWidth[n] != *bandWidth[n]) {

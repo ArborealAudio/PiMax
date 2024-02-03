@@ -14,17 +14,14 @@ if (PRODUCTION_BUILD)
         set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE INTERNAL "")
     endif()
     set(CMAKE_BUILD_TYPE Release CACHE INTERNAL "")
-endif()
-
-if(NOT PRODUCTION_BUILD)
-    set(PRODUCTION_BUILD OFF)
+else()
+    set(PRODUCTION_BUILD 0)
 endif()
 message("PRODUCTION_BUILD: ${PRODUCTION_BUILD}")
 
 if (NOT INSTALL)
     set(INSTALL OFF)
 endif()
-
 
 add_subdirectory(modules/juce)
 add_subdirectory(modules/clap-juce-extensions)
