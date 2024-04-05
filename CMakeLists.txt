@@ -23,8 +23,8 @@ if (NOT INSTALL)
     set(INSTALL OFF)
 endif()
 
-add_subdirectory(modules/juce)
-add_subdirectory(modules/clap-juce-extensions)
+include(Dependencies.cmake)
+fetch_dependencies()
 
 if(NOT APPLE)
     set(USE_PFFFT 1)
