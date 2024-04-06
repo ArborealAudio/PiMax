@@ -70,7 +70,6 @@ target_sources(PiMax PRIVATE ${SourceFiles})
 
 target_include_directories(PiMax PRIVATE
     "modules/farbot/include"
-    "modules/clap-juce-extensions/include"
     $<${USE_PFFFT}:${CMAKE_SOURCE_DIR}/modules/pffft>)
 
 juce_add_modules(
