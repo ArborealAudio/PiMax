@@ -15,12 +15,14 @@ function(fetch_dependencies)
   )
   FetchContent_MakeAvailable(clap-juce-extensions)
 
-  FetchContent_Declare(pffft
-    GIT_REPOSITORY https://github.com/marton78/pffft.git
-    GIT_TAG e0bf595c98ded55cc457a371c1b29c8cab552628
-    GIT_SUBMODULES ""
-    GIT_SHALLOW TRUE
-  )
-  FetchContent_MakeAvailable(pffft)
+  if (NOT APPLE)
+    FetchContent_Declare(pffft
+      GIT_REPOSITORY https://github.com/marton78/pffft.git
+      GIT_TAG e0bf595c98ded55cc457a371c1b29c8cab552628
+      GIT_SUBMODULES ""
+      GIT_SHALLOW TRUE
+    )
+    FetchContent_MakeAvailable(pffft)
+  endif()
   
 endfunction()
