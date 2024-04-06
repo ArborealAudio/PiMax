@@ -28,7 +28,7 @@ fetch_dependencies()
 
 if(NOT APPLE)
     set(USE_PFFFT 1)
-    add_subdirectory(modules/pffft)
+    # add_subdirectory(modules/pffft)
 else()
     set(USE_PFFFT 0)
 endif()
@@ -70,7 +70,7 @@ target_sources(PiMax PRIVATE ${SourceFiles})
 
 target_include_directories(PiMax PRIVATE
     "modules/farbot/include"
-    $<${USE_PFFFT}:${CMAKE_SOURCE_DIR}/modules/pffft>)
+)
 
 juce_add_modules(
     "modules/Gin/modules/gin"
