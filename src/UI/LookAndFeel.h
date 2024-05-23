@@ -1,4 +1,5 @@
 #pragma once
+#include <JuceHeader.h>
 
 enum class FontStyle
 {
@@ -9,27 +10,27 @@ enum class FontStyle
 
 static const Font getCustomFont(FontStyle style)
 {
-    if (style == FontStyle::Light)
-    {
+	switch(style) {
+	case FontStyle::Light: {
         static auto typeface = Typeface::createSystemTypefaceFor(BinaryData::SoraThin_ttf,
                                                                  BinaryData::SoraThin_ttfSize);
 
         return Font(typeface);
-    }
-    else if (style == FontStyle::Regular)
-    {
+    } case FontStyle::Regular: {
         static auto typeface = Typeface::createSystemTypefaceFor(BinaryData::SoraRegular_ttf,
                                                                  BinaryData::SoraRegular_ttfSize);
 
         return Font(typeface);
-    }
-    else if (style == FontStyle::Bold)
-    {
+    } case FontStyle::Bold: {
         static auto typeface = Typeface::createSystemTypefaceFor(BinaryData::SoraSemiBold_ttf,
                                                                  BinaryData::SoraSemiBold_ttfSize);
 
         return Font(typeface);
     }
+	}
+
+	// return default font otherwise
+	return Font();
 }
 
 namespace Blur
