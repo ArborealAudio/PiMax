@@ -161,7 +161,6 @@ private:
     StereoWidener<float> widener;
 
     MultibandProcessor mbProc;
-    SpinLock mutex;
 
     int filterLength = 0;
     dsp::DryWetMixer<float> mixer;
