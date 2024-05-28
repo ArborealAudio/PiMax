@@ -30,7 +30,8 @@ struct UnlockStatus
         if (auto stream = URL(url).createInputStream(
                 URL::InputStreamOptions(URL::ParameterHandling::inAddress)
                     .withExtraHeaders(
-                        "x-api-key: Fb5mXNfHiNaSKABQEl0PiFmYBthvv457bOCA1ou2")
+                        "x-api-key: "
+                        AWS_API_KEY)
                     .withConnectionTimeoutMs(10000))) {
             return stream->readEntireStreamAsString();
         }
