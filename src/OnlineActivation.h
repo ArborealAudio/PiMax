@@ -171,7 +171,6 @@ struct UnlockForm : Component
                                  "arborealaudio.com\n"
                                  "to continue using PiMax",
                                  textBounds, Justification::centred, 3);
-                close.setEnabled(false);
                 if (textBounds.contains(getMouseXYRelative())) {
                     setMouseCursor(MouseCursor::PointingHandCursor);
                     if (isMouseButtonDown() && !clickedLink) {
@@ -204,7 +203,6 @@ struct UnlockForm : Component
         key.centreWithSize(150, 25);
         reg.centreWithSize(68, 25);
         close.centreWithSize(50, 25);
-        // key.setBounds(key.getBounds().translated(0, -60));
         reg.setBounds(reg.getBounds().translated(0, 60));
         close.setBounds(close.getBounds().translated(0, 110));
     }
@@ -215,7 +213,6 @@ struct UnlockForm : Component
 
         if (result == 0) {
             waiting = false;
-            // key.unfocusAllComponents();
             key.setText("", false);
             key.setTextToShowWhenEmpty("invalid serial number", Colours::red);
             repaint();
@@ -225,7 +222,6 @@ struct UnlockForm : Component
             repaint();
         } else {
             waiting = false;
-            // key.unfocusAllComponents();
             key.setText("", false);
             key.setTextToShowWhenEmpty("Activations maxed!", Colours::red);
             repaint();
