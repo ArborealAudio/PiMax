@@ -28,7 +28,7 @@ fetch_dependencies()
 
 if(NOT APPLE)
     set(USE_PFFFT 1)
-	message("Building with PFFFT")
+    message("Building with PFFFT")
 else()
     set(USE_PFFFT 0)
 endif()
@@ -38,6 +38,10 @@ set(JUCE_FORMATS VST3 AU)
 if(BUILD_VST2)
     juce_set_vst2_sdk_path("./vst2_sdk")
     list(APPEND JUCE_FORMATS VST)
+endif()
+
+if(UNIX AND NOT APPLE)
+    list(APPEND JUCE_FORMATS LV2)
 endif()
 
 juce_add_plugin(PiMax
@@ -52,6 +56,7 @@ juce_add_plugin(PiMax
     AU_MAIN_TYPE kAudioUnitType_Effect
     PRODUCT_NAME "PiMax"
     NEEDS_CURL TRUE
+    LV2URI https://github.com/ArborealAudio/PiMax.git
     HARDENED_RUNTIME_ENABLED TRUE)
 
 clap_juce_extensions_plugin(TARGET PiMax
