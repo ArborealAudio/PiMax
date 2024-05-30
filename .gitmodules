@@ -1,13 +1,6 @@
-[submodule "Source/modules/farbot"]
-	path = modules/farbot
-	url = https://github.com/hogliux/farbot
 [submodule "Source/modules/Arbor_modules"]
 	path = modules/Arbor_modules
 	url = https://github.com/ArborealAudio/Arbor_modules
 [submodule "Source/modules/Gin"]
 	path = modules/Gin
 	url = https://github.com/FigBug/Gin
-[submodule "Source/modules/pffft"]
-	path = modules/pffft
-	url = https://github.com/marton78/pffft
-	shallow = true

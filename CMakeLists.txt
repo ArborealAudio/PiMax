@@ -28,7 +28,7 @@ fetch_dependencies()
 
 if(NOT APPLE)
     set(USE_PFFFT 1)
-    # add_subdirectory(modules/pffft)
+	message("Building with PFFFT")
 else()
     set(USE_PFFFT 0)
 endif()
