@@ -1,5 +1,3 @@
-# This starter workflow is for a CMake project running on multiple platforms. There is a different starter workflow if you just want a single platform.
-# See: https://github.com/actions/starter-workflows/blob/main/ci/cmake-single-platform.yml
 name: CMake
 
 on:
@@ -51,7 +49,7 @@ jobs:
       run: cmake -Bbuild -DPRODUCTION_BUILD=1
 
     - name: Build
-      run: cmake --build build --config Release
+      run: cmake --build build --config Release --target "PiMax_VST3"
 
     - name: Validate Unix
       if: runner.os != 'Windows'
