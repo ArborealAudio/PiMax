@@ -230,7 +230,6 @@ void MaximizerAudioProcessor::parameterChanged(const String &parameterID, float)
         };
 
         mPi.prepare(newSpec);
-        mbProc.reset();
         if (parameterID == "hq") {
             suspendProcessing(true);
             mbProc.prepare(newSpec);
