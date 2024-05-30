@@ -9,8 +9,8 @@
 */
 
 #pragma once
-#include <JuceHeader.h>
 #include "UI/LookAndFeel.h"
+#include <JuceHeader.h>
 
 struct UnlockStatus
 {
@@ -104,7 +104,7 @@ struct UnlockStatus
     String m_key;
 };
 
-struct UnlockForm : Component
+struct UnlockForm : Component, Timer
 {
     UnlockForm(UnlockStatus &s, int64 trialTime)
         : userInstructions("Register PiMax"), trialRemaining_ms(trialTime),
@@ -122,17 +122,22 @@ struct UnlockForm : Component
         close.setLookAndFeel(&lnf);
 
         reg.onClick = [&] {
-            runAuth();
-            repaint();
+            thread = std::make_unique<strix::LiteThread>(1);
+            thread->addJob([&] { runAuth(); });
         };
         close.onClick = [&] { dismiss(); };
+
+        startTimerHz(2);
     }
 
     ~UnlockForm()
     {
         reg.setLookAndFeel(nullptr);
         close.setLookAndFeel(nullptr);
+        stopTimer();
     }
+
+    void timerCallback() override { repaint(); }
 
     void paint(Graphics &g) override
     {
@@ -215,16 +220,13 @@ struct UnlockForm : Component
             waiting = false;
             key.setText("", false);
             key.setTextToShowWhenEmpty("invalid serial number", Colours::red);
-            repaint();
         } else if (result == 1) {
             successRepaint = true;
             waiting = false;
-            repaint();
         } else {
             waiting = false;
             key.setText("", false);
             key.setTextToShowWhenEmpty("Activations maxed!", Colours::red);
-            repaint();
         }
     }
 
@@ -242,6 +244,8 @@ struct UnlockForm : Component
 
     std::atomic<bool> successRepaint = false, waiting = false;
     bool clickedLink = false;
+
+    std::unique_ptr<strix::LiteThread> thread = nullptr;
 
     UnlockStatus &status;
 };
