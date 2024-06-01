@@ -5,13 +5,17 @@
 
 #pragma once
 
+#include "LookAndFeel.h"
 #include "UI.h"
+#include <memory>
 class MenuComponent : public Component
 {
     DrawableButton menuButton;
     std::unique_ptr<Drawable> icon;
 
-    bool openGL = false;
+    bool openGLEnabled = false;
+
+    PopupLNF lnf;
 
 public:
     MenuComponent() : menuButton("Menu", DrawableButton::ButtonStyle::ImageFitted)
@@ -22,9 +26,9 @@ public:
         menuButton.onClick = [&]
         {
             PopupMenu m;
-            m.setLookAndFeel(new PopupLNF());
+            m.setLookAndFeel(&lnf);
 #if !JUCE_MAC
-            openGL = (bool)strix::readConfigFile(CONFIG_PATH, "openGL");
+            openGLEnabled = (bool)strix::readConfigFile(CONFIG_PATH, "openGL");
             m.addItem(1, "OpenGL", true, openGL);
 #endif
             m.addItem(2, "Default UI Size");
@@ -40,7 +44,7 @@ public:
                                     break;
                                 case 1:
                                     if (openGLCallback)
-                                        openGLCallback(!openGL);
+                                        openGLCallback(!openGLEnabled);
                                     break;
                                 case 2:
                                     if (windowResizeCallback)
@@ -52,6 +56,8 @@ public:
                                     break;
                                 }
                             });
+
+            m.setLookAndFeel(nullptr);
         };
     }
 
