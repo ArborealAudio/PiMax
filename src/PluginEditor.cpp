@@ -8,14 +8,18 @@
 
 #include <JuceHeader.h>
 #include "PluginEditor.h"
-#include "UI/UI.h"
+
+void onMenuTooltip(MaximizerAudioProcessorEditor &);
+void onWindowReset(MaximizerAudioProcessorEditor &);
+void onOpenGLChange(MaximizerAudioProcessorEditor &, bool);
 
 //==============================================================================
 MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(
     MaximizerAudioProcessor &p)
     : AudioProcessorEditor(&p), audioProcessor(p), responseCurveComponent(p),
       ui(p), waveshaperComponent(p),
-      activationComp(p.isUnlocked, p.trialRemaining_ms), downloadManager(DL_BIN)
+      activationComp(p.isUnlocked, p.trialRemaining_ms),
+      downloadManager(DL_BIN), menu(*this)
 {
     auto &globalLNF = LookAndFeel::getDefaultLookAndFeel();
     globalLNF.setDefaultSansSerifTypeface(
@@ -28,8 +32,6 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(
     if ((bool)strix::readConfigFile(CONFIG_PATH, "tooltip"))
         tooltip = std::make_unique<TooltipWindow>(this, 2000);
 
-    menu = std::make_unique<MenuComponent>();
-
 #if JUCE_WINDOWS || JUCE_LINUX
     opengl.setImageCacheSize((size_t)64 * 1024000);
     if (strix::readConfigFile(CONFIG_PATH, "openGL")) {
@@ -38,26 +40,10 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(
     }
 #endif
 
-    menu->setAlwaysOnTop(true);
-    menu->windowResizeCallback = [&] { resetWindowSize(); };
-#if JUCE_WINDOWS || JUCE_LINUX
-    menu->openGLCallback = [&](bool state) {
-        if (state)
-            opengl.attachTo(*this);
-        else
-            opengl.detach();
-        DBG("OpenGL: " << (int)opengl.isAttached()
-                       << ", w/ cache size: " << opengl.getImageCacheSize());
-        strix::writeConfigFile(CONFIG_PATH, "openGL", state);
-    };
-#endif
-    menu->tooltipCallback = [&]() {
-        if (tooltip)
-            tooltip = nullptr;
-        else
-            tooltip.reset(new TooltipWindow(this, 2000));
-        strix::writeConfigFile(CONFIG_PATH, "tooltip", tooltip != nullptr);
-    };
+    menu.setAlwaysOnTop(true);
+    menu.windowResetCallback = onWindowReset;
+    menu.openGLCallback = onOpenGLChange;
+    menu.tooltipCallback = onMenuTooltip;
 
     for (auto *comp : getComps()) {
         addAndMakeVisible(comp);
@@ -174,8 +160,8 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(
 
     p.onPresetChange = [&] { updateBandDisplay(p.numBands); };
 
-    addAndMakeVisible(*menu);
-    menu->setBoundsRelative(0.01f, 0.94f, 0.04f, 0.04f);
+    addAndMakeVisible(menu);
+    menu.setBoundsRelative(0.01f, 0.94f, 0.04f, 0.04f);
 
     splash.onLogoClick = [&] {
         splash.setImage(createComponentSnapshot(getLocalBounds()));
@@ -236,7 +222,7 @@ MaximizerAudioProcessorEditor::~MaximizerAudioProcessorEditor()
 #endif
     curve__slider.setLookAndFeel(nullptr);
     unlockButton.setLookAndFeel(nullptr);
-    menu->setLookAndFeel(nullptr);
+    menu.setLookAndFeel(nullptr);
     stopTimer();
 }
 
@@ -298,7 +284,7 @@ void MaximizerAudioProcessorEditor::resized()
         child->setTransform(AffineTransform::scale(scale));
     }
 
-    menu->setBoundsRelative(0.01f, 0.94f, 0.04f, 0.04f);
+    menu.setBoundsRelative(0.01f, 0.94f, 0.04f, 0.04f);
     unlockButton.setBoundsRelative(0.12f, 0.12f, 0.08f, 0.05f);
     activationComp.centreWithSize(240, 360);
 
@@ -309,4 +295,33 @@ std::vector<Component *> MaximizerAudioProcessorEditor::getComps()
 {
     return {&ui, &responseCurveComponent, &waveshaperComponent, &curve__slider,
             &splash};
+}
+
+void onMenuTooltip(MaximizerAudioProcessorEditor &editor)
+{
+    auto &tooltip = editor.tooltip;
+    if (tooltip)
+        tooltip = nullptr;
+    else
+        tooltip.reset(new TooltipWindow(&editor, 2000));
+    strix::writeConfigFile(CONFIG_PATH, "tooltip", tooltip != nullptr);
+}
+
+void onWindowReset(MaximizerAudioProcessorEditor &editor)
+{
+    editor.resetWindowSize();
+}
+
+void onOpenGLChange(MaximizerAudioProcessorEditor &editor, bool enabled)
+{
+#if !JUCE_MAC
+    auto &opengl = editor.opengl;
+    if (enabled)
+        opengl.attachTo(editor);
+    else
+        opengl.detach();
+    DBG("OpenGL: " << (int)opengl.isAttached()
+                   << ", w/ cache size: " << opengl.getImageCacheSize());
+    strix::writeConfigFile(CONFIG_PATH, "openGL", enabled);
+#endif
 }

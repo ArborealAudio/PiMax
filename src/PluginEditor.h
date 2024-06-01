@@ -8,6 +8,8 @@
 
 #pragma once
 
+class MaximizerAudioProcessorEditor;
+
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
 #include "UI/UI.h"
@@ -69,12 +71,14 @@ public:
         if (lThread && !lThread->working)
             lThread.reset();
     }
-
-private:
-    MaximizerAudioProcessor &audioProcessor;
+    
+    std::unique_ptr<TooltipWindow> tooltip = nullptr;
 #if JUCE_WINDOWS || JUCE_LINUX
     OpenGLContext opengl;
 #endif
+
+private:
+    MaximizerAudioProcessor &audioProcessor;
 
     ResponseCurveComponent responseCurveComponent;
     UI ui;
@@ -100,10 +104,7 @@ private:
     TopButtonLNF unlockLNF;
     TextButton unlockButton{"Unlock"};
 
-    std::unique_ptr<TooltipWindow> tooltip = nullptr;
-
-    std::unique_ptr<MenuComponent> menu = nullptr;
-
+    MenuComponent menu;
 
     void writeUISize(int width, int height)
     {

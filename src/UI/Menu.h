@@ -6,8 +6,8 @@
 #pragma once
 
 #include "LookAndFeel.h"
-#include "UI.h"
-#include <memory>
+#include "../PluginEditor.h"
+
 class MenuComponent : public Component
 {
     DrawableButton menuButton;
@@ -17,14 +17,15 @@ class MenuComponent : public Component
 
     PopupLNF lnf;
 
-public:
-    MenuComponent() : menuButton("Menu", DrawableButton::ButtonStyle::ImageFitted)
+  public:
+    MenuComponent(MaximizerAudioProcessorEditor &editor)
+        : menuButton("Menu", DrawableButton::ButtonStyle::ImageFitted)
     {
         addAndMakeVisible(menuButton);
-        icon = Drawable::createFromImageData(BinaryData::Hamburger_icon_svg, BinaryData::Hamburger_icon_svgSize);
+        icon = Drawable::createFromImageData(
+            BinaryData::Hamburger_icon_svg, BinaryData::Hamburger_icon_svgSize);
         menuButton.setImages(icon.get());
-        menuButton.onClick = [&]
-        {
+        menuButton.onClick = [&] {
             PopupMenu m;
             m.setLookAndFeel(&lnf);
 #if !JUCE_MAC
@@ -32,41 +33,46 @@ public:
             m.addItem(1, "OpenGL", true, openGL);
 #endif
             m.addItem(2, "Default UI Size");
-            bool displayingTooltip = (bool)strix::readConfigFile(CONFIG_PATH, "tooltip");
+            bool displayingTooltip =
+                (bool)strix::readConfigFile(CONFIG_PATH, "tooltip");
             m.addItem(3, "Show Tooltips", true, displayingTooltip);
 
-            m.showMenuAsync(PopupMenu::Options().withMinimumWidth(175).withStandardItemHeight(35),
-                            [&](int result)
-                            {
-                                switch (result)
-                                {
+            PopupMenu asym;
+            asym.setLookAndFeel(&lnf);
+            asym.addItem(1, "Global DC Block");
+            asym.addItem(2, "Alt. Type");
+            m.addSubMenu("Asym. Options", asym);
+
+            m.showMenuAsync(PopupMenu::Options()
+                                .withMinimumWidth(175)
+                                .withStandardItemHeight(35),
+                            [&](int result) {
+                                switch (result) {
                                 case 0:
                                     break;
                                 case 1:
                                     if (openGLCallback)
-                                        openGLCallback(!openGLEnabled);
+                                        openGLCallback(editor, !openGLEnabled);
                                     break;
                                 case 2:
-                                    if (windowResizeCallback)
-                                        windowResizeCallback();
+                                    if (windowResetCallback)
+                                        windowResetCallback(editor);
                                     break;
                                 case 3:
                                     if (tooltipCallback)
-                                        tooltipCallback();
+                                        tooltipCallback(editor);
                                     break;
                                 }
                             });
 
+            asym.setLookAndFeel(nullptr);
             m.setLookAndFeel(nullptr);
         };
     }
 
-    std::function<void()> windowResizeCallback;
-    std::function<void(bool)> openGLCallback;
-    std::function<void()> tooltipCallback;
+    void (*windowResetCallback)(MaximizerAudioProcessorEditor &);
+    void (*openGLCallback)(MaximizerAudioProcessorEditor &, bool);
+    void (*tooltipCallback)(MaximizerAudioProcessorEditor &);
 
-    void resized() override
-    {
-        menuButton.setBounds(getLocalBounds());
-    }
+    void resized() override { menuButton.setBounds(getLocalBounds()); }
 };
