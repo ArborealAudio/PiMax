@@ -69,7 +69,7 @@ class MaximPizer
         }
     }
 
-    template <typename T> void process(dsp::AudioBlock<T> &block)
+    template <typename T> void process(dsp::AudioBlock<T> &block, bool asymType)
     {
         loadAtomics();
 
@@ -78,20 +78,20 @@ class MaximPizer
 
             switch (clip_m) {
             case ClipType::Deep:
-                processDeep(ch, block.getNumSamples(), in);
+                processDeep(ch, block.getNumSamples(), in, asymType);
                 break;
             case ClipType::Warm:
-                processWarm(ch, block.getNumSamples(), in);
+                processWarm(ch, block.getNumSamples(), in, asymType);
                 break;
             default:
-                processRegular(ch, block.getNumSamples(), in);
+                processRegular(ch, block.getNumSamples(), in, asymType);
                 break;
             };
         }
     }
 
     template <typename T>
-    void processRegular(size_t channel, size_t numSamples, T *in) noexcept
+    void processRegular(size_t channel, size_t numSamples, T *in, bool asymType) noexcept
     {
         T yn = 0.0, x1 = 0.0, x2 = 0.0, k = 0.0;
 
@@ -101,6 +101,9 @@ class MaximPizer
             smoothCurve[channel].setTargetValue(*curve);
         for (size_t i = 0; i < numSamples; ++i) {
             k = smoothCurve[channel].getNextValue();
+
+            if (asymType && in[i] >= 0)
+                in[i] *= 1.1f;
             /*if we're in regular bounds, apply curve algo*/
             const auto xn = in[i];
 
@@ -164,16 +167,24 @@ class MaximPizer
             x_n1[channel] = xn;
             y_n1[channel] = yn;
             in[i] = yn;
+
+            if (asymType && in[i] >= 0)
+                in[i] /= 1.1;
         }
     }
 
-    template <typename T> void processDeep(size_t ch, size_t numSamples, T *xn)
+    template <typename T> void processDeep(size_t ch, size_t numSamples, T *xn,
+                                           bool asymType)
     {
+        float _curve = *curve;
         FloatVectorOperations::multiply(xn, halfPi, numSamples);
         T k = 0.0;
         if (smoothCurve[ch].isSmoothing()) {
-            smoothCurve[ch].setTargetValue(*curve * *curve);
+            smoothCurve[ch].setTargetValue(_curve * _curve);
             for (int i = 0; i < numSamples; ++i) {
+                if (asymType && xn[i] >= 0) {
+                    xn[i] *= 1.1;
+                }
                 k = smoothCurve[ch].getNextValue();
                 xn[i] = xn[i] / this->pow((1.0 + this->pow(std::abs(xn[i]), k)),
                                           1.0 / k);
@@ -181,21 +192,31 @@ class MaximPizer
                 xn[i] += 0.2f * hiShelf.processSample(ch, xn[i]);
                 if (k < 1.0)
                     xn[i] *= 1.0 / k;
+                if (asymType && xn[i] >= 0) {
+                    xn[i] /= 1.1;
+                }
             }
         } else {
-            k = *curve * *curve;
+            k = _curve * _curve;
             for (int i = 0; i < numSamples; ++i) {
+                if (asymType && xn[i] >= 0) {
+                    xn[i] *= 1.1;
+                }
                 xn[i] = xn[i] / this->pow((1.0 + this->pow(std::abs(xn[i]), k)),
                                           1.0 / k);
                 xn[i] += 0.2f * lowShelf.processSample(ch, xn[i]);
                 xn[i] += 0.2f * hiShelf.processSample(ch, xn[i]);
+                if (asymType && xn[i] >= 0) {
+                    xn[i] /= 1.1;
+                }
             }
             if (k < 1.0)
                 FloatVectorOperations::multiply(xn, 1.0 / k, numSamples);
         }
     }
 
-    template <typename T> void processWarm(size_t ch, size_t numSamples, T *xn)
+    template <typename T> void processWarm(size_t ch, size_t numSamples, T *xn,
+                                           bool asymType)
     {
         FloatVectorOperations::multiply(xn, halfPi, numSamples);
 
@@ -203,12 +224,16 @@ class MaximPizer
                                                      : 0.f);
 
         for (int i = 0; i < numSamples; ++i) {
+            if (asymType && xn[i] >= 0)
+                xn[i] *= 1.1;
             auto hf = 0.3f * hiShelf.processSample(ch, xn[i]);
             auto lf = smoothCurve[ch].getNextValue() *
                       lowShelf.processSample(ch, xn[i]);
             xn[i] -= hf;
             xn[i] += lf;
             xn[i] = (-1.0 / (1.0 + std::exp(xn[i])) + 0.5);
+            if (asymType && xn[i] >= 0)
+                xn[i] /= 1.1;
         }
 
         FloatVectorOperations::multiply(xn, e, numSamples);

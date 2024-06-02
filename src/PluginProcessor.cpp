@@ -318,7 +318,8 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float> &buffer,
     bool boost = (bool)*atomics.boost;
     bool distType = (bool)*atomics.distType;
     bool bandSplit = (bool)*atomics.bandSplit;
-    bool globalBias = atomics.globalBias;
+    bool globalBias = atomics.globalBias.load();
+    bool asymType = atomics.asymType.load();
     bool monoWidth = (bool)*atomics.monoWidth;
     bool linearPhase = (bool)*atomics.linearPhase;
     bool autoGain = (bool)*atomics.autoGain;
@@ -347,13 +348,14 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float> &buffer,
             dsp::AudioBlock<float>(buffer));
 
     distState = distType ? Asym : Sym;
-    if (globalBias || !bandSplit)
+    if ((globalBias || !bandSplit) && !atomics.asymType)
         processDCOffset(osBlock);
 
-    if (!(bool)(bandSplit))
-        mPi.process(osBlock);
-    else 
-        mbProc.processBands(osBlock, !globalBias && distState == Asym);
+    if (!bandSplit)
+        mPi.process(osBlock, asymType && distState == Asym);
+    else
+        mbProc.processBands(osBlock, !globalBias && distState == Asym,
+                            asymType && distState == Asym);
     
     if (totalNumOutputChannels > 1)
         oversample[osIndex].processSamplesDown(outBlock);
