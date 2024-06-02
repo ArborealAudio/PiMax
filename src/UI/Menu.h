@@ -31,7 +31,7 @@ class MenuComponent : public Component
             m.setLookAndFeel(&lnf);
 #if !JUCE_MAC
             openGLEnabled = (bool)strix::readConfigFile(CONFIG_PATH, "openGL");
-            m.addItem(1, "OpenGL", true, openGL);
+            m.addItem(1, "OpenGL", true, openGLEnabled);
 #endif
             m.addItem(2, "Default UI Size");
             bool displayingTooltip =
