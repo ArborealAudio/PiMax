@@ -77,8 +77,8 @@ public:
     OpenGLContext opengl;
 #endif
 
-private:
     MaximizerAudioProcessor &audioProcessor;
+private:
 
     ResponseCurveComponent responseCurveComponent;
     UI ui;

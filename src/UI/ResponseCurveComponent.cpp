@@ -107,7 +107,7 @@ ResponseCurveComponent::~ResponseCurveComponent()
 
 void ResponseCurveComponent::paint(Graphics &g)
 {
-    if (!*audioProcessor.bandSplit)
+    if (!(bool)*audioProcessor.atomics.bandSplit)
         return;
 
     ColourGradient gradient(Colour(0xa7a7a7a7).withAlpha(0.125f),
@@ -629,7 +629,7 @@ void ResponseCurveComponent::timerCallback()
         repaint();
 
     /*only draw add button if mouse is over component*/
-    if ((isMouseOver() || addButton.isMouseOver()) && *audioProcessor.bandSplit)
+    if ((isMouseOver() || addButton.isMouseOver()) && (bool)*audioProcessor.atomics.bandSplit)
         repaint();
     else
         addButton.setVisible(false);

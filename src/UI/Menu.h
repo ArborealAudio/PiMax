@@ -18,7 +18,8 @@ class MenuComponent : public Component
     PopupLNF lnf;
 
   public:
-    MenuComponent(MaximizerAudioProcessorEditor &editor)
+    MenuComponent(MaximizerAudioProcessorEditor &editor,
+                  MaximizerAudioProcessor &p)
         : menuButton("Menu", DrawableButton::ButtonStyle::ImageFitted)
     {
         addAndMakeVisible(menuButton);
@@ -39,8 +40,8 @@ class MenuComponent : public Component
 
             PopupMenu asym;
             asym.setLookAndFeel(&lnf);
-            asym.addItem(1, "Global DC Block");
-            asym.addItem(2, "Alt. Type");
+            asym.addItem(4, "Global Bias", true, p.atomics.globalBias);
+            asym.addItem(5, "Alt. Type", true, p.atomics.asymType);
             m.addSubMenu("Asym. Options", asym);
 
             m.showMenuAsync(PopupMenu::Options()
@@ -62,6 +63,14 @@ class MenuComponent : public Component
                                     if (tooltipCallback)
                                         tooltipCallback(editor);
                                     break;
+                                case 4:
+                                    if (globalBiasCallback)
+                                        globalBiasCallback(editor);
+                                    break;
+                                case 5:
+                                    if (asymTypeCallback)
+                                        asymTypeCallback(editor);
+                                    break;
                                 }
                             });
 
@@ -73,6 +82,8 @@ class MenuComponent : public Component
     void (*windowResetCallback)(MaximizerAudioProcessorEditor &);
     void (*openGLCallback)(MaximizerAudioProcessorEditor &, bool);
     void (*tooltipCallback)(MaximizerAudioProcessorEditor &);
+    void (*globalBiasCallback)(MaximizerAudioProcessorEditor &);
+    void (*asymTypeCallback)(MaximizerAudioProcessorEditor &);
 
     void resized() override { menuButton.setBounds(getLocalBounds()); }
 };

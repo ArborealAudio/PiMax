@@ -26,28 +26,28 @@ MaximizerAudioProcessor::MaximizerAudioProcessor()
 #endif
 
 {
-    hq = apvts.getRawParameterValue("hq");
+    atomics.hq = apvts.getRawParameterValue("hq");
     apvts.addParameterListener("hq", this);
-    renderHQ = apvts.getRawParameterValue("renderHQ");
+    atomics.renderHQ = apvts.getRawParameterValue("renderHQ");
     apvts.addParameterListener("renderHQ", this);
     gain_dB = dynamic_cast<strix::FloatParameter *>(apvts.getParameter("gain"));
     curve = dynamic_cast<strix::FloatParameter *>(apvts.getParameter("curve"));
-    distType = apvts.getRawParameterValue("distType");
-    lastAsym = (bool)distType->load();
-    clip = apvts.getRawParameterValue("clipType");
+    atomics.distType = apvts.getRawParameterValue("distType");
+    lastAsym = (bool)atomics.distType->load();
+    atomics.clip = apvts.getRawParameterValue("clipType");
     output_dB =
         dynamic_cast<strix::FloatParameter *>(apvts.getParameter("output"));
-    bandSplit = apvts.getRawParameterValue("bandSplit");
+    atomics.bandSplit = apvts.getRawParameterValue("bandSplit");
     apvts.addParameterListener("bandSplit", this);
-    linearPhase = apvts.getRawParameterValue("linearPhase");
+    atomics.linearPhase = apvts.getRawParameterValue("linearPhase");
     apvts.addParameterListener("linearPhase", this);
     width = dynamic_cast<strix::FloatParameter *>(apvts.getParameter("width"));
-    monoWidth = apvts.getRawParameterValue("monoWidth");
+    atomics.monoWidth = apvts.getRawParameterValue("monoWidth");
     mix = dynamic_cast<strix::FloatParameter *>(apvts.getParameter("mix"));
-    autoGain = apvts.getRawParameterValue("autoGain");
-    bypass = apvts.getRawParameterValue("bypass");
-    delta = apvts.getRawParameterValue("delta");
-    boost = apvts.getRawParameterValue("boost");
+    atomics.autoGain = apvts.getRawParameterValue("autoGain");
+    atomics.bypass = apvts.getRawParameterValue("bypass");
+    atomics.delta = apvts.getRawParameterValue("delta");
+    atomics.boost = apvts.getRawParameterValue("boost");
 
     for (int i = 0; i < 3; ++i)
         apvts.addParameterListener("crossover" + String(i), this);
@@ -153,7 +153,7 @@ void MaximizerAudioProcessor::prepareToPlay(double sampleRate,
     for (auto &s : smoothOffset)
         s.reset(lastSampleRate, 0.5);
 
-    distState = distType->load() ? SymToAsym : Sym;
+    distState = atomics.distType->load() ? Asym : Sym;
 
     mPi.prepare(spec);
 
@@ -196,13 +196,13 @@ bool MaximizerAudioProcessor::isBusesLayoutSupported(
 
 inline void MaximizerAudioProcessor::updateOversample() noexcept
 {
-    if ((bool)*renderHQ && isNonRealtime()) {
+    if ((bool)*atomics.renderHQ && isNonRealtime()) {
         osIndex = 2;
         lastSampleRate = lastDownSampleRate * 4.0;
-    } else if ((bool)*hq && (bool)*linearPhase) {
+    } else if ((bool)*atomics.hq && (bool)*atomics.linearPhase) {
         osIndex = 2;
         lastSampleRate = lastDownSampleRate * 4.0;
-    } else if ((bool)*hq) {
+    } else if ((bool)*atomics.hq) {
         osIndex = 1;
         lastSampleRate = lastDownSampleRate * 4.0;
     } else {
@@ -238,7 +238,7 @@ void MaximizerAudioProcessor::parameterChanged(const String &parameterID, float)
     }
 
     /* flag crossover changes in linear-phase mode */
-    if (parameterID.contains("crossover") && (bool)*linearPhase) {
+    if (parameterID.contains("crossover") && (bool)*atomics.linearPhase) {
         mbProc.crossover_changed_ID = parameterID.getTrailingIntValue();
         mbProc.updateCrossovers = true;
         // CHANGE: So if we want to manage a smooth changeover btw filter coeffs,
@@ -266,7 +266,7 @@ void MaximizerAudioProcessor::updateNumBands(int newNumBands)
     mbProc.updateAllCrossovers(numBands);
     suspendProcessing(false);
 
-    /*write numBands change to tree state*/
+    /* write numBands change to tree state */
     auto val = apvts.state.getChildWithProperty("id", "numBands");
     val.setProperty("value", numBands, nullptr);
 
@@ -314,15 +314,27 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float> &buffer,
     } else
         buffer.applyGain(gain_raw);
 
+    // load atomics
+    bool boost = (bool)*atomics.boost;
+    bool distType = (bool)*atomics.distType;
+    bool bandSplit = (bool)*atomics.bandSplit;
+    bool globalBias = atomics.globalBias;
+    bool monoWidth = (bool)*atomics.monoWidth;
+    bool linearPhase = (bool)*atomics.linearPhase;
+    bool autoGain = (bool)*atomics.autoGain;
+    ClipType clip = (ClipType)((int)*atomics.clip);
+    bool delta = (bool)*atomics.delta;
+    bool bypass = (bool)*atomics.bypass;
+
     bool boostRamped = false;
-    if (*boost) {
-        if (*boost != lastBoost)
+    if (boost) {
+        if (boost != lastBoost)
             buffer.applyGainRamp(0, numSamples, 1.f, 3.98f);
         else
             buffer.applyGain(3.98f);
-    } else if (*boost != lastBoost)
+    } else if (boost != lastBoost)
         buffer.applyGainRamp(0, numSamples, 3.98f, 1.f);
-    lastBoost = (bool)*boost;
+    lastBoost = boost;
 
     inputMeter.copyBuffer(buffer);
 
@@ -334,14 +346,15 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float> &buffer,
         osBlock = oversampleMono[osIndex].processSamplesUp(
             dsp::AudioBlock<float>(buffer));
 
-    processDCOffset(osBlock);
+    distState = distType ? Asym : Sym;
+    if (globalBias || !bandSplit)
+        processDCOffset(osBlock);
 
-    if (!*bandSplit)
+    if (!(bool)(bandSplit))
         mPi.process(osBlock);
-    else {
-        mbProc.processBands(osBlock);
-    }
-
+    else 
+        mbProc.processBands(osBlock, !globalBias && distState == Asym);
+    
     if (totalNumOutputChannels > 1)
         oversample[osIndex].processSamplesDown(outBlock);
     else
@@ -350,7 +363,7 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float> &buffer,
     processDCBlock(block);
 
     if (*width != 1.0 && totalNumOutputChannels > 1) {
-        if (*monoWidth && *bandSplit &&
+        if (monoWidth && bandSplit &&
             (*mbProc.bandWidth[0] > 1.f || *mbProc.bandWidth[1] > 1.f ||
              *mbProc.bandWidth[2] > 1.f || *mbProc.bandWidth[3] > 1.f))
             widener.widenBuffer(
@@ -361,12 +374,12 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float> &buffer,
                 buffer, *width,
                 true); /*if mono->stereo channel config, mono widener*/
         else
-            widener.widenBuffer(buffer, *width, *monoWidth); /*regular*/
+            widener.widenBuffer(buffer, *width, monoWidth); /*regular*/
     }
 
     int totalLatency = 0;
 
-    if (*linearPhase && *bandSplit)
+    if (linearPhase && bandSplit)
         totalLatency = osIndex > 1 ? 573 : 2047;
     else
         totalLatency = oversample[osIndex].getLatencyInSamples();
@@ -377,24 +390,24 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float> &buffer,
 
     mixer.setWetLatency(totalLatency);
 
-    if (*autoGain) {
+    if (autoGain) {
         if (gainRamped)
             buffer.applyGainRamp(0, numSamples, 1.0 / (m_lastGain * halfPi),
                                  1.0 / (gain_raw * halfPi));
         else
             buffer.applyGain(1.0 / (gain_raw * halfPi));
 
-        if ((ClipType)clip->load() == ClipType::Deep)
+        if (clip == ClipType::Deep)
             buffer.applyGain(halfPi * 0.794);
-        else if ((ClipType)clip->load() == ClipType::Warm)
+        else if (clip == ClipType::Warm)
             buffer.applyGain(halfPi);
 
-        if (*boost) {
+        if (boost) {
             if (boostRamped)
                 buffer.applyGainRamp(0, numSamples, 1.f, 1.f / 3.98f);
             else
                 buffer.applyGain(1.f / 3.98f);
-        } else if (!*boost && boostRamped)
+        } else if (!boost && boostRamped)
             buffer.applyGainRamp(0, numSamples, 1.f / 3.98f, 1.f);
     }
 
@@ -417,9 +430,9 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float> &buffer,
             buffer.copyFrom(1, 0, buffer.getReadPointer(0), numSamples);
     }
 
-    if (*delta)
+    if (delta)
         processDelta(buffer, gain_raw * halfPi, output_raw);
-    if (*bypass || lastBypass)
+    if (bypass || lastBypass)
         processBlockBypassed(buffer, midiMessages);
 
     /*mute buffer if it's over ~15dB*/
@@ -433,7 +446,7 @@ void MaximizerAudioProcessor::processBlockBypassed(AudioBuffer<float> &buffer,
     if (!bufferCopied)
         return;
 
-    bool byp = (bool)*bypass;
+    bool byp = (bool)*atomics.bypass;
 
     /*push to our delay buffer & read delayed samples*/
     if (getTotalNumInputChannels() <
@@ -482,55 +495,19 @@ void MaximizerAudioProcessor::processBlockBypassed(AudioBuffer<float> &buffer,
 
 void MaximizerAudioProcessor::processDCOffset(dsp::AudioBlock<float> &block)
 {
-    bool t = (bool)distType->load();
-
-    switch (distState) {
-    case Asym:
-    case Sym:
-        if (t != lastAsym) {
-            for (auto &s : smoothOffset)
-                s.setTargetValue(t ? 0.1f : 0.f);
-            distState = t ? SymToAsym : AsymToSym;
-        }
-        break;
-    case SymToAsym:
-        if (!smoothOffset[0].isSmoothing() && !smoothOffset[1].isSmoothing() &&
-            t)
-            distState = Asym;
-        // else
-        // {
-        //     for (auto &s : smoothOffset)
-        //         s.setTargetValue(t ? 0.1f : 0.f);
-        //     distState = t ? SymToAsym : AsymToSym;
-        // }
-        break;
-    case AsymToSym:
-        if (!smoothOffset[0].isSmoothing() && !smoothOffset[1].isSmoothing() &&
-            !t)
-            distState = Sym;
-        // else
-        // {
-        //     for (auto &s : smoothOffset)
-        //         s.setTargetValue(t ? 0.1f : 0.f);
-        //     distState = t ? SymToAsym : AsymToSym;
-        // }
-        break;
-    }
-
-    // apply DC offset
-    for (size_t ch = 0; ch < block.getNumChannels(); ++ch) {
-        auto in = block.getChannelPointer(ch);
-        for (size_t i = 0; i < block.getNumSamples(); ++i) {
-            in[i] += smoothOffset[ch].getNextValue();
+    
+    if (distState == Asym) {
+        // apply DC offset
+        for (size_t ch = 0; ch < block.getNumChannels(); ++ch) {
+            auto in = block.getChannelPointer(ch);
+            FloatVectorOperations::add(in, 0.1, block.getNumSamples());
         }
     }
-
-    lastAsym = t;
 }
 
 void MaximizerAudioProcessor::processDCBlock(dsp::AudioBlock<float> &block)
 {
-    if (distState != Sym) {
+    if (distState == Asym) {
         const double r = 1.0 - (1.0 / 1000.0);
 
         for (int channel = 0; channel < block.getNumChannels(); ++channel) {
@@ -550,6 +527,8 @@ void MaximizerAudioProcessor::processDCBlock(dsp::AudioBlock<float> &block)
 void MaximizerAudioProcessor::processDelta(AudioBuffer<float> &buffer,
                                            float inGain, float outGain)
 {
+    bool autoGain = (bool)*atomics.autoGain;
+    
     if (getTotalNumInputChannels() < getTotalNumOutputChannels()) {
         auto *data = buffer.getWritePointer(0);
         auto *dryData = bypassBuffer.getWritePointer(0);
@@ -557,7 +536,7 @@ void MaximizerAudioProcessor::processDelta(AudioBuffer<float> &buffer,
         for (int i = 0; i < buffer.getNumSamples(); ++i) {
             bypassDelay.pushSample(0, dryData[i]);
             dryData[i] = bypassDelay.popSample(0);
-            if (!*autoGain) {
+            if (!autoGain) {
                 data[i] = ((data[i] / inGain) / outGain) - dryData[i];
                 // buffer.setSample(1, i, data[i]);
             } else {
@@ -575,7 +554,7 @@ void MaximizerAudioProcessor::processDelta(AudioBuffer<float> &buffer,
             for (int i = 0; i < buffer.getNumSamples(); ++i) {
                 bypassDelay.pushSample(ch, dryData[i]);
                 dryData[i] = bypassDelay.popSample(ch);
-                if (!*autoGain)
+                if (!autoGain)
                     data[i] = ((data[i] / inGain) / outGain) - dryData[i];
                 else
                     data[i] = (data[i] / outGain) - dryData[i];

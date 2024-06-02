@@ -93,8 +93,13 @@ public:
 
     AudioProcessorValueTreeState apvts;
 
-    std::atomic<float>* bandSplit, *monoWidth, *delta, *clip, *distType, *autoGain, *linearPhase;
-    strix::FloatParameter *gain_dB, *curve, *output_dB;
+    struct {
+        std::atomic<float> *bandSplit, *monoWidth, *delta, *clip, *distType,
+            *autoGain, *linearPhase, *hq, *renderHQ, *bypass, *boost;
+        std::atomic<bool> globalBias = false, asymType = false;
+    } atomics;
+
+    strix::FloatParameter *gain_dB, *curve, *output_dB, *width, *mix;
 
     int numBands = 2, lastNumBands = 2;
 
@@ -139,8 +144,8 @@ private:
     
     enum
     {
-        SymToAsym,
-        AsymToSym,
+        // SymToAsym,
+        // AsymToSym,
         Sym,
         Asym
     } distState;
@@ -169,8 +174,6 @@ private:
 
     float m_lastGain = 1.0;
 
-    std::atomic<float>* hq, *renderHQ, *bypass, *boost;
-    strix::FloatParameter *width, *mix;
 
     float lastInputGain = 1.0, lastOutGain = 1.0;
 

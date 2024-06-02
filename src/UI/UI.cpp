@@ -175,7 +175,7 @@ UI::UI (MaximizerAudioProcessor& p) : audioProcessor(p), gain__slider(false), ou
     widthSlider.setTooltip("Widens or narrows the stereo image.\n\n"
         "Alt / Option-click to toggle widening for a mono source.\n\n"
     "If widening individual bands of a mono source in Band Split mode, this will work in its regular stereo mode.");
-    widthLNF.altDown = p.monoWidth;
+    widthLNF.altDown = p.atomics.monoWidth;
     widthSlider.onAltClick = [&] { p.apvts.getParameterAsValue("monoWidth") = widthSlider.altDown; };
     widthSlider.setBounds(415, 300, 50, 75);
 
@@ -186,7 +186,7 @@ UI::UI (MaximizerAudioProcessor& p) : audioProcessor(p), gain__slider(false), ou
     mixSlider.setSliderSnapsToMousePosition(false);
     mixSlider.setTooltip("Blends processed output with the dry input signal. Alt / Option-click to enable Delta mode,"
         " which subtracts the dry signal from the processed signal, allowing you to hear what PiMax is adding to the input signal.");
-    mixLNF.altDown = p.delta;
+    mixLNF.altDown = p.atomics.delta;
     mixSlider.onAltClick = [&] { p.apvts.getParameterAsValue("delta") = mixSlider.altDown; };
     mixSlider.setBounds(480, 300, 50, 75);
 

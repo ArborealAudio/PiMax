@@ -29,7 +29,7 @@ WaveshaperComponent::~WaveshaperComponent()
 
 void WaveshaperComponent::paint(Graphics& g)
 {
-    if (*audioProcessor.bandSplit)
+    if ((bool)*audioProcessor.atomics.bandSplit)
         return;
 
     Path p;
@@ -55,8 +55,8 @@ void WaveshaperComponent::paint(Graphics& g)
     g.setGradientFill(gradient);
     g.fillAll();
 
-    ClipType clip = (ClipType)audioProcessor.clip->load();
-    auto distIndex = audioProcessor.distType->load();
+    ClipType clip = (ClipType)audioProcessor.atomics.clip->load();
+    bool distIndex = (bool)*audioProcessor.atomics.distType;
     auto outGain = pow(10.f, audioProcessor.output_dB->get() * 0.05f);
 
     for (int n = 0; n < w; ++n)

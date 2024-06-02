@@ -12,6 +12,8 @@
 void onMenuTooltip(MaximizerAudioProcessorEditor &);
 void onWindowReset(MaximizerAudioProcessorEditor &);
 void onOpenGLChange(MaximizerAudioProcessorEditor &, bool);
+void onGlobalBiasChange(MaximizerAudioProcessorEditor &);
+void onAsymTypeChange(MaximizerAudioProcessorEditor &);
 
 //==============================================================================
 MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(
@@ -19,7 +21,7 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(
     : AudioProcessorEditor(&p), audioProcessor(p), responseCurveComponent(p),
       ui(p), waveshaperComponent(p),
       activationComp(p.isUnlocked, p.trialRemaining_ms),
-      downloadManager(DL_BIN), menu(*this)
+      downloadManager(DL_BIN), menu(*this, p)
 {
     auto &globalLNF = LookAndFeel::getDefaultLookAndFeel();
     globalLNF.setDefaultSansSerifTypeface(
@@ -44,6 +46,8 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(
     menu.windowResetCallback = onWindowReset;
     menu.openGLCallback = onOpenGLChange;
     menu.tooltipCallback = onMenuTooltip;
+    menu.globalBiasCallback = onGlobalBiasChange;
+    menu.asymTypeCallback = onAsymTypeChange;
 
     for (auto *comp : getComps()) {
         addAndMakeVisible(comp);
@@ -324,4 +328,14 @@ void onOpenGLChange(MaximizerAudioProcessorEditor &editor, bool enabled)
                    << ", w/ cache size: " << opengl.getImageCacheSize());
     strix::writeConfigFile(CONFIG_PATH, "openGL", enabled);
 #endif
+}
+
+void onGlobalBiasChange(MaximizerAudioProcessorEditor &e)
+{
+    e.audioProcessor.atomics.globalBias = !e.audioProcessor.atomics.globalBias;
+}
+
+void onAsymTypeChange(MaximizerAudioProcessorEditor &e)
+{
+    e.audioProcessor.atomics.asymType = !e.audioProcessor.atomics.asymType;
 }

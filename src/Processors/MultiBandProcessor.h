@@ -6,9 +6,6 @@
 #include "MaximPizer.h"
 #include "StereoWidener.h"
 
-#include <array>
-#include <atomic>
-
 struct MultibandProcessor
 {
     static constexpr int TOTAL_BANDS = 4;
@@ -85,8 +82,6 @@ struct MultibandProcessor
             band.reset();
         for (auto &lb : linBand)
             lb.reset();
-
-        xm1[0] = 0.0, xm1[1] = 0.0, ym1[0] = 0.0, ym1[1] = 0.0;
     }
 
     // like prepare(), but does not resize the audio buffers
@@ -227,7 +222,7 @@ struct MultibandProcessor
     }
 
     template <typename T>
-    void processBands(dsp::AudioBlock<T> &block)
+    void processBands(dsp::AudioBlock<T> &block, bool addOffset)
     {
         const auto numSamples = block.getNumSamples();
 
@@ -260,6 +255,11 @@ struct MultibandProcessor
                 dsp::AudioBlock<T> b_block(bandBuffer[n]);
                 b_block = b_block.getSubBlock(0, numSamples);
 
+                if (addOffset) {
+                    for (size_t ch = 0; ch < b_block.getNumChannels(); ++ch)
+                        FloatVectorOperations::add(b_block.getChannelPointer(ch), 0.1, b_block.getNumSamples());
+                }
+              
                 mPi[n].process(b_block);
 
                 if (*autoGain) {
@@ -299,8 +299,6 @@ struct MultibandProcessor
 
     std::array<LRFilter<float>, TOTAL_XOVER> bands;
 
-    // dsp::ConvolutionMessageQueue q{16000};
-
     static constexpr int FFT_SIZE = 2048;
     std::array<LinearFilter::Processor<FFT_SIZE>, TOTAL_XOVER> linBand{
         {{LinearFilter::Processor<FFT_SIZE>(true)},
@@ -309,17 +307,12 @@ struct MultibandProcessor
 
     std::array<StereoWidener<float>, TOTAL_BANDS> bandWidener;
 
-    // IDEA: Can we set a max size at init, and don't bother resizing on
-    // oversample?
     std::array<AudioBuffer<float>, TOTAL_BANDS> bandBuffer;
 
   private:
     int numBands = 2;
 
     double lastSampleRate = 44100.0;
-
-    double xm1[2]{0.0, 0.0};
-    double ym1[2]{0.0, 0.0};
 
     std::atomic<float> *linearPhase, *curve, *clip, *distIndex, *monoWidth,
         *autoGain;
