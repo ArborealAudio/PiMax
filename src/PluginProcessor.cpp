@@ -595,6 +595,8 @@ void MaximizerAudioProcessor::getStateInformation(juce::MemoryBlock &destData)
     auto xml = state.createXml();
     xml->setAttribute("numBands", numBands);
     xml->setAttribute("preset", currentPreset);
+    xml->setAttribute("globalBias", (int)atomics.globalBias.load());
+    xml->setAttribute("asymType", (int)atomics.asymType.load());
     copyXmlToBinary(*xml, destData);
 }
 
@@ -607,6 +609,8 @@ void MaximizerAudioProcessor::setStateInformation(const void *data,
         if (numBands < 1)
             numBands = 1;
         currentPreset = xmlState->getStringAttribute("preset");
+        atomics.globalBias = xmlState->getIntAttribute("globalBias");
+        atomics.asymType = xmlState->getIntAttribute("asymType");
         apvts.replaceState(ValueTree::fromXml(*xmlState));
         auto numBandsTree = apvts.state.getChildWithProperty("id", "numBands");
         if (numBandsTree.isValid())
