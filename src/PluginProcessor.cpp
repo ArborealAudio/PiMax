@@ -240,13 +240,17 @@ void MaximizerAudioProcessor::parameterChanged(const String &parameterID, float)
     }
 
     /* flag crossover changes in linear-phase mode */
-    if (parameterID.contains("crossover") && (bool)*atomics.linearPhase) {
-        mbProc.crossover_changed_ID = parameterID.getTrailingIntValue();
-        mbProc.updateCrossovers = true;
-        // CHANGE: So if we want to manage a smooth changeover btw filter coeffs,
-        // we have to just use the above flag and manage the filter change w/in
-        // mbProc, where it'll swap some pointers
-        updateBandCrossovers(mbProc.crossover_changed_ID);
+    if (parameterID.contains("crossover")) {
+        int crossover_id = parameterID.getTrailingIntValue();
+        if ((bool)*atomics.linearPhase) {
+            // CHANGE: So if we want to manage a smooth changeover btw filter coeffs,
+            // we have to just use the above flag and manage the filter change w/in
+            // mbProc, where it'll swap some pointers
+            updateBandCrossovers(crossover_id);
+        } else {
+            // Change linear-phase crossovers when linear phase is off
+            mbProc.updateCrossoverLin(crossover_id);
+        }
     }
 }
 

@@ -294,9 +294,6 @@ struct MultibandProcessor
     std::array<float, TOTAL_BANDS> lastInGain, lastOutGain, lastBandWidth;
     std::array<strix::FloatParameter *, TOTAL_XOVER> crossovers;
 
-    std::atomic<bool> updateCrossovers = false;
-    int crossover_changed_ID;
-
     std::array<LRFilter<float>, TOTAL_XOVER> bands;
 
     static constexpr int FFT_SIZE = 2048;
