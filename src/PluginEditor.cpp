@@ -20,7 +20,7 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(
     MaximizerAudioProcessor &p)
     : AudioProcessorEditor(&p), audioProcessor(p), responseCurveComponent(p),
       ui(p), waveshaperComponent(p),
-      activationComp(p.isUnlocked, p.trialRemaining_ms),
+      activationComp(p.trialRemaining_ms),
       downloadManager(DL_BIN), menu(*this, p)
 {
     auto &globalLNF = LookAndFeel::getDefaultLookAndFeel();
@@ -179,26 +179,15 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(
     if (!p.isUnlocked)
         unlockButton.setVisible(true);
     unlockButton.onClick = [&] {
-        if (!activationComp.isFormVisible()) {
-            activationComp.setImage(createComponentSnapshot(getLocalBounds()));
-            activationComp.setVisible(true);
-        }
+        activationComp.setVisible(true);
     };
     unlockButton.setBoundsRelative(0.12f, 0.12f, 0.08f, 0.05f);
 
     addChildComponent(activationComp);
-    activationComp.onUnlock = [&](var unlocked) {
+    activationComp.onActivationCheck = [&](bool unlocked) {
         p.isUnlocked = unlocked;
-        unlockButton.setEnabled(false);
-        unlockButton.setVisible(false);
     };
-    activationComp.centreWithSize(240, 360);
-    if (!p.checkUnlock()) {
-        activationComp.setImage(createComponentSnapshot(getLocalBounds()));
-        activationComp.setVisible(true);
-    }
-
-    startTimerHz(1);
+    activationComp.centreWithSize(300, 200);
 #endif
 
     addChildComponent(downloadManager);
@@ -219,6 +208,8 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(
                                          String(Time::currentTimeMillis()));
         });
     }
+    
+    startTimerHz(1);
 }
 
 MaximizerAudioProcessorEditor::~MaximizerAudioProcessorEditor()
@@ -292,7 +283,7 @@ void MaximizerAudioProcessorEditor::resized()
 
     menu.setBoundsRelative(0.01f, 0.94f, 0.04f, 0.04f);
     unlockButton.setBoundsRelative(0.12f, 0.12f, 0.08f, 0.05f);
-    activationComp.centreWithSize(240, 360);
+    activationComp.centreWithSize(300, 200);
 
     MessageManager::callAsync([&] { writeUISize(getWidth(), getHeight()); });
 }

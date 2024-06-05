@@ -13,7 +13,7 @@ class MaximizerAudioProcessorEditor;
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
 #include "UI/UI.h"
-#include "OnlineActivation.h"
+#include "Activation.hpp"
 
 #define SITE_URL "https://arborealaudio.com"
 #if JUCE_WINDOWS
@@ -40,16 +40,6 @@ public:
     //==============================================================================
     void paint(juce::Graphics &) override;
     void resized() override;
-    void mouseDown(const MouseEvent &e) override
-    {
-        auto pos = e.position;
-        if (activationComp.isFormVisible()) {
-            if (activationComp.getBounds().contains(pos.roundToInt()))
-                activationComp.mouseDown(e);
-        }
-        else
-            AudioProcessorEditor::mouseDown(e);
-    }
 
     inline void updateBandDisplay(int newNumBands) noexcept
     {

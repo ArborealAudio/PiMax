@@ -3,7 +3,6 @@ name: CMake
 on:
   workflow_dispatch:
   push:
-    branches: [ "master", "develop" ]
   pull_request:
     branches: [ "master", "develop" ]
 
@@ -23,7 +22,12 @@ jobs:
       fail-fast: false
 
       matrix:
-        os: [ubuntu-latest, windows-2019, macos-12]
+        include:
+        - os: ubuntu-20.04
+          cmake-options: -GNinja
+        - os: windows-2019
+        - os: macos-12
+          cmake-options: -GNinja
 
     steps:
     - name: Install Linux Deps
@@ -46,21 +50,10 @@ jobs:
       uses: seanmiddleditch/gha-setup-ninja@master
       
     - name: Configure
-      run: cmake -Bbuild -DPRODUCTION_BUILD=1
+      run: cmake -Bbuild ${{ matrix.cmake-options }} -DPRODUCTION_BUILD=1
 
     - name: Build
-      run: cmake --build build --config Release --target "PiMax_VST3"
+      run: cmake --build build --config Release
 
-    - name: Validate Unix
-      if: runner.os != 'Windows'
-      run: ./validate.sh
-    - name: Validate Windows
-      if: runner.os == 'Windows'
-      run: bash validate.sh
-
-    # TODO: Write unit tests
-    # - name: Test
-    #   working-directory: ${{ steps.strings.outputs.build-output-dir }}
-    #   # Execute tests defined by the CMake configuration. Note that --build-config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
-    #   # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
-    #   run: ctest --build-config ${{ matrix.build_type }}
+    - name: Validate
+      run: bash ./validate.sh
