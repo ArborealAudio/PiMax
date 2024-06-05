@@ -44,10 +44,6 @@ if(BUILD_VST2)
     list(APPEND JUCE_FORMATS VST)
 endif()
 
-if(UNIX AND NOT APPLE)
-    list(APPEND JUCE_FORMATS LV2)
-endif()
-
 juce_add_plugin(PiMax
     COMPANY_NAME "Arboreal Audio"
     COMPANY_COPYRIGHT "(c) 2024 Arboreal Audio, LLC"
