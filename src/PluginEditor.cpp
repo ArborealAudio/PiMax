@@ -172,6 +172,7 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(
         splash.setPluginWrapperType(p.wrapperType);
     };
 
+#if !NO_LICENSE_CHECK
     addChildComponent(unlockButton);
     unlockLNF.setType(TopButtonLNF::Type::Regular);
     unlockButton.setLookAndFeel(&unlockLNF);
@@ -198,6 +199,7 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(
     }
 
     startTimerHz(1);
+#endif
 
     addChildComponent(downloadManager);
     downloadManager.changes = dlResult.changes;

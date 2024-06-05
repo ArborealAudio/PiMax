@@ -56,7 +56,9 @@ MaximizerAudioProcessor::MaximizerAudioProcessor()
 
     apvts.state.addListener(this);
 
+#if !NO_LICENSE_CHECK
     checkActivation();
+#endif
 }
 
 MaximizerAudioProcessor::~MaximizerAudioProcessor()

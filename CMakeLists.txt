@@ -23,6 +23,10 @@ if (NOT INSTALL)
     set(INSTALL OFF)
 endif()
 
+if (NOT NO_LICENSE_CHECK)
+    set(NO_LICENSE_CHECK 0)
+endif()
+
 include(Dependencies.cmake)
 fetch_dependencies()
 
@@ -93,6 +97,7 @@ PUBLIC
     JUCE_COREGRAPHICS_RENDER_WITH_MULTIPLE_PAINT_CALLS=0
     JUCE_SILENCE_XCODE_15_LINKER_WARNING=1
     AWS_API_KEY="$ENV{AWS_API_KEY}"
+    NO_LICENSE_CHECK=${NO_LICENSE_CHECK}
 )
 
 juce_add_binary_data(BinaryData SOURCES

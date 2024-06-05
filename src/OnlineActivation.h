@@ -118,12 +118,18 @@ struct UnlockForm : Component, Timer
         lnf.setType(TopButtonLNF::Type::Regular);
         addAndMakeVisible(reg);
         reg.setLookAndFeel(&lnf);
+        addAndMakeVisible(buy);
+        buy.setLookAndFeel(&lnf);
         addAndMakeVisible(close);
         close.setLookAndFeel(&lnf);
 
         reg.onClick = [&] {
             thread = std::make_unique<strix::LiteThread>(1);
             thread->addJob([&] { runAuth(); });
+        };
+        buy.onClick = [&]{
+            URL("https://arborealaudio.com/plugins/pimax")
+                .launchInDefaultBrowser();
         };
         close.onClick = [&] { dismiss(); };
 
@@ -133,6 +139,7 @@ struct UnlockForm : Component, Timer
     ~UnlockForm()
     {
         reg.setLookAndFeel(nullptr);
+        buy.setLookAndFeel(nullptr);
         close.setLookAndFeel(nullptr);
         stopTimer();
     }
@@ -162,31 +169,18 @@ struct UnlockForm : Component, Timer
                      RelativeTime::milliseconds(trialRemaining_ms) -
                      Time::getCurrentTime());
                 auto daysRemaining = timeRemaining.getDescription();
-                Rectangle<int> textBounds{45, 60, 150, 25};
                 g.setFont(getCustomFont(FontStyle::Regular).withHeight(15.f));
                 g.drawFittedText(daysRemaining + " left in free trial",
                                  textBounds, Justification::centred, 2);
             } else {
-                Rectangle<int> textBounds{45, 45, 150, 85};
                 g.setFont(getCustomFont(FontStyle::Regular).withHeight(15.f));
                 g.setColour(Colours::darkred);
                 g.fillRoundedRectangle(textBounds.toFloat(), 5.f);
                 g.setColour(Colour(0xffa7a7a7));
-                g.drawFittedText("Please purchase a license @\n"
+                g.drawFittedText("Please purchase a license or become a supporter @\n"
                                  "arborealaudio.com\n"
                                  "to continue using PiMax",
                                  textBounds, Justification::centred, 3);
-                if (textBounds.contains(getMouseXYRelative())) {
-                    setMouseCursor(MouseCursor::PointingHandCursor);
-                    if (isMouseButtonDown() && !clickedLink) {
-                        URL("https://arborealaudio.com/plugins/pimax")
-                            .launchInDefaultBrowser();
-                        clickedLink = true;
-                        return;
-                    } else if (!isMouseButtonDown() && clickedLink)
-                        clickedLink = false;
-                } else
-                    setMouseCursor(MouseCursor::NormalCursor);
             }
         }
         if (waiting) {
@@ -197,6 +191,7 @@ struct UnlockForm : Component, Timer
         } else if (!waiting && successRepaint) {
             key.setVisible(false);
             reg.setVisible(false);
+            buy.setVisible(false);
             close.setEnabled(true);
             g.drawText("Thank you for your purchase.", getLocalBounds(),
                        Justification::centred);
@@ -205,27 +200,36 @@ struct UnlockForm : Component, Timer
 
     void resized() override
     {
+        auto b = getLocalBounds().removeFromBottom(300);
+        textBounds = b.removeFromTop(100).reduced(25, 0);
+        key.setBounds(b.removeFromTop(25));
         key.centreWithSize(150, 25);
-        reg.centreWithSize(68, 25);
-        close.centreWithSize(50, 25);
-        reg.setBounds(reg.getBounds().translated(0, 60));
-        close.setBounds(close.getBounds().translated(0, 110));
+
+        auto third = b.getWidth() / 3;
+
+        reg.setBounds(b.removeFromLeft(third).reduced(5, 70));
+        buy.setBounds(b.removeFromLeft(third).reduced(5, 70));
+        close.setBounds(b.removeFromLeft(third).reduced(5, 70));
     }
 
     void runAuth()
     {
+        if (key.getText().isEmpty()) {
+            key.setTextToShowWhenEmpty("Actually enter a key...", Colours::yellow);
+            return;
+        }
         auto result = status.authorize(key.getText());
 
         if (result == 0) {
             waiting = false;
-            key.setText("", false);
+            key.clear();
             key.setTextToShowWhenEmpty("invalid serial number", Colours::red);
         } else if (result == 1) {
             successRepaint = true;
             waiting = false;
         } else {
             waiting = false;
-            key.setText("", false);
+            key.clear();
             key.setTextToShowWhenEmpty("Activations maxed!", Colours::red);
         }
     }
@@ -240,10 +244,11 @@ struct UnlockForm : Component, Timer
     TextEditor key;
 
     TopButtonLNF lnf;
-    TextButton reg{"Register"}, close{"Close"};
+    TextButton reg{"Register"}, close{"Close"}, buy{"Buy"};
+    
+    Rectangle<int> textBounds;
 
     std::atomic<bool> successRepaint = false, waiting = false;
-    bool clickedLink = false;
 
     std::unique_ptr<strix::LiteThread> thread = nullptr;
 

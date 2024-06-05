@@ -40,17 +40,15 @@ public:
     //==============================================================================
     void paint(juce::Graphics &) override;
     void resized() override;
-    bool hitTest(int x, int y) override
+    void mouseDown(const MouseEvent &e) override
     {
-        if (activationComp.isFormVisible())
-        {
-            if (activationComp.getBounds().transformedBy(activationComp.getTransform()).contains(x, y))
-                return true;
-            else
-                return false;
+        auto pos = e.position;
+        if (activationComp.isFormVisible()) {
+            if (activationComp.getBounds().contains(pos.roundToInt()))
+                activationComp.mouseDown(e);
         }
         else
-            return AudioProcessorEditor::hitTest(x, y);
+            AudioProcessorEditor::mouseDown(e);
     }
 
     inline void updateBandDisplay(int newNumBands) noexcept
