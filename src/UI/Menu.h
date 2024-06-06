@@ -41,7 +41,7 @@ class MenuComponent : public Component
             PopupMenu asym;
             asym.setLookAndFeel(&lnf);
             asym.addItem(4, "Global Bias", true, p.atomics.globalBias);
-            asym.addItem(5, "Alt. Type", true, p.atomics.asymType);
+            asym.addItem(5, "Alt. Type", true, p.atomics.altAsymType);
             m.addSubMenu("Asym. Options", asym);
 
             m.showMenuAsync(PopupMenu::Options()

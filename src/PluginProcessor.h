@@ -96,7 +96,7 @@ public:
     struct {
         std::atomic<float> *bandSplit, *monoWidth, *delta, *clip, *distType,
             *autoGain, *linearPhase, *hq, *renderHQ, *bypass, *boost;
-        std::atomic<bool> globalBias = false, asymType = false;
+        std::atomic<bool> globalBias = false, altAsymType = false;
     } atomics;
 
     strix::FloatParameter *gain_dB, *curve, *output_dB, *width, *mix;
@@ -135,7 +135,9 @@ private:
 
     void checkActivation();
 
-    SmoothedValue<float> smoothOffset[2];
+    static constexpr double smoothOffsetLengthSeconds = 0.25;
+    SmoothedValue<float> offsetSmoother[2];
+    void setSmoothOffsetState();
     void processDCOffset(dsp::AudioBlock<float> &);
     void processDCBlock(dsp::AudioBlock<float> &);
     // DC block coeffs
@@ -144,11 +146,11 @@ private:
     
     enum
     {
-        // SymToAsym,
-        // AsymToSym,
+        SymToAsym,
+        AsymToSym,
         Sym,
         Asym
-    } distState;
+    } offsetSmoothState;
 
     void processDelta(AudioBuffer<float>&, float, float);
 

@@ -330,5 +330,5 @@ void onGlobalBiasChange(MaximizerAudioProcessorEditor &e)
 
 void onAsymTypeChange(MaximizerAudioProcessorEditor &e)
 {
-    e.audioProcessor.atomics.asymType = !e.audioProcessor.atomics.asymType;
+    e.audioProcessor.atomics.altAsymType = !e.audioProcessor.atomics.altAsymType;
 }
