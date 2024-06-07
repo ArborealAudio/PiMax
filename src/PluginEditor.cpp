@@ -12,7 +12,6 @@
 void onMenuTooltip(MaximizerAudioProcessorEditor &);
 void onWindowReset(MaximizerAudioProcessorEditor &);
 void onOpenGLChange(MaximizerAudioProcessorEditor &, bool);
-void onGlobalBiasChange(MaximizerAudioProcessorEditor &);
 void onAsymTypeChange(MaximizerAudioProcessorEditor &);
 
 //==============================================================================
@@ -46,7 +45,6 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(
     menu.windowResetCallback = onWindowReset;
     menu.openGLCallback = onOpenGLChange;
     menu.tooltipCallback = onMenuTooltip;
-    menu.globalBiasCallback = onGlobalBiasChange;
     menu.asymTypeCallback = onAsymTypeChange;
 
     for (auto *comp : getComps()) {
@@ -321,11 +319,6 @@ void onOpenGLChange(MaximizerAudioProcessorEditor &editor, bool enabled)
                    << ", w/ cache size: " << opengl.getImageCacheSize());
     strix::writeConfigFile(CONFIG_PATH, "openGL", enabled);
 #endif
-}
-
-void onGlobalBiasChange(MaximizerAudioProcessorEditor &e)
-{
-    e.audioProcessor.atomics.globalBias = !e.audioProcessor.atomics.globalBias;
 }
 
 void onAsymTypeChange(MaximizerAudioProcessorEditor &e)

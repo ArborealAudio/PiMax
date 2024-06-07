@@ -271,16 +271,13 @@ The menu in the lower-left corner of the UI gives you a few useful options:
 
 - Default UI size
 
-- #text(fill: yellow)[( New in v1.1.3 )] Asymmetric saturation options:
-	- Global DC Offset --- In Band Split mode with Asymmetric saturation turned on, this will apply a single DC offset to the entire signal, which produces less phase shift around the filter cutoffs
-	- Alt. Asym. Type --- A different type of asymmetric saturation that does not apply a static DC offset, but uses some asymmetric multiplication to bias the saturation. It's not really a big deal.
+- #text(fill: yellow)[( New in v1.1.3 )] Alt. Asym. Type --- A different type of asymmetric saturation that does not apply a static DC offset, but uses some asymmetric multiplication to bias the saturation. It's not really a big deal.
 
 - Show Tooltips
 
 *Only Windows/Linux:*
 
 - OpenGL on/off
-
 
 == Uninstallation
 

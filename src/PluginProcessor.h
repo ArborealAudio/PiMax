@@ -96,7 +96,7 @@ public:
     struct {
         std::atomic<float> *bandSplit, *monoWidth, *delta, *clip, *distType,
             *autoGain, *linearPhase, *hq, *renderHQ, *bypass, *boost;
-        std::atomic<bool> globalBias = false, altAsymType = false;
+        std::atomic<bool> altAsymType = false;
     } atomics;
 
     strix::FloatParameter *gain_dB, *curve, *output_dB, *width, *mix;
@@ -146,8 +146,6 @@ private:
     
     enum
     {
-        SymToAsym,
-        AsymToSym,
         Sym,
         Asym
     } offsetSmoothState;

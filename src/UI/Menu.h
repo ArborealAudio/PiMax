@@ -37,12 +37,7 @@ class MenuComponent : public Component
             bool displayingTooltip =
                 (bool)strix::readConfigFile(CONFIG_PATH, "tooltip");
             m.addItem(3, "Show Tooltips", true, displayingTooltip);
-
-            PopupMenu asym;
-            asym.setLookAndFeel(&lnf);
-            asym.addItem(4, "Global Bias", true, p.atomics.globalBias);
-            asym.addItem(5, "Alt. Type", true, p.atomics.altAsymType);
-            m.addSubMenu("Asym. Options", asym);
+            m.addItem(4, "Alt. Asym Type", true, p.atomics.altAsymType);
 
             m.showMenuAsync(PopupMenu::Options()
                                 .withMinimumWidth(175)
@@ -64,17 +59,12 @@ class MenuComponent : public Component
                                         tooltipCallback(editor);
                                     break;
                                 case 4:
-                                    if (globalBiasCallback)
-                                        globalBiasCallback(editor);
-                                    break;
-                                case 5:
                                     if (asymTypeCallback)
                                         asymTypeCallback(editor);
                                     break;
                                 }
                             });
 
-            asym.setLookAndFeel(nullptr);
             m.setLookAndFeel(nullptr);
         };
     }
@@ -82,7 +72,6 @@ class MenuComponent : public Component
     void (*windowResetCallback)(MaximizerAudioProcessorEditor &);
     void (*openGLCallback)(MaximizerAudioProcessorEditor &, bool);
     void (*tooltipCallback)(MaximizerAudioProcessorEditor &);
-    void (*globalBiasCallback)(MaximizerAudioProcessorEditor &);
     void (*asymTypeCallback)(MaximizerAudioProcessorEditor &);
 
     void resized() override { menuButton.setBounds(getLocalBounds()); }

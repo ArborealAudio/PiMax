@@ -329,8 +329,7 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float> &buffer,
     bool boost = (bool)*atomics.boost;
     bool distType = (bool)*atomics.distType;
     bool bandSplit = (bool)*atomics.bandSplit;
-    bool globalBias = atomics.globalBias.load();
-    bool asymType = atomics.altAsymType.load();
+    bool altAsymType = atomics.altAsymType.load();
     bool monoWidth = (bool)*atomics.monoWidth;
     bool linearPhase = (bool)*atomics.linearPhase;
     bool autoGain = (bool)*atomics.autoGain;
@@ -360,15 +359,15 @@ void MaximizerAudioProcessor::processBlock(juce::AudioBuffer<float> &buffer,
 
     setSmoothOffsetState();
     
-    if ((globalBias || !bandSplit) && !atomics.altAsymType)
+    if (!bandSplit && !altAsymType)
         processDCOffset(osBlock);
 
     if (!bandSplit)
-        mPi.process(osBlock, asymType && offsetSmoothState != Sym);
+        mPi.process(osBlock, altAsymType && offsetSmoothState == Asym);
     else
-        mbProc.processBands(osBlock, !globalBias && offsetSmoothState != Sym,
-                            asymType && offsetSmoothState != Sym);
-    
+        mbProc.processBands(osBlock, offsetSmoothState == Asym,
+                            altAsymType && offsetSmoothState == Asym);
+
     if (totalNumOutputChannels > 1)
         oversample[osIndex].processSamplesDown(outBlock);
     else
@@ -510,46 +509,21 @@ void MaximizerAudioProcessor::processBlockBypassed(AudioBuffer<float> &buffer,
 void MaximizerAudioProcessor::setSmoothOffsetState()
 {
     bool finalDistType = (bool)atomics.distType->load();
-    bool altAsymType = (bool)atomics.altAsymType.load();
-    if (altAsymType || ((bool)atomics.bandSplit->load() &&
-                        !atomics.globalBias)) {
-        offsetSmoothState = finalDistType ? Asym : Sym;
-        return;
-    }
     
-    switch (offsetSmoothState) {
-    case Asym:
-    case Sym: {
-        const float target = finalDistType ? 0.1f : 0.f;
-        bool smoothing = true;
-        for (auto &s : offsetSmoother) {
-            s.setTargetValue(target);
-            smoothing = s.isSmoothing();
-        }
-        if (smoothing) {
-            offsetSmoothState = finalDistType ? SymToAsym : AsymToSym;
-        }
-    } break;
-    case SymToAsym: {
-        bool smoothing = true;
-        for (auto &s : offsetSmoother) {
-            smoothing = s.isSmoothing();
-        }
-        if (!smoothing) offsetSmoothState = Asym;
-    } break;
-    case AsymToSym: {
-        bool smoothing = true;
-        for (auto &s : offsetSmoother) {
-            smoothing = s.isSmoothing();
-        }
-        if (!smoothing) offsetSmoothState = Sym;
-    } break;
+    const float target = finalDistType ? 0.1f : 0.f;
+    bool smoothing = true;
+    for (auto &s : offsetSmoother) {
+        s.setTargetValue(target);
+        smoothing = s.isSmoothing();
+    }
+    if (smoothing) {
+        offsetSmoothState = finalDistType ? Asym : Sym;
     }
 }
 
 void MaximizerAudioProcessor::processDCOffset(dsp::AudioBlock<float> &block)
 {
-    if (offsetSmoothState != Sym) {
+    if (offsetSmoothState == Asym) {
         // apply DC offset
         for (size_t ch = 0; ch < block.getNumChannels(); ++ch) {
             auto in = block.getChannelPointer(ch);
@@ -562,7 +536,7 @@ void MaximizerAudioProcessor::processDCOffset(dsp::AudioBlock<float> &block)
 
 void MaximizerAudioProcessor::processDCBlock(dsp::AudioBlock<float> &block)
 {
-    if (offsetSmoothState != Sym) {
+    if (offsetSmoothState == Asym) {
         const double r = 1.0 - (1.0 / 1000.0);
 
         for (int channel = 0; channel < block.getNumChannels(); ++channel) {
@@ -648,7 +622,6 @@ void MaximizerAudioProcessor::getStateInformation(juce::MemoryBlock &destData)
     auto xml = state.createXml();
     xml->setAttribute("numBands", numBands);
     xml->setAttribute("preset", currentPreset);
-    xml->setAttribute("globalBias", (int)atomics.globalBias.load());
     xml->setAttribute("asymType", (int)atomics.altAsymType.load());
     copyXmlToBinary(*xml, destData);
 }
@@ -662,7 +635,6 @@ void MaximizerAudioProcessor::setStateInformation(const void *data,
         if (numBands < 1)
             numBands = 1;
         currentPreset = xmlState->getStringAttribute("preset");
-        atomics.globalBias = xmlState->getIntAttribute("globalBias");
         atomics.altAsymType = xmlState->getIntAttribute("asymType");
         apvts.replaceState(ValueTree::fromXml(*xmlState));
         auto numBandsTree = apvts.state.getChildWithProperty("id", "numBands");

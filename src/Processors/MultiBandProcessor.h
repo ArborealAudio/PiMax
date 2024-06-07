@@ -222,7 +222,7 @@ struct MultibandProcessor
     }
 
     template <typename T>
-    void processBands(dsp::AudioBlock<T> &block, bool addOffset, bool asymType)
+    void processBands(dsp::AudioBlock<T> &block, bool asym, bool asymType)
     {
         const auto numSamples = block.getNumSamples();
 
@@ -255,7 +255,7 @@ struct MultibandProcessor
                 dsp::AudioBlock<T> b_block(bandBuffer[n]);
                 b_block = b_block.getSubBlock(0, numSamples);
 
-                if (addOffset) {
+                if (asym) {
                     for (size_t ch = 0; ch < b_block.getNumChannels(); ++ch)
                         FloatVectorOperations::add(b_block.getChannelPointer(ch), 0.1, b_block.getNumSamples());
                 }
