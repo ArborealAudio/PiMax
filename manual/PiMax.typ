@@ -4,7 +4,7 @@
 
 #set text(
 	fill: white,
-	font: "Liberation Sans",
+	font: "Helvetica",
 	size: 14pt
 )
 
@@ -314,18 +314,23 @@ The development of PiMax was made possible with these open-source libraries:
 
 #show link: underline
 
-=== JUCE
-(c) 2022 Raw Material Software Limited #super[1]
+=== JUCE #super[1]
+(c) 2022 Raw Material Software Limited
 
 https://github.com/juce-framework/juce.git
 
-=== PFFFT
-(c) 2020 Dario Mambro / (c) 2019 Hayati Ayguen / (c) 2013 Julien Pmmier / (c) 2004 the University Corporation for Atmospheric Research (UCAR) #super[2]
+=== VST3 SDK #super[1]
+(c) 2024 Steinberg Media Group GmbH, All Rights Reserved
 
-https://github.com/marton78/pffft.git 
+https://github.com/steinbergmedia/vst3sdk.git
 
-=== Gin
-(c) 2018, Roland Rabien #super[2]
+=== PFFFT #super[2]
+(c) 2020 Dario Mambro / (c) 2019 Hayati Ayguen / (c) 2013 Julien Pommier / (c) 2004 the University Corporation for Atmospheric Research (UCAR)
+
+https://github.com/marton78/pffft.git
+
+=== Gin #super[2]
+(c) 2018, Roland Rabien
 
 https://github.com/FigBug/Gin.git | https://www.rabiensoftware.com
 
