@@ -1,9 +1,6 @@
 /*
-  ==============================================================================
-
-    This file contains the basic framework code for a JUCE plugin processor.
-
-  ==============================================================================
+   (c) 2024 Arboreal Audio, LLC
+   See LICENSE for more info
 */
 
 #pragma once
