@@ -25,6 +25,7 @@ To compile:
 
 ```sh
     cmake -Bbuild -DPRODUCTION_BUILD=1 -DINSTALL=1 -DNO_LICENSE_CHECK=1
+    cmake --build build --config Release
 ```
 
 ## Credits
