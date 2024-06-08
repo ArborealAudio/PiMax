@@ -174,8 +174,10 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(
     addChildComponent(unlockButton);
     unlockLNF.setType(TopButtonLNF::Type::Regular);
     unlockButton.setLookAndFeel(&unlockLNF);
-    if (!p.isUnlocked)
+    if (!p.isUnlocked) {
         unlockButton.setVisible(true);
+        activationComp.setVisible(true);
+    }
     unlockButton.onClick = [&] {
         activationComp.setVisible(true);
     };

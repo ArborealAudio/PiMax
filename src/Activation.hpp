@@ -212,8 +212,10 @@ struct ActivationComponent : Component, Timer
             if (activate && success)
                 return CheckResult::Success;
 
-            auto numActivations = json.getProperty("timesActivated", var());
-            auto maxActivations = json.getProperty("timesActivatedMax", var());
+            auto item = json.getProperty("Item", var());
+
+            auto numActivations = item.getProperty("activationCount", var());
+            auto maxActivations = item.getProperty("maxActivations", var());
 
             if (numActivations >= maxActivations)
                 return CheckResult::ActivationsMaxed;
