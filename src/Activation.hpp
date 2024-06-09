@@ -10,7 +10,6 @@ struct ActivationComponent : Component, Timer
         None,
         Success,
         InvalidLicense,
-        ActivationsMaxed,
         WrongProduct,
         ConnectionFailed
     };
@@ -79,10 +78,7 @@ struct ActivationComponent : Component, Timer
             m_status = Waiting;
             DBG("Checking license...\n");
             thread->addJob([this, text] {
-                check_result = checkSite(text, false);
-                if (check_result == Success) {
-                    activate_result = checkSite(text, true);
-                }
+                check_result = checkSite(text);
                 m_status = Finished;
             });
         }
@@ -90,7 +86,7 @@ struct ActivationComponent : Component, Timer
 
     void checkResults()
     {
-        if (check_result == Success && activate_result == Success) {
+        if (check_result == Success) {
             stopTimer();
             thread->working = false;
             writeFile(license_text.toRawUTF8());
@@ -128,17 +124,12 @@ struct ActivationComponent : Component, Timer
             g.setColour(Colours::red);
             switch (check_result) {
             case Success:
-                if (activate_result == Success)
+                if (check_result == Success)
                     message = "License activated! Thank you!";
-                else
-                    message = "Valid license -- error activating. Try again.";
                 g.setColour(Colours::white);
                 break;
             case InvalidLicense:
                 message = "Invalid license";
-                break;
-            case ActivationsMaxed:
-                message = "Activations maxed";
                 break;
             case WrongProduct:
                 message = "License for wrong product";
@@ -177,14 +168,10 @@ struct ActivationComponent : Component, Timer
         buy.setBounds(buttons.removeFromLeft(w / 3).reduced(10));
     }
 
-    CheckResult checkSite(const String &input, bool activate)
+    CheckResult checkSite(const String &input)
     {
         auto url =
-            URL("https://3pvj52nx17.execute-api.us-east-1.amazonaws.com");
-        if (activate)
-            url = url.withNewSubPath("/default/licenses/activate/" + input);
-        else
-            url = url.withNewSubPath("/default/licenses/" + input);
+            URL("https://3pvj52nx17.execute-api.us-east-1.amazonaws.com/default/licenses/" + input);
 
         DBG("Querying URL: " << url.toString(false));
 
@@ -209,17 +196,6 @@ struct ActivationComponent : Component, Timer
             if (success != true)
                 return CheckResult::InvalidLicense;
 
-            if (activate && success)
-                return CheckResult::Success;
-
-            auto item = json.getProperty("Item", var());
-
-            auto numActivations = item.getProperty("activationCount", var());
-            auto maxActivations = item.getProperty("maxActivations", var());
-
-            if (numActivations >= maxActivations)
-                return CheckResult::ActivationsMaxed;
-
             return CheckResult::Success;
         }
 
@@ -230,7 +206,7 @@ struct ActivationComponent : Component, Timer
     TextButton submit{"Submit"}, close{"Close"}, buy{"Buy"};
 
   private:
-    std::atomic<CheckResult> check_result = None, activate_result = None;
+    std::atomic<CheckResult> check_result = None;
     std::atomic<CheckStatus> m_status = NotSubmitted;
 
     String license_text;
