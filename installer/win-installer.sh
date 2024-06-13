@@ -56,7 +56,7 @@ if [[ $clap == true ]]; then
     cp -r build/${name}_artefacts/Release/CLAP/${name}.clap pkg
 fi
 
-[ $manual == true ] cp manual/${name}.pdf pkg/${name}_manual.pdf
+[ $manual == true ] && cp manual/${name}.pdf pkg/${name}_manual.pdf
 if [[ $presets == true ]]; then
     [ -d pkg/Factory] && rm -r pkg/Factory
     cp -r presets pkg/Factory

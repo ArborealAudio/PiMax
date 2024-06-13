@@ -63,7 +63,7 @@ fi
 cp LICENSE ${dest}/LICENSE
 cp $script_dir/linux-readme.md ${dest}/README.md
 
-cd $dest
+cd pkg
 sed -i "s/#PLUGIN#/${name}/g" ${name}-linux/README.md
 tar cJvf ${name}-linux.tar.xz ${name}-linux
 
