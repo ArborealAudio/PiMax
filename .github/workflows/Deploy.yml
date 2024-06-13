@@ -103,7 +103,7 @@ jobs:
       shell: bash
       run: |
         powershell Invoke-WebRequest -Uri https://archive.org/download/VST2SDK/vst_sdk2_4_rev1.zip -OutFile vst2_sdk.zip
-        7z x vst2_sdk2.zip -ovst2_sdk
+        7z x vst2_sdk.zip -ovst2_sdk
         cmake -Bbuild ${{ matrix.cmake-options }}
         cmake --build build --config Release
         ./installer/win-installer.sh --clap --vst3-no-recurse
