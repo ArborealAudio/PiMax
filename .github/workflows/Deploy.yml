@@ -63,18 +63,18 @@ jobs:
       uses: apple-actions/import-codesign-certs@v2
       if: runner.os == 'macOS'
       with:
-        keychain-password: ${{ secrets.DEV_ID_APP_PASSWORD }}
-        p12-file-base64: ${{ secrets.DEV_ID_INSTALLER_CERT }}
-        p12-password: ${{ secrets.DEV_ID_INSTALLER_PASSWORD }}
+        keychain-password: ${{ secrets.MACOS_CERT_PASSWORD }}
+        p12-file-base64: ${{ secrets.MACOS_INSTALL_CERT }}
+        p12-password: ${{ secrets.MACOS_CERT_PASSWORD }}
 
     - name: Build & Sign (MacOS)
       if: runner.os == 'macOS'
       env:
-        APP_CERT: ${{ secrets.DEVELOPER_ID_APPLICATION }}
-        INSTALL_CERT: ${{ secrets.DEVELOPER_ID_INSTALLER }}
-        APPLE_USER: ${{ secrets.NOTARY_USER }}
-        NOTARY_PW: ${{ secrets.NOTARY_PASSWORD }}
-        TEAM_ID: ${{ secrets.TEAM_ID }}
+        APP_CERT: ${{ secrets.MACOS_DEVELOPER_ID_APPLICATION }}
+        INSTALL_CERT: ${{ secrets.MACOS_DEVELOPER_ID_INSTALLER }}
+        APPLE_USER: ${{ secrets.MACOS_NOTARY_USER }}
+        NOTARY_PW: ${{ secrets.MACOS_NOTARY_PASSWORD }}
+        TEAM_ID: ${{ secrets.MACOS_TEAM_ID }}
       run: |
         sudo xcode-select -s /Applications/Xcode_13.4.1.app
         wget https://archive.org/download/VST2SDK/vst_sdk2_4_rev1.zip -O vst2_sdk.zip
