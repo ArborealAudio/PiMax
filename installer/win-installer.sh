@@ -5,9 +5,9 @@
 
 set -e
 
-name='$PLUGIN_NAME'
+name=$PLUGIN_NAME
 version=v${PLUGIN_VERSION}
-version_num='$PLUGIN_VERSION'
+version_num=$PLUGIN_VERSION
 clap=false
 vst3_no_recurse=false
 manual=true
