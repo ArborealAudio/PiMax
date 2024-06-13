@@ -4,7 +4,7 @@ on:
   workflow_run:
     workflows: ["Cmake"]
     types: [completed]
-    branches: ["master"]
+    branches: ["main"]
   workflow_dispatch:
 
 env:
