@@ -20,7 +20,7 @@ jobs:
         fail-fast: false
         matrix:
           include:
-            - os: ubuntu-latest
+            - os: ubuntu-20.04
               cmake-options: -GNinja -DBUILD_VST2=1 -DPRODUCTION_BUILD=1
             - os: macos-12
               cmake-options: -GNinja -DBUILD_VST2=1 -DPRODUCTION_BUILD=1
@@ -36,7 +36,7 @@ jobs:
         sudo apt install libasound2-dev libx11-dev \
           libxcomposite-dev libxcursor-dev libxext-dev libxinerama-dev \
           libxrandr-dev libxrender-dev libfreetype6-dev libglu1-mesa-dev \
-          libjack-jackd2-dev libcurl4-gnutls-dev
+          libjack-jackd2-dev libcurl4-gnutls-dev ninja-build
 
     - name: Install Ninja
       uses: seanmiddleditch/gha-setup-ninja@master
@@ -66,6 +66,7 @@ jobs:
         keychain-password: ${{ secrets.MACOS_CERT_PASSWORD }}
         p12-file-base64: ${{ secrets.MACOS_INSTALL_CERT }}
         p12-password: ${{ secrets.MACOS_CERT_PASSWORD }}
+        create-keychain: false
 
     - name: Build & Sign (MacOS)
       if: runner.os == 'macOS'
@@ -103,7 +104,7 @@ jobs:
       shell: bash
       run: |
         powershell Invoke-WebRequest -Uri https://archive.org/download/VST2SDK/vst_sdk2_4_rev1.zip -OutFile vst2_sdk.zip
-        7z x vst2_sdk.zip -ovst2_sdk
+        7z x vst2_sdk.zip
         cmake -Bbuild ${{ matrix.cmake-options }}
         cmake --build build --config Release
         ./installer/win-installer.sh --clap --vst3-no-recurse

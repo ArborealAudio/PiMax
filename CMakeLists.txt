@@ -40,7 +40,7 @@ endif()
 set(JUCE_FORMATS VST3 AU)
 
 if(BUILD_VST2)
-    juce_set_vst2_sdk_path("./vst2_sdk")
+    juce_set_vst2_sdk_path("./vstsdk2.4")
     list(APPEND JUCE_FORMATS VST)
 endif()
 
