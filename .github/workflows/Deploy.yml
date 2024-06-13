@@ -4,29 +4,28 @@ on:
   workflow_run:
     workflows: ["Cmake"]
     types: [completed]
-    branches: ["master"]
+    branches: ["main"]
   workflow_dispatch:
 
 env:
-  PROJECT: PiMax
+  PLUGIN_NAME: PiMax
   ARTIFACTS_PATH: build/PiMax_artefacts/Release/
-  VERSION: "1.1.3"
+  PLUGIN_VERSION: "1.1.3"
 
 jobs:
   build_and_deploy:
     if: $GITHUB_EVENT_NAME == 'workflow_run' && ${{ github.event.workflow_run.conclusion == 'success' }}
-    name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     strategy:
         fail-fast: false
         matrix:
           include:
-            - name: Linux
-              os: ubuntu-latest
-            - name: macOS
-              os: macos-12
-            - name: Windows
-              os: windows-2019
+            - os: ubuntu-latest
+              cmake-options: -GNinja -DBUILD_VST2=1 -DPRODUCTION_BUILD=1
+            - os: macos-12
+              cmake-options: -GNinja -DBUILD_VST2=1 -DPRODUCTION_BUILD=1
+            - os: windows-2019
+              cmake-options: -DBUILD_VST2=1 -DPRODUCTION_BUILD=1
 
     steps:
 
@@ -37,45 +36,28 @@ jobs:
         sudo apt install libasound2-dev libx11-dev \
           libxcomposite-dev libxcursor-dev libxext-dev libxinerama-dev \
           libxrandr-dev libxrender-dev libfreetype6-dev libglu1-mesa-dev \
-          libjack-jackd2-dev libcurl4-gnutls-dev ninja-build
+          libjack-jackd2-dev libcurl4-gnutls-dev
 
-    - name: Windows Install Ninja
-      if: runner.os == 'Windows'
-      run: |
-        choco install ninja
+    - name: Install Ninja
+      uses: seanmiddleditch/gha-setup-ninja@master
 
-    - name: MacOS Install Tools
+    - name: MacOS Install Package Builder 
       if: runner.os == 'macOS'
       run: |
-        brew install ninja packages
+        brew install packages
 
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         submodules: recursive
-
-    - name: Checkout build scripts
-      uses: actions/checkout@v3
-      with:
-        repository: ArborealAudio/scripts
-        ref: deploy
-        path: scripts
-        token: ${{ secrets.WORKFLOW_PAT }}
-
-    - name: Get SDKs
-      uses: actions/checkout@v3
-      with:
-        repository: ArborealAudio/vst2_sdk
-        path: vst2_sdk
-        token: ${{ secrets.WORKFLOW_PAT }}
 
     - name: Import App Certs (MacOS)
       uses: apple-actions/import-codesign-certs@v2
       if: runner.os == 'macOS'
       with:
-        keychain-password: ${{ secrets.DEV_ID_APP_PASSWORD }}
-        p12-file-base64: ${{ secrets.DEV_ID_APP_CERT }}
-        p12-password: ${{ secrets.DEV_ID_APP_PASSWORD }}
+        keychain-password: ${{ secrets.MACOS_CERT_PASSWORD }}
+        p12-file-base64: ${{ secrets.MACOS_APP_CERT }}
+        p12-password: ${{ secrets.MACOS_CERT_PASSWORD }}
 
     - name: Import Installer Certs (MacOS)
       uses: apple-actions/import-codesign-certs@v2
@@ -84,7 +66,6 @@ jobs:
         keychain-password: ${{ secrets.DEV_ID_APP_PASSWORD }}
         p12-file-base64: ${{ secrets.DEV_ID_INSTALLER_CERT }}
         p12-password: ${{ secrets.DEV_ID_INSTALLER_PASSWORD }}
-        create-keychain: 'false'
 
     - name: Build & Sign (MacOS)
       if: runner.os == 'macOS'
@@ -96,41 +77,53 @@ jobs:
         TEAM_ID: ${{ secrets.TEAM_ID }}
       run: |
         sudo xcode-select -s /Applications/Xcode_13.4.1.app
-        ./scripts/mac-build.sh -n $PROJECT -v $VERSION --vst2 --clap --presets
-        echo "VERSION=$VERSION" >> "$GITHUB_ENV"
-        echo "ARTIFACT=${{ env.PROJECT }}-mac.dmg" >> "$GITHUB_ENV"
+        wget https://archive.org/download/VST2SDK/vst_sdk2_4_rev1.zip -O vst2_sdk.zip
+        unzip vst_sdk2.zip
+        cmake -Bbuild ${{ matrix.cmake-options }}
+        cmake --build build --config Release
+        ./installer/mac-insaller.sh --clap
+        echo "ARTIFACT=${PLUGIN_NAME}-mac.dmg" >> "$GITHUB_ENV"
         mkdir bin
-        cp installer/build/${{ env.PROJECT }}-mac.dmg bin/
+        cp pkg/build/${PLUGIN_NAME}-mac.dmg bin/
 
     - name: Build (Linux)
       if: runner.os == 'Linux'
       run: |
-        cmake -Bbuild -GNinja -DPRODUCTION_BUILD=1 -DBUILD_VST2=1
+        wget https://archive.org/download/VST2SDK/vst_sdk2_4_rev1.zip -O vst2_sdk.zip
+        unzip vst_sdk2.zip
+        cmake -Bbuild ${{ matrix.cmake-options }} 
         cmake --build build --config Release
-        ./scripts/linux-installer.sh -n $PROJECT -v $VERSION --vst2 --clap --presets
-        echo "VERSION=$VERSION" >> "$GITHUB_ENV"
-        echo "ARTIFACT=${{ env.PROJECT }}-linux.tar.xz" >> "$GITHUB_ENV"
+        ./installer/linux-installer.sh --clap 
+        echo "ARTIFACT=${PLUGIN_NAME}-linux.tar.xz" >> "$GITHUB_ENV"
         mkdir bin
-        cp ${{ env.PROJECT }}-linux.tar.xz bin/
+        cp pkg/${PLUGIN_NAME}-linux/${PLUGIN_NAME}-linux.tar.xz bin/
       
     - name: Build (Windows)
       if: runner.os == 'Windows'
       shell: bash
       run: |
-        scripts/win-build.sh -n $PROJECT -v $VERSION --vst2 --clap --ninja --presets
-        echo "ARTIFACT=${{ env.PROJECT }}-windows.exe" >> "$GITHUB_ENV"
+        powershell Invoke-WebRequest -Uri https://archive.org/download/VST2SDK/vst_sdk2_4_rev1.zip -OutFile vst2_sdk.zip
+        7z x vst_sdk2.zip -ovst2_sdk
+        cmake -Bbuild ${{ matrix.cmake-options }}
+        cmake --build build --config Release
+        ./installer/win-installer.sh --clap --vst3-no-recurse
+        echo "ARTIFACT=${PLUGIN_NAME}-windows.exe" >> "$GITHUB_ENV"
         mkdir bin
-        cp products/Output/${{ env.PROJECT }}-windows.exe bin/
+        cp pkg/Output/${PLUGIN_NAME}-windows.exe bin/
 
-    - name: Sign Windows Installer
-      if: runner.os == 'Windows'
-      uses: GabrielAcostaEngler/signtool-code-sign@main
+    - name: Sign (Windows)
+      uses: azure/trusted-signing-action@v0.3.16
       with:
-        certificate: ${{ secrets.WIN_INSTALL_CERT }}
-        cert-password: ${{ secrets.WIN_INSTALL_CERT_PW }}
-        cert-sha1: ${{ secrets.WIN_INSTALL_CERT_HASH }}
-        folder: products/Output
-        timestamp-server: 'http://timestamp.digicert.com'
+        azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+        endpoint: ${{ secrets.AZURE_ENDPOINT }}
+        code-signing-account-name: ${{ secrets.AZURE_CODE_SIGNING_NAME }}
+        certificate-profile-name: ${{ secrets.AZURE_CERT_PROFILE_NAME }}
+
+        files-folder: bin
+        files-folder-filter: exe
+        file-digest: SHA256
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v3.1.3
@@ -138,12 +131,13 @@ jobs:
         name: ${{ env.ARTIFACT }}
         path: bin/${{ env.ARTIFACT }}
 
-    - name: Configure S3 Credentials
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-east-1
+    # TODO
+    # - name: Configure S3 Credentials
+    #   uses: aws-actions/configure-aws-credentials@v1
+    #   with:
+    #     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+    #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    #     aws-region: us-east-1
 
-    - name: Upload to S3
-      run: aws s3 sync --acl public-read bin/ s3://arborealaudioinstallers/omniamp/
+    # - name: Upload to S3
+    #   run: aws s3 sync --acl public-read bin/ ${{ secrets.AWS_ENDPOINT }}
