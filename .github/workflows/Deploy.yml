@@ -78,7 +78,7 @@ jobs:
       run: |
         sudo xcode-select -s /Applications/Xcode_13.4.1.app
         wget https://archive.org/download/VST2SDK/vst_sdk2_4_rev1.zip -O vst2_sdk.zip
-        unzip vst_sdk2.zip
+        unzip vst2_sdk.zip
         cmake -Bbuild ${{ matrix.cmake-options }}
         cmake --build build --config Release
         ./installer/mac-insaller.sh --clap
@@ -90,7 +90,7 @@ jobs:
       if: runner.os == 'Linux'
       run: |
         wget https://archive.org/download/VST2SDK/vst_sdk2_4_rev1.zip -O vst2_sdk.zip
-        unzip vst_sdk2.zip
+        unzip vst2_sdk.zip
         cmake -Bbuild ${{ matrix.cmake-options }} 
         cmake --build build --config Release
         ./installer/linux-installer.sh --clap 
@@ -103,7 +103,7 @@ jobs:
       shell: bash
       run: |
         powershell Invoke-WebRequest -Uri https://archive.org/download/VST2SDK/vst_sdk2_4_rev1.zip -OutFile vst2_sdk.zip
-        7z x vst_sdk2.zip -ovst2_sdk
+        7z x vst2_sdk2.zip -ovst2_sdk
         cmake -Bbuild ${{ matrix.cmake-options }}
         cmake --build build --config Release
         ./installer/win-installer.sh --clap --vst3-no-recurse
