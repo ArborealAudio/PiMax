@@ -73,19 +73,19 @@ cd pkg
 
 echo "Signing binaries..."
 
-codesign -f -o runtime --timestamp -s "$MACOS_APP_CERT" ${plugins[@]}
+codesign -f -o runtime --timestamp -s "$APP_CERT" ${plugins[@]}
 
 echo "Finishing installer package..."
 sed -i "" "s/#PLUGIN_VERSION#/${version}/g" ${name}.pkgproj
 packagesbuild --package-version $version ${name}.pkgproj 
 cd build
 [ ! -d ${name}-mac ] && mkdir ${name}-mac
-productsign --timestamp --sign "$MACOS_INSTALL_CERT" $name.pkg ${name}-mac/$name.pkg
+productsign --timestamp --sign "$INSTALL_CERT" $name.pkg ${name}-mac/$name.pkg
 cp ../${name}_manual.pdf ${name}-mac
 cp ../LICENSE ${name}-mac
 hdiutil create -volname ${name}-mac -srcfolder ${name}-mac -ov -format UDBZ ${name}-mac.dmg
-codesign -s $MACOS_APP_CERT --timestamp ${name}-mac.dmg
-xcrun notarytool submit ${name}-mac.dmg --apple-id $MACOS_NOTARY_USER --password $MACOS_NOTARY_PW --team-id $MACOS_TEAM_ID --wait
+codesign -s APP_CERT --timestamp ${name}-mac.dmg
+xcrun notarytool submit ${name}-mac.dmg --apple-id $APPLE_USER --password $NOTARY_PW --team-id $TEAM_ID --wait
 xcrun stapler staple ${name}-mac.dmg
 
 echo "Exited with code $?"
