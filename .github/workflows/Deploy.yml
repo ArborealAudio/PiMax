@@ -38,13 +38,10 @@ jobs:
           libxrandr-dev libxrender-dev libfreetype6-dev libglu1-mesa-dev \
           libjack-jackd2-dev libcurl4-gnutls-dev ninja-build
 
-    - name: Install Ninja
-      uses: seanmiddleditch/gha-setup-ninja@master
-
-    - name: MacOS Install Package Builder 
+    - name: MacOS Install Extra Tools
       if: runner.os == 'macOS'
       run: |
-        brew install packages
+        brew install packages ninja
 
     - name: Checkout code
       uses: actions/checkout@v4
@@ -113,6 +110,7 @@ jobs:
         cp pkg/Output/${PLUGIN_NAME}-windows.exe bin/
 
     - name: Sign (Windows)
+      if: runner.os == 'Windows'
       uses: azure/trusted-signing-action@v0.3.16
       with:
         azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
