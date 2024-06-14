@@ -79,7 +79,7 @@ jobs:
         7z x vst2_sdk.zip
         cmake -Bbuild ${{ matrix.cmake-options }}
         cmake --build build --config Release
-        ./installer/mac-insaller.sh --clap
+        ./installer/mac-installer.sh --clap
         echo "ARTIFACT=${PLUGIN_NAME}-mac.dmg" >> "$GITHUB_ENV"
         mkdir bin
         cp pkg/build/${PLUGIN_NAME}-mac.dmg bin/
