@@ -60,6 +60,7 @@ fi
 if [[ $manual == true ]]; then
     [ $compile_manual == true ] && typst compile manual/${name}.typ
     cp manual/${name}.pdf pkg/${name}_manual.pdf
+fi
 if [[ $presets == true ]]; then
     echo "Including presets"
 	[ -d "pkg/Factory" ] && rm -r pkg/Factory
