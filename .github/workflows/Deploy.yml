@@ -104,7 +104,7 @@ jobs:
         7z x vst2_sdk.zip
         cmake -Bbuild ${{ matrix.cmake-options }}
         cmake --build build --config Release
-        ./installer/win-installer.sh --clap --vst3-no-recurse
+        ./installer/win-installer.sh --clap --vst3-no-bundle
         echo "ARTIFACT=${PLUGIN_NAME}-windows.exe" >> "$GITHUB_ENV"
         mkdir bin
         cp pkg/Output/${PLUGIN_NAME}-windows.exe bin/
