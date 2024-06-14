@@ -73,10 +73,6 @@ file(GLOB_RECURSE SourceFiles CONFIGURE_DEPENDS
 )
 target_sources(PiMax PRIVATE ${SourceFiles})
 
-target_include_directories(PiMax PRIVATE
-    "modules/farbot/include"
-)
-
 juce_add_modules(
     "modules/Gin/modules/gin"
     "modules/Gin/modules/gin_gui"
