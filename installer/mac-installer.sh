@@ -88,3 +88,4 @@ xcrun notarytool submit ${name}-mac.dmg --apple-id $MACOS_NOTARY_USER --password
 xcrun stapler staple ${name}-mac.dmg
 
 echo "Exited with code $?"
+
