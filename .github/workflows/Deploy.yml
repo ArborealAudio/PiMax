@@ -20,8 +20,8 @@ jobs:
     steps:
     - name: Install Deps
       run: |
-        sudo apt update
-        sudo apt install libasound2-dev libx11-dev \
+        apt update
+        apt install libasound2-dev libx11-dev \
           libxcomposite-dev libxcursor-dev libxext-dev libxinerama-dev \
           libxrandr-dev libxrender-dev libfreetype6-dev libglu1-mesa-dev \
           libjack-jackd2-dev libcurl4-gnutls-dev
