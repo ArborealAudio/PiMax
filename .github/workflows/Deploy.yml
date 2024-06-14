@@ -79,7 +79,7 @@ jobs:
       run: |
         sudo xcode-select -s /Applications/Xcode_13.4.1.app
         wget https://archive.org/download/VST2SDK/vst_sdk2_4_rev1.zip -O vst2_sdk.zip
-        unzip vst2_sdk.zip
+        7z x vst2_sdk.zip
         cmake -Bbuild ${{ matrix.cmake-options }}
         cmake --build build --config Release
         ./installer/mac-insaller.sh --clap
@@ -97,7 +97,7 @@ jobs:
         ./installer/linux-installer.sh --clap 
         echo "ARTIFACT=${PLUGIN_NAME}-linux.tar.xz" >> "$GITHUB_ENV"
         mkdir bin
-        cp pkg/${PLUGIN_NAME}-linux/${PLUGIN_NAME}-linux.tar.xz bin/
+        cp pkg/${PLUGIN_NAME}-linux.tar.xz bin/
       
     - name: Build (Windows)
       if: runner.os == 'Windows'
