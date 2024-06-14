@@ -10,6 +10,7 @@ on:
 env:
   PLUGIN_NAME: PiMax
   PLUGIN_VERSION: "1.1.3"
+  AWS_API_KEY: ${{ secrets.AWS_API_KEY }}
 
 jobs:
   build_and_deploy:
