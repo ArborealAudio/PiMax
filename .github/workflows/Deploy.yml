@@ -15,9 +15,8 @@ env:
 jobs:
   deploy-linux:
     runs-on: ubuntu-latest
-    container: ubuntu:18.04
-    volumes:
-      - $GITHUB_ACTION_PATH:/src
+    container:
+      image: ubuntu:18.04
     steps:
     - name: Install Deps
       run: |
