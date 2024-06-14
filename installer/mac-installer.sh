@@ -84,7 +84,7 @@ productsign --timestamp --sign "$INSTALL_CERT" $name.pkg ${name}-mac/$name.pkg
 cp ../${name}_manual.pdf ${name}-mac
 cp ../LICENSE ${name}-mac
 hdiutil create -volname ${name}-mac -srcfolder ${name}-mac -ov -format UDBZ ${name}-mac.dmg
-codesign -s $APP_CERT --timestamp ${name}-mac.dmg
+codesign -s "$APP_CERT" --timestamp ${name}-mac.dmg
 xcrun notarytool submit ${name}-mac.dmg --apple-id $APPLE_USER --password $NOTARY_PW --team-id $TEAM_ID --wait
 xcrun stapler staple ${name}-mac.dmg
 
