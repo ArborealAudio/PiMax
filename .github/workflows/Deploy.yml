@@ -13,59 +13,6 @@ env:
   AWS_API_KEY: ${{ secrets.AWS_API_KEY }}
 
 jobs:
-  deploy-linux:
-    runs-on: ubuntu-latest
-    container:
-      image: ubuntu:18.04
-    steps:
-    - name: Install Deps
-      run: |
-        apt update
-        apt install -y wget tar libasound2-dev libx11-dev \
-          libxcomposite-dev libxcursor-dev libxext-dev libxinerama-dev \
-          libxrandr-dev libxrender-dev libfreetype6-dev libglu1-mesa-dev \
-          libjack-jackd2-dev libcurl4-gnutls-dev ninja-build
-
-    - name: Get CMake
-      run: |
-        mkdir -p ~/bin && \
-        cd ~ && \
-        wget https://github.com/Kitware/CMake/releases/download/v3.28.1/cmake-3.28.1-linux-x86_64.tar.gz && \
-        tar xf cmake-3.28.1-linux-x86_64.tar.gz && cd cmake-3.28.1-linux-x86_64/bin && \
-        ln -s $PWD/cmake ~/bin/cmake && \
-        echo PATH=~/bin:$PATH >> ~/.bashrc
-
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        submodules: recursive
-
-    - name: Build
-      run: |
-        wget https://archive.org/download/VST2SDK/vst_sdk2_4_rev1.zip -O vst2_sdk.zip
-        unzip vst2_sdk.zip
-        cmake -Bbuild -GNinja -DPRODUCTION_BUILD=1 -DBUILD_VST2=1
-        cmake --build build --config Release
-        ./installer/linux-installer.sh --clap 
-        echo "ARTIFACT=${PLUGIN_NAME}-linux.tar.xz" >> "$GITHUB_ENV"
-        mkdir bin
-        cp pkg/${PLUGIN_NAME}-linux.tar.xz bin/
-
-    - name: Upload Artifact
-      uses: actions/upload-artifact@v4.3.3
-      with:
-        name: ${{ env.ARTIFACT }}
-        path: bin/${{ env.ARTIFACT }}
-
-    - name: Configure S3 Credentials
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}
-        aws-region: us-east-1
-
-    - name: Upload to S3
-      run: aws s3 sync --acl public-read bin/ s3://arborealaudioinstallers/pimax
 
   deploy-mac-and-windows:
     if: $GITHUB_EVENT_NAME == 'workflow_run' && ${{ github.event.workflow_run.conclusion == 'success' }}
@@ -74,12 +21,22 @@ jobs:
         fail-fast: false
         matrix:
           include:
+            - os: ubuntu-20.04
+              cmake-options: -GNinja -DBUILD_VST2=1 -DPRODUCTION_BUILD=1
             - os: macos-12
               cmake-options: -GNinja -DBUILD_VST2=1 -DPRODUCTION_BUILD=1
             - os: windows-2019
               cmake-options: -DBUILD_VST2=1 -DPRODUCTION_BUILD=1
 
     steps:
+    - name: Install Linux Deps
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt update
+        sudo apt install -y libasound2-dev libx11-dev \
+          libxcomposite-dev libxcursor-dev libxext-dev libxinerama-dev \
+          libxrandr-dev libxrender-dev libfreetype6-dev libglu1-mesa-dev \
+          libjack-jackd2-dev libcurl4-gnutls-dev ninja-build
 
     - name: MacOS Install Extra Tools
       if: runner.os == 'macOS'
@@ -126,6 +83,18 @@ jobs:
         echo "ARTIFACT=${PLUGIN_NAME}-mac.dmg" >> "$GITHUB_ENV"
         mkdir bin
         cp pkg/build/${PLUGIN_NAME}-mac.dmg bin/
+
+    - name: Build (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        wget https://archive.org/download/VST2SDK/vst_sdk2_4_rev1.zip -O vst2_sdk.zip
+        unzip vst2_sdk.zip
+        cmake -Bbuild -GNinja -DPRODUCTION_BUILD=1 -DBUILD_VST2=1
+        cmake --build build --config Release
+        ./installer/linux-installer.sh --clap 
+        echo "ARTIFACT=${PLUGIN_NAME}-linux.tar.xz" >> "$GITHUB_ENV"
+        mkdir bin
+        cp pkg/${PLUGIN_NAME}-linux.tar.xz bin/
 
     - name: Build (Windows)
       if: runner.os == 'Windows'
