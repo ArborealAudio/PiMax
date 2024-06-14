@@ -24,10 +24,16 @@ jobs:
         apt install -y libasound2-dev libx11-dev \
           libxcomposite-dev libxcursor-dev libxext-dev libxinerama-dev \
           libxrandr-dev libxrender-dev libfreetype6-dev libglu1-mesa-dev \
-          libjack-jackd2-dev libcurl4-gnutls-dev
+          libjack-jackd2-dev libcurl4-gnutls-dev ninja-build
 
     - name: Get CMake
-      uses: lukka/get-cmake@latest
+      run: |
+        mkdir -p ~/bin && \
+        cd ~ && \
+        wget https://github.com/Kitware/CMake/releases/download/v3.28.1/cmake-3.28.1-linux-x86_64.tar.gz && \
+        tar xf cmake-3.28.1-linux-x86_64.tar.gz && cd cmake-3.28.1-linux-x86_64/bin && \
+        ln -s $PWD/cmake ~/bin/cmake && \
+        echo PATH=~/bin:$PATH >> ~/.bashrc
 
     - name: Checkout code
       uses: actions/checkout@v4
