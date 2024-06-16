@@ -78,6 +78,9 @@ juce_add_modules(
     "modules/Gin/modules/gin_gui"
     "modules/Arbor_modules")
 
+add_subdirectory(modules/quicfetch)
+target_include_directories(PiMax PRIVATE modules/quicfetch)
+
 target_compile_definitions(PiMax
 PUBLIC
     PRODUCTION_BUILD=${PRODUCTION_BUILD}
@@ -127,6 +130,7 @@ PRIVATE
     gin
     gin_gui
     Arbor_modules
+    quicfetch
 PUBLIC
     juce::juce_recommended_config_flags
     juce::juce_recommended_lto_flags

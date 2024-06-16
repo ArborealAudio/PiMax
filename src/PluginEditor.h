@@ -56,8 +56,6 @@ public:
     {
         if (!downloadManager.shouldBeHidden)
             downloadManager.setVisible(dlResult.updateAvailable);
-        if (lThread && !lThread->working)
-            lThread.reset();
     }
     
     std::unique_ptr<TooltipWindow> tooltip = nullptr;
@@ -73,9 +71,8 @@ private:
     WaveshaperComponent waveshaperComponent;
     Splash splash;
 
-    std::unique_ptr<strix::LiteThread> lThread;
-
     ActivationComponent activationComp;
+    Updater *updater;
     strix::DownloadManager downloadManager;
 
     Slider curve__slider;

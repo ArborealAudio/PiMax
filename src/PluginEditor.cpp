@@ -8,6 +8,7 @@
 
 #include <JuceHeader.h>
 #include "PluginEditor.h"
+#include "quicfetch.h"
 
 void onMenuTooltip(MaximizerAudioProcessorEditor &);
 void onWindowReset(MaximizerAudioProcessorEditor &);
@@ -195,18 +196,7 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(
     downloadManager.centreWithSize(300, 200);
 
     if (!p.hasUpdated) {
-        lThread = std::make_unique<strix::LiteThread>(1);
-        lThread->addJob([this, &p] {
-            dlResult = downloadManager.checkForUpdate(
-                ProjectInfo::projectName, ProjectInfo::versionString,
-                SITE_URL "/versions/index.json", false, false,
-                strix::readConfigFile(CONFIG_PATH, "updateCheck"));
-            p.hasUpdated = true;
-            downloadManager.changes = dlResult.changes;
-            downloadManager.shouldBeHidden = !dlResult.updateAvailable;
-            strix::writeConfigFileString(CONFIG_PATH, "updateCheck",
-                                         String(Time::currentTimeMillis()));
-        });
+        // TODO: run download check
     }
     
     startTimerHz(1);
@@ -220,6 +210,7 @@ MaximizerAudioProcessorEditor::~MaximizerAudioProcessorEditor()
     curve__slider.setLookAndFeel(nullptr);
     unlockButton.setLookAndFeel(nullptr);
     menu.setLookAndFeel(nullptr);
+    updater_deinit(updater);
     stopTimer();
 }
 
