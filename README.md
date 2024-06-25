@@ -17,6 +17,8 @@ A versatile tool for mixing and mastering.
 
 Requirements:
 
+* CMake on all platforms
+
 |Windows|MacOS|Linux|
 |-------|-----|-----|
 |Visual Studio|XCode Command Line Tools|See JUCE [Linux deps](https://github.com/juce-framework/JUCE/blob/master/docs/Linux%20Dependencies.md)
