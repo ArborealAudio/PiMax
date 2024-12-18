@@ -24,8 +24,6 @@ class MaximizerAudioProcessorEditor;
 #define DL_BIN "PiMax-linux.tar.gz"
 #endif
 
-static strix::UpdateResult dlResult;
-
 //==============================================================================
 /**
  */
@@ -54,8 +52,14 @@ public:
 
     void timerCallback() override
     {
-        if (!downloadManager.shouldBeHidden)
-            downloadManager.setVisible(dlResult.updateAvailable);
+        if (downloadManager.updateStatus.state ==
+            strix::UpdateStatus::Finished) {
+            audioProcessor.hasUpdated = true;
+        }
+        if (!downloadManager.updateStatus.updateAvailable) {
+            downloadManager.setVisible(downloadManager.updateStatus.updateAvailable);
+            audioProcessor.hasUpdated = true;
+        }
     }
     
     std::unique_ptr<TooltipWindow> tooltip = nullptr;
@@ -72,7 +76,6 @@ private:
     Splash splash;
 
     ActivationComponent activationComp;
-    Updater *updater;
     strix::DownloadManager downloadManager;
 
     Slider curve__slider;

@@ -8,7 +8,6 @@
 
 #include <JuceHeader.h>
 #include "PluginEditor.h"
-#include "quicfetch.h"
 
 void onMenuTooltip(MaximizerAudioProcessorEditor &);
 void onWindowReset(MaximizerAudioProcessorEditor &);
@@ -21,7 +20,9 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(
     : AudioProcessorEditor(&p), audioProcessor(p), responseCurveComponent(p),
       ui(p), waveshaperComponent(p),
       activationComp(p.trialRemaining_ms),
-      downloadManager(DL_BIN), menu(*this, p)
+      downloadManager(File("~/Downloads/"
+                            DL_BIN).getFullPathName()),
+      menu(*this, p)
 {
     auto &globalLNF = LookAndFeel::getDefaultLookAndFeel();
     globalLNF.setDefaultSansSerifTypeface(
@@ -192,13 +193,20 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(
 #endif
 
     addChildComponent(downloadManager);
-    downloadManager.changes = dlResult.changes;
     downloadManager.centreWithSize(300, 200);
 
     if (!p.hasUpdated) {
-        // TODO: run download check
+        downloadManager.checkForUpdate(
+            ProjectInfo::projectName, ProjectInfo::versionString,
+#if NDEBUG
+            SITE_URL "/versions/index.json",
+#else
+            "http://localhost:1313/versions/draft/index.json",
+#endif
+            false, false,
+            strix::readConfigFile(CONFIG_PATH, "updateCheck"));
     }
-    
+
     startTimerHz(1);
 }
 
@@ -210,7 +218,6 @@ MaximizerAudioProcessorEditor::~MaximizerAudioProcessorEditor()
     curve__slider.setLookAndFeel(nullptr);
     unlockButton.setLookAndFeel(nullptr);
     menu.setLookAndFeel(nullptr);
-    updater_deinit(updater);
     stopTimer();
 }
 

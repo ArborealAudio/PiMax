@@ -79,7 +79,7 @@ juce_add_modules(
     "modules/Arbor_modules")
 
 add_subdirectory(modules/quicfetch)
-target_include_directories(PiMax PRIVATE modules/quicfetch)
+target_include_directories(PiMax PRIVATE modules/quicfetch/include)
 
 target_compile_definitions(PiMax
 PUBLIC
