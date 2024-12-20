@@ -1,9 +1,6 @@
 [submodule "Source/modules/Arbor_modules"]
 	path = modules/Arbor_modules
 	url = https://github.com/ArborealAudio/Arbor_modules
-[submodule "Source/modules/Gin"]
-	path = modules/Gin
-	url = https://github.com/FigBug/Gin
 [submodule "modules/quicfetch"]
 	path = modules/quicfetch
 	url = https://github.com/abriccio/quicfetch
