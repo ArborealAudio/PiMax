@@ -55,10 +55,13 @@ public:
         if (downloadManager.updateStatus.state ==
             strix::UpdateStatus::Finished) {
             audioProcessor.hasUpdated = true;
+            strix::writeConfigFileString(CONFIG_PATH, "updateCheck",
+                String(Time::currentTimeMillis()));
+            stopTimer();
         }
         if (!downloadManager.updateStatus.updateAvailable) {
             downloadManager.setVisible(false);
-            audioProcessor.hasUpdated = true;
+            // audioProcessor.hasUpdated = true;
         }
     }
     

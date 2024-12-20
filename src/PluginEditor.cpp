@@ -205,7 +205,7 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(
             "http://localhost:1313/versions/draft/index.json",
 #endif
             false, false,
-            strix::readConfigFile(CONFIG_PATH, "updateCheck"));
+            strix::readConfigFileString(CONFIG_PATH, "updateCheck").getLargeIntValue());
     }
 
     startTimerHz(1);
