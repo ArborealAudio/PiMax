@@ -55,7 +55,7 @@ juce_add_plugin(PiMax
     VST3_CATEGORIES Fx Distortion Mastering
     AU_MAIN_TYPE kAudioUnitType_Effect
     PRODUCT_NAME "PiMax"
-    NEEDS_CURL TRUE
+    NEEDS_CURL FALSE
     LV2URI https://github.com/ArborealAudio/PiMax.git
     HARDENED_RUNTIME_ENABLED TRUE)
 
@@ -73,10 +73,7 @@ file(GLOB_RECURSE SourceFiles CONFIGURE_DEPENDS
 )
 target_sources(PiMax PRIVATE ${SourceFiles})
 
-juce_add_modules(
-    "modules/Gin/modules/gin"
-    "modules/Gin/modules/gin_gui"
-    "modules/Arbor_modules")
+juce_add_modules("modules/Arbor_modules")
 
 add_subdirectory(modules/quicfetch)
 target_include_directories(PiMax PRIVATE modules/quicfetch/include)
@@ -86,7 +83,7 @@ PUBLIC
     PRODUCTION_BUILD=${PRODUCTION_BUILD}
     JUCE_USE_PFFFT=${USE_PFFFT}
     JUCE_WEB_BROWSER=0
-    JUCE_USE_CURL=1
+    JUCE_USE_CURL=0
     JUCE_VST3_CAN_REPLACE_VST2=0
     JUCE_DISPLAY_SPLASH_SCREEN=0
     JUCE_COREGRAPHICS_RENDER_WITH_MULTIPLE_PAINT_CALLS=0
@@ -127,8 +124,6 @@ PRIVATE
     BinaryData
     juce::juce_audio_utils
     juce::juce_dsp
-    gin
-    gin_gui
     Arbor_modules
     quicfetch
 PUBLIC

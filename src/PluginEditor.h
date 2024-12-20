@@ -57,7 +57,7 @@ public:
             audioProcessor.hasUpdated = true;
         }
         if (!downloadManager.updateStatus.updateAvailable) {
-            downloadManager.setVisible(downloadManager.updateStatus.updateAvailable);
+            downloadManager.setVisible(false);
             audioProcessor.hasUpdated = true;
         }
     }

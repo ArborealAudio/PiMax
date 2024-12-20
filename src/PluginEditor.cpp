@@ -186,7 +186,7 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(
     unlockButton.setBoundsRelative(0.12f, 0.12f, 0.08f, 0.05f);
 
     addChildComponent(activationComp);
-    activationComp.onActivationCheck = [&](bool unlocked) {
+    activationComp.editorCb = [&](bool unlocked) {
         p.isUnlocked = unlocked;
     };
     activationComp.centreWithSize(300, 200);
@@ -199,7 +199,8 @@ MaximizerAudioProcessorEditor::MaximizerAudioProcessorEditor(
         downloadManager.checkForUpdate(
             ProjectInfo::projectName, ProjectInfo::versionString,
 #if NDEBUG
-            SITE_URL "/versions/index.json",
+            SITE_URL
+            "/versions/index.json",
 #else
             "http://localhost:1313/versions/draft/index.json",
 #endif
